@@ -1,0 +1,6 @@
+{
+  "name": "Create Product Yahoo",
+  "type": "http",
+  "method": "POST",
+  "address": "https://yahoo.com/products"
+}
