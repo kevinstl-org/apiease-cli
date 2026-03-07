@@ -1,0 +1,24 @@
+{
+  "name": "apiease-cli",
+  "version": "0.1.0",
+  "description": "Node client and thin CLI wrapper for creating APIEase requests.",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "apiease-cli": "./bin/apiease-cli"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

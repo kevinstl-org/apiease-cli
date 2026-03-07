@@ -2,4 +2,8 @@
 
 set -euo pipefail
 
-echo ".codex/run_test_suite.sh: Placeholder test suite. Please customize for this project."
+script_directory_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+project_directory_path="$(cd "${script_directory_path}/.." && pwd)"
+
+cd "${project_directory_path}"
+npm run test

@@ -1,0 +1,4 @@
+class ApiEaseCreateRequestClient {
+}
+
+export { ApiEaseCreateRequestClient };

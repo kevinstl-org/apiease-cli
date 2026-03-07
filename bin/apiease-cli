@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+script_directory_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec node "${script_directory_path}/apiease-cli.js" "$@"
