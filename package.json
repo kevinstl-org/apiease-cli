@@ -8,7 +8,7 @@
     ".": "./src/index.js"
   },
   "bin": {
-    "apiease-cli": "./bin/apiease-cli"
+    "apiease": "./bin/apiease-cli"
   },
   "files": [
     "bin",
