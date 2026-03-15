@@ -1,16 +1,17 @@
 import { ApiEaseCreateRequestClient } from '../client/ApiEaseCreateRequestClient.js';
+import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
 import { RequestDefinitionFileLoader } from './RequestDefinitionFileLoader.js';
 
 const JSON_FLAG = '--json';
-const REQUIRED_OPTION_NAMES = ['--file', '--base-url', '--shop-domain', '--api-key'];
+const REQUIRED_OPTION_NAMES = ['--file', '--base-url', '--shop-domain'];
 const USAGE_TEXT = [
-  'Usage: apiease-cli create --file <path> --base-url <url> --shop-domain <shop-domain> --api-key <api-key> [--json]',
+  'Usage: apiease-cli create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]',
   '',
   'Options:',
   '  --file <path>                Path to the request definition JSON file.',
   '  --base-url <url>            APIEase base URL.',
   '  --shop-domain <shop-domain> Shopify shop domain.',
-  '  --api-key <api-key>         APIEase API key.',
+  '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
   '  --json                      Emit raw JSON output.',
 ].join('\n');
 
@@ -18,11 +19,13 @@ class CreateRequestCommand {
   constructor({
     requestDefinitionFileLoader = new RequestDefinitionFileLoader(),
     apiEaseCreateRequestClient = new ApiEaseCreateRequestClient(),
+    apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
     stdout = process.stdout,
     stderr = process.stderr,
   } = {}) {
     this.requestDefinitionFileLoader = requestDefinitionFileLoader;
     this.apiEaseCreateRequestClient = apiEaseCreateRequestClient;
+    this.apiEaseHomeConfigurationResolver = apiEaseHomeConfigurationResolver;
     this.stdout = stdout;
     this.stderr = stderr;
   }
@@ -34,6 +37,12 @@ class CreateRequestCommand {
       return 1;
     }
 
+    const apiKeyResult = await this.resolveApiKey(parseResult.apiKey);
+    if (!apiKeyResult.ok) {
+      this.writeResult(apiKeyResult, parseResult.json);
+      return 1;
+    }
+
     const requestDefinitionResult = await this.requestDefinitionFileLoader.loadRequestDefinition(parseResult.filePath);
     if (!requestDefinitionResult.ok) {
       this.writeResult(requestDefinitionResult, parseResult.json);
@@ -42,7 +51,7 @@ class CreateRequestCommand {
 
     const result = await this.apiEaseCreateRequestClient.createRequest({
       apiBaseUrl: parseResult.apiBaseUrl,
-      apiKey: parseResult.apiKey,
+      apiKey: apiKeyResult.apiKey,
       shopDomain: parseResult.shopDomain,
       request: requestDefinitionResult.requestDefinition,
     });
@@ -69,6 +78,17 @@ class CreateRequestCommand {
       apiKey: optionMap['--api-key'],
       json: optionMap[JSON_FLAG] === true,
     };
+  }
+
+  async resolveApiKey(explicitApiKey) {
+    if (explicitApiKey) {
+      return {
+        ok: true,
+        apiKey: explicitApiKey,
+      };
+    }
+
+    return await this.apiEaseHomeConfigurationResolver.resolveConfiguration();
   }
 
   buildOptionMap(commandArguments) {
