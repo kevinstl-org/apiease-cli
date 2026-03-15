@@ -39,10 +39,21 @@ describe('InitProjectCommand', () => {
           resolveTemplateSource() {
             return {
               displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
               templateDirectoryPath,
             };
           },
         },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
+        cliVersion: '0.1.0-test',
         stdout: createWritableStream(stdoutChunks),
         stderr: createWritableStream(stderrChunks),
       });
@@ -65,6 +76,21 @@ describe('InitProjectCommand', () => {
       assert.equal(
         await fs.readFile(path.join(workingDirectoryPath, 'my-project', 'src', 'index.js'), 'utf8'),
         'export const app = true;\n',
+      );
+      assert.deepEqual(
+        JSON.parse(await fs.readFile(path.join(workingDirectoryPath, 'my-project', '.apiease', 'project.json'), 'utf8')),
+        {
+          cliVersion: '0.1.0-test',
+          template: {
+            displayTemplateSource: '../apiease-template',
+            publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+            sourceType: 'localDevelopment',
+            version: {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            },
+          },
+        },
       );
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', '.git')));
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', '.idea')));
@@ -106,6 +132,14 @@ describe('InitProjectCommand', () => {
             return {
               displayTemplateSource: '../apiease-template',
               templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
             };
           },
         },
@@ -165,6 +199,14 @@ describe('InitProjectCommand', () => {
             };
           },
         },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
         stdout: createWritableStream(stdoutChunks),
         stderr: createWritableStream(stderrChunks),
       });
@@ -204,6 +246,14 @@ describe('InitProjectCommand', () => {
             return {
               displayTemplateSource: '../apiease-template',
               templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
             };
           },
         },
@@ -255,6 +305,14 @@ describe('InitProjectCommand', () => {
             };
           },
         },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
         stdout: createWritableStream(stdoutChunks),
         stderr: createWritableStream(stderrChunks),
       });
@@ -301,6 +359,14 @@ describe('InitProjectCommand', () => {
             return {
               displayTemplateSource: '../apiease-template',
               templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
             };
           },
         },

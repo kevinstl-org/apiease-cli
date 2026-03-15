@@ -68,6 +68,42 @@ describe('apiease-cli', () => {
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
     });
 
+    it('should delegate upgrade command arguments to UpgradeProjectCommand and return its exit code', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const commandArguments = ['upgrade', '--check'];
+      const receivedCommandArguments = [];
+      const upgradeProjectCommand = {
+        async run(incomingCommandArguments) {
+          receivedCommandArguments.push(incomingCommandArguments);
+          return 0;
+        },
+      };
+      const createRequestCommand = {
+        async run() {
+          throw new Error('create command should not run');
+        },
+      };
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments,
+        createRequestCommand,
+        initProjectCommand: {
+          async run() {
+            throw new Error('init command should not run');
+          },
+        },
+        upgradeProjectCommand,
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
     it('should return one and write a structured json failure when an unexpected runtime error is thrown', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);

@@ -30,6 +30,7 @@ apiease
 
 ```bash
 apiease init [project-name]
+apiease upgrade [--check]
 apiease create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
 ```
 
@@ -55,6 +56,7 @@ Current development behavior:
 
 - The CLI resolves the template from `../apiease-template`.
 - The template is copied directly into `./my-project`.
+- The CLI writes project metadata to `.apiease/project.json`.
 - The template `.git` and `.idea` directories are excluded.
 - `node_modules` is excluded if it exists in the template.
 - Existing files and folders are allowed when they do not collide with template paths.
@@ -78,6 +80,35 @@ For existing directories:
 - The CLI reports `Project initialized successfully.` instead of `Project created successfully.`
 - The CLI omits `git init` when the destination already contains a `.git` directory.
 - The CLI omits the entire `Next steps:` section when there are no remaining next steps to show.
+
+## Check for Template Upgrades
+
+Check whether the current project template metadata matches the latest local template version:
+
+```bash
+apiease upgrade --check
+```
+
+Current behavior:
+
+- The command reads `.apiease/project.json` from the current project directory.
+- It compares the stored template git commit to the current `../apiease-template` git commit.
+- It exits `0` when the project is already up to date.
+- It exits `1` when an upgrade is available or when the project metadata is missing.
+
+Example up-to-date output:
+
+```text
+APIEASE project template is up to date.
+```
+
+Example upgrade-available output:
+
+```text
+APIEASE project template upgrade is available.
+Current project template version: <stored-template-commit>
+Latest template version: <current-template-commit>
+```
 
 ## Configure Authentication
 

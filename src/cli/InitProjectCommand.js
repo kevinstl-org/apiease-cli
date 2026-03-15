@@ -1,17 +1,25 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { ProjectMetadataFileService } from '../project/ProjectMetadataFileService.js';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
+import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', 'node_modules']);
 const USAGE_TEXT = 'Usage: apiease init [project-name]';
 
 class InitProjectCommand {
   constructor({
+    cliVersion,
+    projectMetadataFileService = new ProjectMetadataFileService(),
     templateProjectSourceResolver = new TemplateProjectSourceResolver(),
+    templateProjectVersionResolver = new TemplateProjectVersionResolver(),
     stdout = process.stdout,
     stderr = process.stderr,
   } = {}) {
+    this.cliVersion = cliVersion;
+    this.projectMetadataFileService = projectMetadataFileService;
     this.templateProjectSourceResolver = templateProjectSourceResolver;
+    this.templateProjectVersionResolver = templateProjectVersionResolver;
     this.stdout = stdout;
     this.stderr = stderr;
   }
@@ -56,6 +64,17 @@ class InitProjectCommand {
       force: false,
       errorOnExist: true,
       filter: (sourcePath) => this.shouldCopyPath(sourcePath),
+    });
+
+    const templateVersion = await this.templateProjectVersionResolver.resolveTemplateVersion(
+      templateSource.templateDirectoryPath,
+    );
+    await this.projectMetadataFileService.writeProjectMetadata({
+      projectDirectoryPath: destinationDirectoryPath,
+      projectMetadata: this.buildProjectMetadata({
+        templateSource,
+        templateVersion,
+      }),
     });
 
     const hasExistingGitDirectory = await this.hasGitDirectory(destinationDirectoryPath);
@@ -202,6 +221,18 @@ class InitProjectCommand {
     }
 
     return outputLines.join('\n');
+  }
+
+  buildProjectMetadata({ templateSource, templateVersion }) {
+    return {
+      cliVersion: this.cliVersion,
+      template: {
+        displayTemplateSource: templateSource.displayTemplateSource,
+        publicRepositoryUrl: templateSource.publicRepositoryUrl,
+        sourceType: templateSource.sourceType,
+        version: templateVersion,
+      },
+    };
   }
 }
 
