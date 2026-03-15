@@ -77,21 +77,26 @@ describe('InitProjectCommand', () => {
         await fs.readFile(path.join(workingDirectoryPath, 'my-project', 'src', 'index.js'), 'utf8'),
         'export const app = true;\n',
       );
-      assert.deepEqual(
-        JSON.parse(await fs.readFile(path.join(workingDirectoryPath, 'my-project', '.apiease', 'project.json'), 'utf8')),
-        {
-          cliVersion: '0.1.0-test',
-          template: {
-            displayTemplateSource: '../apiease-template',
-            publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
-            sourceType: 'localDevelopment',
-            version: {
-              type: 'gitCommit',
-              value: 'template-sha-1',
-            },
-          },
-        },
+      const projectMetadata = JSON.parse(
+        await fs.readFile(path.join(workingDirectoryPath, 'my-project', '.apiease', 'project.json'), 'utf8'),
       );
+      assert.equal(projectMetadata.cliVersion, '0.1.0-test');
+      assert.equal(projectMetadata.template.displayTemplateSource, '../apiease-template');
+      assert.equal(projectMetadata.template.publicRepositoryUrl, 'https://github.com/kevinstl-org/apiease-template');
+      assert.equal(projectMetadata.template.sourceType, 'localDevelopment');
+      assert.deepEqual(projectMetadata.template.version, {
+        type: 'gitCommit',
+        value: 'template-sha-1',
+      });
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), [
+        '.env',
+        'package.json',
+        'src/index.js',
+      ]);
+      for (const manifestHash of Object.values(projectMetadata.template.manifest)) {
+        assert.equal(typeof manifestHash, 'string');
+        assert.notEqual(manifestHash.length, 0);
+      }
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', '.git')));
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', '.idea')));
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', 'node_modules')));
@@ -287,21 +292,16 @@ describe('InitProjectCommand', () => {
       assert.equal(exitCode, 0);
       assert.equal(await fs.readFile(path.join(workingDirectoryPath, '.gitignore'), 'utf8'), gitignoreContent);
       assert.equal(await fs.readFile(path.join(workingDirectoryPath, 'README.md'), 'utf8'), 'template readme\n');
-      assert.deepEqual(
-        JSON.parse(await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8')),
-        {
-          cliVersion: '0.1.0-test',
-          template: {
-            displayTemplateSource: '../apiease-template',
-            publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
-            sourceType: 'localDevelopment',
-            version: {
-              type: 'gitCommit',
-              value: 'template-sha-1',
-            },
-          },
-        },
+      const projectMetadata = JSON.parse(
+        await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8'),
       );
+      assert.equal(projectMetadata.cliVersion, '0.1.0-test');
+      assert.equal(projectMetadata.template.displayTemplateSource, '../apiease-template');
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), ['.gitignore', 'README.md']);
+      for (const manifestHash of Object.values(projectMetadata.template.manifest)) {
+        assert.equal(typeof manifestHash, 'string');
+        assert.notEqual(manifestHash.length, 0);
+      }
       assert.equal(
         stdoutChunks.join(''),
         [
@@ -530,21 +530,18 @@ describe('InitProjectCommand', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.equal(await fs.readFile(path.join(workingDirectoryPath, 'README.md'), 'utf8'), 'custom readme\n');
-      assert.deepEqual(
-        JSON.parse(await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8')),
-        {
-          cliVersion: '0.1.0-test',
-          template: {
-            displayTemplateSource: '../apiease-template',
-            publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
-            sourceType: 'localDevelopment',
-            version: {
-              type: 'gitCommit',
-              value: 'template-sha-1',
-            },
-          },
-        },
+      const projectMetadata = JSON.parse(
+        await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8'),
       );
+      assert.equal(projectMetadata.cliVersion, '0.1.0-test');
+      assert.equal(projectMetadata.template.displayTemplateSource, '../apiease-template');
+      assert.equal(projectMetadata.template.publicRepositoryUrl, 'https://github.com/kevinstl-org/apiease-template');
+      assert.equal(projectMetadata.template.sourceType, 'localDevelopment');
+      assert.deepEqual(projectMetadata.template.version, {
+        type: 'gitCommit',
+        value: 'template-sha-1',
+      });
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest), ['README.md']);
       assert.equal(
         stdoutChunks.join(''),
         [

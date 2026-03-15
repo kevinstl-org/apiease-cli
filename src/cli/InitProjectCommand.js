@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectMetadataFileService } from '../project/ProjectMetadataFileService.js';
+import { TemplateProjectManifestBuilder } from '../template/TemplateProjectManifestBuilder.js';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
 
@@ -11,6 +12,7 @@ class InitProjectCommand {
   constructor({
     cliVersion,
     projectMetadataFileService = new ProjectMetadataFileService(),
+    templateProjectManifestBuilder = new TemplateProjectManifestBuilder(),
     templateProjectSourceResolver = new TemplateProjectSourceResolver(),
     templateProjectVersionResolver = new TemplateProjectVersionResolver(),
     stdout = process.stdout,
@@ -18,6 +20,7 @@ class InitProjectCommand {
   } = {}) {
     this.cliVersion = cliVersion;
     this.projectMetadataFileService = projectMetadataFileService;
+    this.templateProjectManifestBuilder = templateProjectManifestBuilder;
     this.templateProjectSourceResolver = templateProjectSourceResolver;
     this.templateProjectVersionResolver = templateProjectVersionResolver;
     this.stdout = stdout;
@@ -59,9 +62,13 @@ class InitProjectCommand {
     const templateVersion = await this.templateProjectVersionResolver.resolveTemplateVersion(
       templateSource.templateDirectoryPath,
     );
+    const templateManifest = await this.templateProjectManifestBuilder.buildTemplateManifest(
+      templateSource.templateDirectoryPath,
+    );
     await this.projectMetadataFileService.writeProjectMetadata({
       projectDirectoryPath: destinationDirectoryPath,
       projectMetadata: this.buildProjectMetadata({
+        templateManifest,
         templateSource,
         templateVersion,
       }),
@@ -254,11 +261,12 @@ class InitProjectCommand {
     return outputLines.join('\n');
   }
 
-  buildProjectMetadata({ templateSource, templateVersion }) {
+  buildProjectMetadata({ templateManifest, templateSource, templateVersion }) {
     return {
       cliVersion: this.cliVersion,
       template: {
         displayTemplateSource: templateSource.displayTemplateSource,
+        manifest: templateManifest,
         publicRepositoryUrl: templateSource.publicRepositoryUrl,
         sourceType: templateSource.sourceType,
         version: templateVersion,

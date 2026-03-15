@@ -31,6 +31,7 @@ apiease
 ```bash
 apiease init [project-name]
 apiease upgrade [--check]
+apiease upgrade --dry-run
 apiease create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
 ```
 
@@ -57,6 +58,7 @@ Current development behavior:
 - The CLI resolves the template from `../apiease-template`.
 - The template is copied directly into `./my-project`.
 - The CLI writes project metadata to `.apiease/project.json`.
+- The metadata includes the template git version and a manifest of template-managed file hashes.
 - The template `.git` and `.idea` directories are excluded.
 - `node_modules` is excluded if it exists in the template.
 - Existing files and folders are allowed when they do not collide with template paths.
@@ -111,6 +113,19 @@ APIEASE project template upgrade is available.
 Current project template version: <stored-template-commit>
 Latest template version: <current-template-commit>
 ```
+
+Preview the file-level upgrade plan without writing any changes:
+
+```bash
+apiease upgrade --dry-run
+```
+
+Current dry-run behavior:
+
+- It compares the stored template manifest from `.apiease/project.json` to the current template manifest.
+- It classifies template-managed file changes as `Add`, `Update`, `Remove`, or `Skip conflict`.
+- It never writes project files.
+- It exits `1` when there are planned changes or conflicts to review.
 
 ## Configure Authentication
 
