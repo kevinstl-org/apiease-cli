@@ -208,6 +208,60 @@ describe('ApiEaseCreateRequestClient', () => {
       });
     });
 
+    it('should return a structured failure when the API responds with html instead of json', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const request = {
+        name: 'Create order',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/orders',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: {
+          validate() {
+            return {
+              isValid: true,
+              errorCode: null,
+              message: '',
+              fieldErrors: [],
+            };
+          },
+        },
+        fetchImplementation: async () => ({
+          status: 502,
+          headers: {
+            get(name) {
+              return name === 'content-type' ? 'text/html; charset=utf-8' : null;
+            },
+          },
+          async text() {
+            return '<!DOCTYPE html><html><body>Bad gateway</body></html>';
+          },
+          async json() {
+            throw new Error('response.json should not be called for html responses');
+          },
+        }),
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.deepEqual(result, {
+        status: 502,
+        ok: false,
+        errorCode: 'REQUEST_CREATE_FAILED',
+        message: 'API returned a non-JSON response with status 502 and content-type text/html; response starts with <!DOCTYPE html><html><body>Bad gateway</body></html>',
+        fieldErrors: [],
+      });
+    });
+
     it('should short-circuit local contract validation failures without making a network request', async () => {
       // Arrange
       const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);

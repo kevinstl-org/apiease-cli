@@ -165,7 +165,7 @@ class ApiEasePublicCrudExercise {
   async exerciseShopVariableCrud() {
     const variableName = this.buildShopVariableName();
 
-    this.reportStep(`Creating shop variable ${variableName}`);
+    this.reportStep(`Creating variable ${variableName}`);
     const createPayload = await this.requestJson({
       method: 'POST',
       path: this.buildShopVariableCollectionPath(),
@@ -173,36 +173,36 @@ class ApiEasePublicCrudExercise {
     });
     this.createdResources.shopVariable = {
       variableName,
-      createdShopVariable: createPayload.shopVariable,
+      createdShopVariable: createPayload.variable,
       updatedShopVariable: null,
     };
 
-    this.reportStep(`Listing shop variables for exercise ${this.exerciseId}`);
+    this.reportStep(`Listing variables for exercise ${this.exerciseId}`);
     const listPayload = await this.requestJson({
       method: 'GET',
       path: this.buildShopVariableCollectionPath(),
     });
     this.assertCollectionContains({
-      collection: listPayload.shopVariables,
+      collection: listPayload.variables,
       identifierKey: 'name',
       identifierValue: variableName,
-      resourceType: 'shop variable',
+      resourceType: 'variable',
     });
 
-    this.reportStep(`Reading shop variable ${variableName}`);
+    this.reportStep(`Reading variable ${variableName}`);
     await this.requestJson({
       method: 'GET',
       path: this.buildShopVariableItemPath(variableName),
     });
 
-    this.reportStep(`Updating shop variable ${variableName}`);
+    this.reportStep(`Updating variable ${variableName}`);
     const updatePayload = await this.requestJson({
       method: 'PUT',
       path: this.buildShopVariableItemPath(variableName),
       body: this.buildUpdateShopVariablePayload(),
     });
 
-    this.createdResources.shopVariable.updatedShopVariable = updatePayload.shopVariable;
+    this.createdResources.shopVariable.updatedShopVariable = updatePayload.variable;
     return this.createdResources.shopVariable;
   }
 
@@ -215,7 +215,7 @@ class ApiEasePublicCrudExercise {
 
     const cleanupTargets = [
       this.buildCleanupTarget({
-        resourceType: 'shopVariable',
+        resourceType: 'variable',
         identifierValue: shopVariableName,
         path: shopVariableName ? this.buildShopVariableItemPath(shopVariableName) : '',
       }),
@@ -384,11 +384,11 @@ class ApiEasePublicCrudExercise {
   }
 
   buildShopVariableCollectionPath() {
-    return 'api/v1/resources/shopVariables';
+    return 'api/v1/resources/variables';
   }
 
   buildShopVariableItemPath(variableName) {
-    return `api/v1/resources/shopVariables/${encodeURIComponent(variableName)}`;
+    return `api/v1/resources/variables/${encodeURIComponent(variableName)}`;
   }
 
   buildCreateRequestPayload() {

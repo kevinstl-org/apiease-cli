@@ -11,7 +11,7 @@ const moduleUrl = pathToFileURL(
 
 describe('ApiEasePublicCrudExercise', () => {
   describe('run', () => {
-    it('should exercise request widget and shop-variable crud flows and clean up created resources', async () => {
+    it('should exercise request widget and variable crud flows and clean up created resources', async () => {
       // Arrange
       const { ApiEasePublicCrudExercise } = await import(moduleUrl);
       const fetchCalls = [];
@@ -110,7 +110,7 @@ describe('ApiEasePublicCrudExercise', () => {
         buildFetchResponse(201, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
-          shopVariable: {
+          variable: {
             name: 'codex_variable_exercise_123',
             sensitive: true,
             displayValue: '***********',
@@ -119,12 +119,12 @@ describe('ApiEasePublicCrudExercise', () => {
         buildFetchResponse(200, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
-          shopVariables: [{ name: 'codex_variable_exercise_123' }],
+          variables: [{ name: 'codex_variable_exercise_123' }],
         }),
         buildFetchResponse(200, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
-          shopVariable: {
+          variable: {
             name: 'codex_variable_exercise_123',
             sensitive: true,
             displayValue: '***********',
@@ -133,7 +133,7 @@ describe('ApiEasePublicCrudExercise', () => {
         buildFetchResponse(200, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
-          shopVariable: {
+          variable: {
             name: 'codex_variable_exercise_123',
             sensitive: false,
             value: 'updated-value-exercise-123',
@@ -142,7 +142,7 @@ describe('ApiEasePublicCrudExercise', () => {
         buildFetchResponse(200, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
-          shopVariable: {
+          variable: {
             name: 'codex_variable_exercise_123',
             sensitive: false,
             value: 'updated-value-exercise-123',
@@ -200,11 +200,11 @@ describe('ApiEasePublicCrudExercise', () => {
           'GET https://apiease.example.com/root/api/v1/resources/widgets',
           'GET https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
           'PUT https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
-          'POST https://apiease.example.com/root/api/v1/resources/shopVariables',
-          'GET https://apiease.example.com/root/api/v1/resources/shopVariables',
-          'GET https://apiease.example.com/root/api/v1/resources/shopVariables/codex_variable_exercise_123',
-          'PUT https://apiease.example.com/root/api/v1/resources/shopVariables/codex_variable_exercise_123',
-          'DELETE https://apiease.example.com/root/api/v1/resources/shopVariables/codex_variable_exercise_123',
+          'POST https://apiease.example.com/root/api/v1/resources/variables',
+          'GET https://apiease.example.com/root/api/v1/resources/variables',
+          'GET https://apiease.example.com/root/api/v1/resources/variables/codex_variable_exercise_123',
+          'PUT https://apiease.example.com/root/api/v1/resources/variables/codex_variable_exercise_123',
+          'DELETE https://apiease.example.com/root/api/v1/resources/variables/codex_variable_exercise_123',
           'DELETE https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
           'DELETE https://apiease.example.com/root/api/v1/resources/requests/request-1',
         ],
@@ -233,7 +233,7 @@ describe('ApiEasePublicCrudExercise', () => {
       assert.equal(result.shopVariable.variableName, 'codex_variable_exercise_123');
       assert.deepEqual(
         result.cleanupResults.map((cleanupResult) => cleanupResult.resourceType),
-        ['shopVariable', 'widget', 'request'],
+        ['variable', 'widget', 'request'],
       );
     });
 

@@ -60,11 +60,64 @@ class ApiEaseCreateRequestClient {
   }
 
   async buildResponseResult(response) {
+    const responseContentType = this.readResponseContentType(response);
+    if (responseContentType && !this.isJsonContentType(responseContentType)) {
+      return await this.buildNonJsonFailureResult({
+        response,
+        responseContentType,
+      });
+    }
+
     const payload = await response.json();
     return {
       status: response.status,
       ...payload,
     };
+  }
+
+  readResponseContentType(response) {
+    return response?.headers?.get?.('content-type') || '';
+  }
+
+  isJsonContentType(responseContentType) {
+    return responseContentType.toLowerCase().includes(JSON_CONTENT_TYPE);
+  }
+
+  async buildNonJsonFailureResult({ response, responseContentType }) {
+    return {
+      status: response?.status || DEFAULT_FAILURE_STATUS,
+      ok: false,
+      errorCode: REQUEST_CREATE_FAILED,
+      message: this.buildNonJsonFailureMessage({
+        responseStatus: response?.status,
+        responseContentType,
+        responseBody: await this.readResponseText(response),
+      }),
+      fieldErrors: [],
+    };
+  }
+
+  async readResponseText(response) {
+    if (typeof response?.text !== 'function') {
+      return '';
+    }
+
+    return await response.text();
+  }
+
+  buildNonJsonFailureMessage({ responseStatus, responseContentType, responseBody }) {
+    const normalizedContentType = responseContentType.split(';')[0] || 'unknown';
+    const responsePreview = this.buildResponsePreview(responseBody);
+    return `API returned a non-JSON response with status ${responseStatus || DEFAULT_FAILURE_STATUS} and content-type ${normalizedContentType}; response starts with ${responsePreview}`;
+  }
+
+  buildResponsePreview(responseBody) {
+    const normalizedResponseBody = String(responseBody || '').replace(/\s+/g, ' ').trim();
+    if (normalizedResponseBody.length === 0) {
+      return '(empty body)';
+    }
+
+    return normalizedResponseBody.slice(0, 120);
   }
 
   buildTransportFailureResult(error) {
