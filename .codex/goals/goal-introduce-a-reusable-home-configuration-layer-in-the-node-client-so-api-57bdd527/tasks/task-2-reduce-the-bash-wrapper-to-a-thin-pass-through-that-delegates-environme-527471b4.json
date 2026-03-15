@@ -4,7 +4,7 @@
   "goalId": "goal-introduce-a-reusable-home-configuration-layer-in-the-node-client-so-api-57bdd527",
   "goal": "introduce a reusable home-configuration layer in the Node client so apiease-cli reads the active environment from ~/.apiease/environment, validates that it is local, staging, or production, loads the matching ~/.apiease/.env.<environment> file, resolves APIEASE_API_KEY from that file, and uses it whenever --api-key is not explicitly passed. Keep explicit CLI flags as the highest-precedence overrides, keep the bash wrapper thin, fail fast with clear structured errors when the environment declaration is missing or invalid or when the selected env file is missing or lacks APIEASE_API_KEY, and update tests and README so the new ~/.apiease environment-selection and env-file authentication flow is fully covered and documented.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "cli",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-14T23:48:34Z",
-  "updatedAt": "2026-03-15T00:02:48Z",
+  "updatedAt": "2026-03-15T00:13:10Z",
   "context": [
     "The wrapper should no longer own environment-selection or env-file parsing behavior."
   ],
