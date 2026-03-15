@@ -484,7 +484,7 @@ describe('InitProjectCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
-    it('should write metadata even when the current directory has conflicting customized files', async () => {
+    it('should exclude skipped conflicting files from the stored template manifest', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
       const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-customized-current-'));
@@ -541,7 +541,7 @@ describe('InitProjectCommand', () => {
         type: 'gitCommit',
         value: 'template-sha-1',
       });
-      assert.deepEqual(Object.keys(projectMetadata.template.manifest), ['README.md']);
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest), []);
       assert.equal(
         stdoutChunks.join(''),
         [

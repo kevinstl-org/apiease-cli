@@ -68,6 +68,8 @@ class InitProjectCommand {
     await this.projectMetadataFileService.writeProjectMetadata({
       projectDirectoryPath: destinationDirectoryPath,
       projectMetadata: this.buildProjectMetadata({
+        destinationDirectoryPath,
+        skippedPaths: copyPlan.skippedPaths,
         templateManifest,
         templateSource,
         templateVersion,
@@ -261,17 +263,44 @@ class InitProjectCommand {
     return outputLines.join('\n');
   }
 
-  buildProjectMetadata({ templateManifest, templateSource, templateVersion }) {
+  buildProjectMetadata({
+    destinationDirectoryPath,
+    skippedPaths,
+    templateManifest,
+    templateSource,
+    templateVersion,
+  }) {
     return {
       cliVersion: this.cliVersion,
       template: {
         displayTemplateSource: templateSource.displayTemplateSource,
-        manifest: templateManifest,
+        manifest: this.buildStoredTemplateManifest({
+          destinationDirectoryPath,
+          skippedPaths,
+          templateManifest,
+        }),
         publicRepositoryUrl: templateSource.publicRepositoryUrl,
         sourceType: templateSource.sourceType,
         version: templateVersion,
       },
     };
+  }
+
+  buildStoredTemplateManifest({ destinationDirectoryPath, skippedPaths, templateManifest }) {
+    const skippedRelativePaths = new Set(
+      skippedPaths.map((skippedPath) => path.relative(destinationDirectoryPath, skippedPath).split(path.sep).join('/')),
+    );
+    const storedTemplateManifest = {};
+
+    for (const [templatePath, templateHash] of Object.entries(templateManifest)) {
+      if (skippedRelativePaths.has(templatePath)) {
+        continue;
+      }
+
+      storedTemplateManifest[templatePath] = templateHash;
+    }
+
+    return storedTemplateManifest;
   }
 }
 

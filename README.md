@@ -64,6 +64,7 @@ Current development behavior:
 - Existing files and folders are allowed when they do not collide with template paths.
 - Existing template files with identical content are reused instead of treated as collisions.
 - Existing conflicting files are preserved, skipped, and reported after init completes.
+- Skipped conflicting files are not added to the stored template manifest, so future `upgrade --dry-run` output continues to show them as conflicts until you resolve them.
 
 Expected output:
 
