@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 
-const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', 'node_modules']);
+const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', 'node_modules']);
 const USAGE_TEXT = 'Usage: apiease init <project-name>';
 
 class InitProjectCommand {

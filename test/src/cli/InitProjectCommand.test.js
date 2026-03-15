@@ -13,7 +13,7 @@ const initProjectCommandModuleUrl = pathToFileURL(
 
 describe('InitProjectCommand', () => {
   describe('run', () => {
-    it('should copy the template into the target project directory while excluding .git and node_modules', async () => {
+    it('should copy the template into the target project directory while excluding .git, .idea, and node_modules', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
       const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-'));
@@ -23,10 +23,12 @@ describe('InitProjectCommand', () => {
       const stderrChunks = [];
 
       await fs.mkdir(path.join(templateDirectoryPath, '.git'), { recursive: true });
+      await fs.mkdir(path.join(templateDirectoryPath, '.idea'), { recursive: true });
       await fs.mkdir(path.join(templateDirectoryPath, 'node_modules', 'left-pad'), { recursive: true });
       await fs.mkdir(path.join(templateDirectoryPath, 'src'), { recursive: true });
       await fs.mkdir(workingDirectoryPath, { recursive: true });
       await fs.writeFile(path.join(templateDirectoryPath, '.git', 'config'), '[core]\nrepositoryformatversion = 0\n');
+      await fs.writeFile(path.join(templateDirectoryPath, '.idea', '.gitignore'), '# idea\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'node_modules', 'left-pad', 'index.js'), 'export default 1;\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'package.json'), '{\n  "name": "apiease-template"\n}\n');
       await fs.writeFile(path.join(templateDirectoryPath, '.env'), 'APIEASE=1\n');
@@ -65,6 +67,7 @@ describe('InitProjectCommand', () => {
         'export const app = true;\n',
       );
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', '.git')));
+      await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', '.idea')));
       await assert.rejects(fs.access(path.join(workingDirectoryPath, 'my-project', 'node_modules')));
       assert.equal(
         stdoutChunks.join(''),

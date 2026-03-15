@@ -53,7 +53,7 @@ Current development behavior:
 
 - The CLI resolves the template from `../apiease-template`.
 - The template is copied directly into `./my-project`.
-- The template `.git` directory is excluded.
+- The template `.git` and `.idea` directories are excluded.
 - `node_modules` is excluded if it exists in the template.
 - Existing files and folders are allowed when they do not collide with template paths.
 - The command fails if a template file or folder would overwrite an existing path.
