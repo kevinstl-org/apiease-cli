@@ -1,0 +1,45 @@
+{
+  "id": "task-2-reduce-the-bash-wrapper-to-a-thin-pass-through-that-delegates-environme-527471b4",
+  "text": "Reduce the bash wrapper to a thin pass-through that delegates environment and API-key resolution to the Node client.",
+  "goalId": "goal-introduce-a-reusable-home-configuration-layer-in-the-node-client-so-api-57bdd527",
+  "goal": "introduce a reusable home-configuration layer in the Node client so apiease-cli reads the active environment from ~/.apiease/environment, validates that it is local, staging, or production, loads the matching ~/.apiease/.env.<environment> file, resolves APIEASE_API_KEY from that file, and uses it whenever --api-key is not explicitly passed. Keep explicit CLI flags as the highest-precedence overrides, keep the bash wrapper thin, fail fast with clear structured errors when the environment declaration is missing or invalid or when the selected env file is missing or lacks APIEASE_API_KEY, and update tests and README so the new ~/.apiease environment-selection and env-file authentication flow is fully covered and documented.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "cli",
+    "wrapper",
+    "shell"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-14T23:48:34Z",
+  "updatedAt": "2026-03-15T00:02:48Z",
+  "context": [
+    "The wrapper should no longer own environment-selection or env-file parsing behavior."
+  ],
+  "steps": [
+    "Remove environment and API-key resolution logic from the wrapper.",
+    "Keep only the bootstrapping and argument-forwarding behavior needed to invoke the Node client.",
+    "Ensure existing CLI flags are forwarded unchanged."
+  ],
+  "constraints": [
+    "Keep the wrapper thin and free of business logic that now lives in Node.",
+    "Do not break current argument pass-through behavior."
+  ],
+  "acceptanceCriteria": [
+    "The wrapper no longer reads `~/.apiease/environment` or any `~/.apiease/.env.<environment>` file itself.",
+    "The wrapper forwards explicit `--api-key` and all other CLI arguments unchanged to the Node client.",
+    "There is no duplicate environment-selection or auth-fallback logic outside the Node client."
+  ],
+  "sequenceIndex": 2,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
