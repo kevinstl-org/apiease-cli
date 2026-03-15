@@ -60,7 +60,8 @@ Current development behavior:
 - The template `.git` and `.idea` directories are excluded.
 - `node_modules` is excluded if it exists in the template.
 - Existing files and folders are allowed when they do not collide with template paths.
-- The command fails if a template file or folder would overwrite an existing path.
+- Existing template files with identical content are reused instead of treated as collisions.
+- Existing conflicting files are preserved, skipped, and reported after init completes.
 
 Expected output:
 
@@ -78,6 +79,7 @@ For existing directories:
 
 - The CLI reports `Initializing APIEase project: ...` instead of `Creating APIEase project: ...`.
 - The CLI reports `Project initialized successfully.` instead of `Project created successfully.`
+- The CLI reports skipped existing conflicting paths instead of overwriting them.
 - The CLI omits `git init` when the destination already contains a `.git` directory.
 - The CLI omits the entire `Next steps:` section when there are no remaining next steps to show.
 

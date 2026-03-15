@@ -175,7 +175,7 @@ describe('InitProjectCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
-    it('should fail when an existing destination file would be overwritten by the template', async () => {
+    it('should preserve conflicting existing files and report them as skipped', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
       const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-collision-'));
@@ -217,13 +217,104 @@ describe('InitProjectCommand', () => {
       });
 
       // Assert
-      assert.equal(exitCode, 1);
-      assert.equal(stdoutChunks.join(''), '');
+      assert.equal(exitCode, 0);
       assert.equal(
-        stderrChunks.join(''),
-        `Template copy would overwrite an existing path: ${path.join(destinationDirectoryPath, 'README.md')}\n`,
+        stdoutChunks.join(''),
+        [
+          'Initializing APIEase project: my-project',
+          'Using template: ../apiease-template',
+          'Project initialized successfully.',
+          '',
+          'Skipped existing conflicting paths:',
+          'README.md',
+          '',
+          'Next steps:',
+          'cd my-project',
+          'git init',
+          '',
+        ].join('\n'),
       );
+      assert.equal(stderrChunks.join(''), '');
       assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'README.md'), 'utf8'), 'existing readme\n');
+    });
+
+    it('should reuse identical existing template files and still write project metadata', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-identical-file-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const gitignoreContent = '.DS_Store\nnode_modules/\n';
+
+      await fs.mkdir(templateDirectoryPath, { recursive: true });
+      await fs.mkdir(workingDirectoryPath, { recursive: true });
+      await fs.writeFile(path.join(templateDirectoryPath, '.gitignore'), gitignoreContent);
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+      await fs.writeFile(path.join(workingDirectoryPath, '.gitignore'), gitignoreContent);
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
+        cliVersion: '0.1.0-test',
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(await fs.readFile(path.join(workingDirectoryPath, '.gitignore'), 'utf8'), gitignoreContent);
+      assert.equal(await fs.readFile(path.join(workingDirectoryPath, 'README.md'), 'utf8'), 'template readme\n');
+      assert.deepEqual(
+        JSON.parse(await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8')),
+        {
+          cliVersion: '0.1.0-test',
+          template: {
+            displayTemplateSource: '../apiease-template',
+            publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+            sourceType: 'localDevelopment',
+            version: {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            },
+          },
+        },
+      );
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Initializing APIEase project: .',
+          'Using template: ../apiease-template',
+          'Project initialized successfully.',
+          '',
+          'Next steps:',
+          'git init',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
     });
 
     it('should omit git init from next steps when initializing an existing git directory', async () => {
@@ -387,6 +478,85 @@ describe('InitProjectCommand', () => {
           'Initializing APIEase project: .',
           'Using template: ../apiease-template',
           'Project initialized successfully.',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write metadata even when the current directory has conflicting customized files', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-customized-current-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+
+      await fs.mkdir(templateDirectoryPath, { recursive: true });
+      await fs.mkdir(workingDirectoryPath, { recursive: true });
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+      await fs.writeFile(path.join(workingDirectoryPath, 'README.md'), 'custom readme\n');
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
+        cliVersion: '0.1.0-test',
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(await fs.readFile(path.join(workingDirectoryPath, 'README.md'), 'utf8'), 'custom readme\n');
+      assert.deepEqual(
+        JSON.parse(await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8')),
+        {
+          cliVersion: '0.1.0-test',
+          template: {
+            displayTemplateSource: '../apiease-template',
+            publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+            sourceType: 'localDevelopment',
+            version: {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            },
+          },
+        },
+      );
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Initializing APIEase project: .',
+          'Using template: ../apiease-template',
+          'Project initialized successfully.',
+          '',
+          'Skipped existing conflicting paths:',
+          'README.md',
+          '',
+          'Next steps:',
+          'git init',
           '',
         ].join('\n'),
       );

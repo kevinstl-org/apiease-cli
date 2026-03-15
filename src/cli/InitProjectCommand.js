@@ -41,15 +41,10 @@ class InitProjectCommand {
       return 1;
     }
 
-    const collisionResult = await this.findTemplateCollision(
+    const copyPlan = await this.buildTemplateCopyPlan(
       templateSource.templateDirectoryPath,
       destinationDirectoryPath,
     );
-
-    if (!collisionResult.ok) {
-      this.stderr.write(`${collisionResult.message}\n`);
-      return 1;
-    }
 
     await fs.mkdir(destinationDirectoryPath, { recursive: true });
 
@@ -59,12 +54,7 @@ class InitProjectCommand {
       projectName: parseResult.projectName,
     }));
 
-    await fs.cp(templateSource.templateDirectoryPath, destinationDirectoryPath, {
-      recursive: true,
-      force: false,
-      errorOnExist: true,
-      filter: (sourcePath) => this.shouldCopyPath(sourcePath),
-    });
+    await this.copyTemplateEntries(templateSource.templateDirectoryPath, destinationDirectoryPath);
 
     const templateVersion = await this.templateProjectVersionResolver.resolveTemplateVersion(
       templateSource.templateDirectoryPath,
@@ -83,6 +73,7 @@ class InitProjectCommand {
         destinationAlreadyExists,
         hasExistingGitDirectory,
         projectName: parseResult.projectName,
+        skippedPaths: copyPlan.skippedPaths,
       }),
     );
     return 0;
@@ -129,7 +120,7 @@ class InitProjectCommand {
     };
   }
 
-  async findTemplateCollision(templateDirectoryPath, destinationDirectoryPath) {
+  async buildTemplateCopyPlan(templateDirectoryPath, destinationDirectoryPath, skippedPaths = []) {
     const templateEntries = await fs.readdir(templateDirectoryPath, { withFileTypes: true });
 
     for (const templateEntry of templateEntries) {
@@ -146,23 +137,48 @@ class InitProjectCommand {
       }
 
       if (templateEntry.isDirectory() && destinationEntryStats.isDirectory()) {
-        const nestedCollisionResult = await this.findTemplateCollision(templateEntryPath, destinationEntryPath);
-        if (!nestedCollisionResult.ok) {
-          return nestedCollisionResult;
-        }
-
+        await this.buildTemplateCopyPlan(templateEntryPath, destinationEntryPath, skippedPaths);
         continue;
       }
 
-      return {
-        ok: false,
-        message: `Template copy would overwrite an existing path: ${destinationEntryPath}`,
-      };
+      if (
+        templateEntry.isFile() &&
+        destinationEntryStats.isFile() &&
+        (await this.areFilesIdentical(templateEntryPath, destinationEntryPath))
+      ) {
+        continue;
+      }
+
+      skippedPaths.push(destinationEntryPath);
     }
 
     return {
       ok: true,
+      skippedPaths,
     };
+  }
+
+  async copyTemplateEntries(templateDirectoryPath, destinationDirectoryPath) {
+    const templateEntries = await fs.readdir(templateDirectoryPath, { withFileTypes: true });
+
+    for (const templateEntry of templateEntries) {
+      if (EXCLUDED_DIRECTORY_NAMES.has(templateEntry.name)) {
+        continue;
+      }
+
+      const templateEntryPath = path.join(templateDirectoryPath, templateEntry.name);
+      const destinationEntryPath = path.join(destinationDirectoryPath, templateEntry.name);
+      const destinationEntryStats = await this.readPathStats(destinationEntryPath);
+
+      if (!destinationEntryStats) {
+        await fs.cp(templateEntryPath, destinationEntryPath, { recursive: true });
+        continue;
+      }
+
+      if (templateEntry.isDirectory() && destinationEntryStats.isDirectory()) {
+        await this.copyTemplateEntries(templateEntryPath, destinationEntryPath);
+      }
+    }
   }
 
   async readPathStats(targetPath) {
@@ -182,6 +198,15 @@ class InitProjectCommand {
     return gitDirectoryStats?.isDirectory() === true;
   }
 
+  async areFilesIdentical(templateEntryPath, destinationEntryPath) {
+    const [templateContent, destinationContent] = await Promise.all([
+      fs.readFile(templateEntryPath),
+      fs.readFile(destinationEntryPath),
+    ]);
+
+    return templateContent.equals(destinationContent);
+  }
+
   shouldCopyPath(sourcePath) {
     return !this.buildPathSegments(sourcePath).some((pathSegment) => EXCLUDED_DIRECTORY_NAMES.has(pathSegment));
   }
@@ -198,7 +223,7 @@ class InitProjectCommand {
     ].join('\n');
   }
 
-  buildSuccessOutput({ destinationAlreadyExists, hasExistingGitDirectory, projectName }) {
+  buildSuccessOutput({ destinationAlreadyExists, hasExistingGitDirectory, projectName, skippedPaths = [] }) {
     const nextStepLines = [];
 
     if (projectName !== '.') {
@@ -213,6 +238,12 @@ class InitProjectCommand {
       destinationAlreadyExists ? 'Project initialized successfully.' : 'Project created successfully.',
       '',
     ];
+
+    if (skippedPaths.length > 0) {
+      outputLines.push('Skipped existing conflicting paths:');
+      outputLines.push(...skippedPaths.map((skippedPath) => path.basename(skippedPath)));
+      outputLines.push('');
+    }
 
     if (nextStepLines.length > 0) {
       outputLines.push('Next steps:');
