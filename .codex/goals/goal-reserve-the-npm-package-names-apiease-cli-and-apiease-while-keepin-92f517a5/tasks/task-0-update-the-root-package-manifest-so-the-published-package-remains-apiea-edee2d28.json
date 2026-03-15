@@ -1,0 +1,49 @@
+{
+  "id": "task-0-update-the-root-package-manifest-so-the-published-package-remains-apiea-edee2d28",
+  "text": "Update the root package manifest so the published package remains apiease-cli while the installed public CLI command is apiease.",
+  "goalId": "goal-reserve-the-npm-package-names-apiease-cli-and-apiease-while-keepin-92f517a5",
+  "goal": "Goal: reserve the npm package names apiease-cli and apiease, while keeping the actual CLI command name as apiease\n\nImplement this directly in the existing apiease-cli project with the following requirements:\n\n1. Keep the root package as the real CLI package\n- The root package.json should publish the npm package named apiease-cli\n- The root package should expose the executable command apiease via the bin field\n- Do not introduce an apiease-cli shell command unless it already exists for another reason\n- The intended developer experience is npm install -g apiease-cli followed by running apiease\n\n2. Add a minimal placeholder package inside this same repo to reserve the npm package name apiease\n- Create a small subdirectory package for the reserved apiease package\n- This package is only for reserving the npm name for now\n- It should not expose any CLI command\n- It should not depend on the private implementation of the main CLI\n- Keep it intentionally minimal\n\n3. Use a repo structure like this, or equivalent if there is already a better fit\n- root package for the real apiease-cli package\n- a nested reserve/apiease package for the reserved apiease npm package\n\n4. Update the root package metadata as needed\n- Ensure the root package.json is valid for npm publication as apiease-cli\n- Ensure the bin mapping points the apiease command to the real entry file\n- Preserve existing functionality of the CLI\n\n5. Create the minimal files needed for the reserved apiease package\n- package.json only, unless another tiny file is truly required\n- description should make it clear the name is reserved for APIEase\n- version can start at 0.0.1 unless the project already has a better convention\n\n6. Add a short internal README or publish note in the repo if useful, but only if needed for clarity within the codebase\n- Keep it brief\n- Its purpose is only to explain that the root package is the real CLI and the nested apiease package exists only to reserve the npm name\n\n7. Do not overengineer this\n- No monorepo tooling\n- No workspaces unless already present and clearly beneficial\n- No wrapper package behavior for apiease yet\n- No upgrade or migration system\n- No extra abstraction\n\n8. At the end, provide the exact publish commands I should run\n- one command from the repo root to publish apiease-cli\n- one command from the nested reserve/apiease directory to publish apiease\n\nImportant constraints\n- Keep the implementation simple\n- Do not use double quotes in this goal statement\n- Preserve the current CLI behavior except for wiring the public command name to apiease",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "npm",
+    "cli",
+    "package-manifest"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-15T15:59:03Z",
+  "updatedAt": "2026-03-15T15:59:59Z",
+  "context": [
+    "The repo already contains the real CLI wrapper at bin/apiease-cli and the Node entrypoint at bin/apiease-cli.js.",
+    "The root package is the actual CLI package and should remain publishable from the repo root."
+  ],
+  "steps": [
+    "Adjust the root package.json metadata needed for npm publication as apiease-cli.",
+    "Change the bin mapping so npm installs the apiease command and routes it to the existing real CLI entry wrapper.",
+    "Keep the current package export and entrypoint wiring intact so CLI behavior stays the same apart from the public command name."
+  ],
+  "constraints": [
+    "Do not add an apiease-cli shell command alias unless some separate existing requirement still needs it.",
+    "Preserve current CLI behavior except for exposing the public command name as apiease.",
+    "Do not add workspaces, wrapper-package behavior, migration logic, or other extra abstraction.",
+    "Do not add extra documentation unless the package roles are still unclear after the manifest update."
+  ],
+  "acceptanceCriteria": [
+    "The root package.json publishes the npm package named apiease-cli.",
+    "The root package bin field exposes the executable command apiease.",
+    "The root package does not advertise an apiease-cli bin mapping.",
+    "The existing CLI implementation remains the command target and the root package can be published from the repo root with npm publish."
+  ],
+  "sequenceIndex": 0,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
