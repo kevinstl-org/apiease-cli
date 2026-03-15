@@ -232,6 +232,55 @@ describe('InitProjectCommand', () => {
       );
       assert.equal(stderrChunks.join(''), '');
     });
+
+    it('should default to the current directory when no project name is provided', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-current-directory-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+
+      await fs.mkdir(path.join(templateDirectoryPath, 'resources'), { recursive: true });
+      await fs.mkdir(workingDirectoryPath, { recursive: true });
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              templateDirectoryPath,
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(await fs.readFile(path.join(workingDirectoryPath, 'README.md'), 'utf8'), 'template readme\n');
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Creating APIEase project: .',
+          'Using template: ../apiease-template',
+          'Project created successfully.',
+          '',
+          'Next steps:',
+          'git init',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
   });
 });
 

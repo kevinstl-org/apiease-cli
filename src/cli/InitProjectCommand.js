@@ -3,7 +3,7 @@ import path from 'node:path';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', 'node_modules']);
-const USAGE_TEXT = 'Usage: apiease init <project-name>';
+const USAGE_TEXT = 'Usage: apiease init [project-name]';
 
 class InitProjectCommand {
   constructor({
@@ -57,7 +57,12 @@ class InitProjectCommand {
     });
 
     const hasExistingGitDirectory = await this.hasGitDirectory(destinationDirectoryPath);
-    this.stdout.write(this.buildSuccessOutput(parseResult.projectName, hasExistingGitDirectory));
+    this.stdout.write(
+      this.buildSuccessOutput({
+        hasExistingGitDirectory,
+        projectName: parseResult.projectName,
+      }),
+    );
     return 0;
   }
 
@@ -69,16 +74,16 @@ class InitProjectCommand {
       };
     }
 
-    if (commandArguments.length !== 2 || !commandArguments[1]) {
+    if (commandArguments.length > 2) {
       return {
         ok: false,
-        message: 'Project name is required.',
+        message: 'Only one optional project name argument is supported.',
       };
     }
 
     return {
       ok: true,
-      projectName: commandArguments[1],
+      projectName: commandArguments[1] ?? '.',
     };
   }
 
@@ -171,13 +176,16 @@ class InitProjectCommand {
     ].join('\n');
   }
 
-  buildSuccessOutput(projectName, hasExistingGitDirectory) {
+  buildSuccessOutput({ hasExistingGitDirectory, projectName }) {
     const outputLines = [
       'Project created successfully.',
       '',
       'Next steps:',
-      `cd ${projectName}`,
     ];
+
+    if (projectName !== '.') {
+      outputLines.push(`cd ${projectName}`);
+    }
 
     if (!hasExistingGitDirectory) {
       outputLines.push('git init');

@@ -49,6 +49,8 @@ cd <your-repo-directory>
 apiease init .
 ```
 
+If you are already in the target directory, `apiease init` defaults to the same behavior as `apiease init .`.
+
 Current development behavior:
 
 - The CLI resolves the template from `../apiease-template`.
