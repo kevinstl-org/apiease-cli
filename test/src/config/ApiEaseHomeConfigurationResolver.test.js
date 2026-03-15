@@ -23,19 +23,42 @@ describe('ApiEaseHomeConfigurationResolver', () => {
   });
 
   describe('resolveConfiguration', () => {
-    it('should resolve the active environment and API key from the matching home env file', async () => {
+    it('should resolve the active local environment and API key from the matching home env file', async () => {
       // Arrange
       const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
-      const homeDirectoryPath = path.join(temporaryDirectoryPath, 'success-home');
-      const apieaseDirectoryPath = path.join(homeDirectoryPath, '.apiease');
-      const environmentDeclarationFilePath = path.join(apieaseDirectoryPath, 'environment');
-      const environmentVariablesFilePath = path.join(apieaseDirectoryPath, '.env.staging');
-      await fs.mkdir(apieaseDirectoryPath, { recursive: true });
-      await fs.writeFile(environmentDeclarationFilePath, 'staging\n', 'utf8');
-      await fs.writeFile(environmentVariablesFilePath, 'APIEASE_API_KEY=staging-api-key\n', 'utf8');
-      const apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver({
-        homeDirectoryPath,
+      const { apiEaseHomeConfigurationResolver, environmentDeclarationFilePath, environmentVariablesFilePath } =
+        await createResolverWithHomeConfiguration({
+          temporaryDirectoryPath,
+          resolverHomeName: 'success-local-home',
+          environment: 'local',
+          apiKey: 'local-api-key',
+          ApiEaseHomeConfigurationResolver,
+        });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveConfiguration();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: true,
+        environment: 'local',
+        apiKey: 'local-api-key',
+        environmentDeclarationFilePath,
+        environmentVariablesFilePath,
       });
+    });
+
+    it('should resolve the active staging environment and API key from the matching home env file', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const { apiEaseHomeConfigurationResolver, environmentDeclarationFilePath, environmentVariablesFilePath } =
+        await createResolverWithHomeConfiguration({
+          temporaryDirectoryPath,
+          resolverHomeName: 'success-staging-home',
+          environment: 'staging',
+          apiKey: 'staging-api-key',
+          ApiEaseHomeConfigurationResolver,
+        });
 
       // Act
       const result = await apiEaseHomeConfigurationResolver.resolveConfiguration();
@@ -45,6 +68,31 @@ describe('ApiEaseHomeConfigurationResolver', () => {
         ok: true,
         environment: 'staging',
         apiKey: 'staging-api-key',
+        environmentDeclarationFilePath,
+        environmentVariablesFilePath,
+      });
+    });
+
+    it('should resolve the active production environment and API key from the matching home env file', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const { apiEaseHomeConfigurationResolver, environmentDeclarationFilePath, environmentVariablesFilePath } =
+        await createResolverWithHomeConfiguration({
+          temporaryDirectoryPath,
+          resolverHomeName: 'success-production-home',
+          environment: 'production',
+          apiKey: 'production-api-key',
+          ApiEaseHomeConfigurationResolver,
+        });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveConfiguration();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: true,
+        environment: 'production',
+        apiKey: 'production-api-key',
         environmentDeclarationFilePath,
         environmentVariablesFilePath,
       });
@@ -123,6 +171,70 @@ describe('ApiEaseHomeConfigurationResolver', () => {
       });
     });
 
+    it('should return a structured error when the environment declaration file cannot be read', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const homeDirectoryPath = path.join(temporaryDirectoryPath, 'unreadable-environment-home');
+      const environmentDeclarationFilePath = path.join(homeDirectoryPath, '.apiease', 'environment');
+      const apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver({
+        homeDirectoryPath,
+        fileSystem: {
+          async readFile() {
+            const readError = new Error('permission denied');
+            readError.code = 'EACCES';
+            throw readError;
+          },
+        },
+      });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveConfiguration();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: false,
+        errorCode: 'APIEASE_HOME_ENVIRONMENT_FILE_READ_FAILED',
+        message: `APIEASE home environment file could not be read: ${environmentDeclarationFilePath}`,
+        filePath: environmentDeclarationFilePath,
+        fieldErrors: [],
+      });
+    });
+
+    it('should return a structured error when the selected env file cannot be read', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const homeDirectoryPath = path.join(temporaryDirectoryPath, 'unreadable-env-file-home');
+      const environmentVariablesFilePath = path.join(homeDirectoryPath, '.apiease', '.env.staging');
+      let readFileCallCount = 0;
+      const apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver({
+        homeDirectoryPath,
+        fileSystem: {
+          async readFile() {
+            readFileCallCount += 1;
+            if (readFileCallCount === 1) {
+              return 'staging\n';
+            }
+
+            const readError = new Error('permission denied');
+            readError.code = 'EACCES';
+            throw readError;
+          },
+        },
+      });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveConfiguration();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: false,
+        errorCode: 'APIEASE_HOME_ENV_FILE_READ_FAILED',
+        message: `APIEASE home environment file could not be read: ${environmentVariablesFilePath}`,
+        filePath: environmentVariablesFilePath,
+        fieldErrors: [],
+      });
+    });
+
     it('should return a structured error when the selected env file does not define APIEASE_API_KEY', async () => {
       // Arrange
       const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
@@ -151,3 +263,28 @@ describe('ApiEaseHomeConfigurationResolver', () => {
     });
   });
 });
+
+async function createResolverWithHomeConfiguration({
+  temporaryDirectoryPath,
+  resolverHomeName,
+  environment,
+  apiKey,
+  ApiEaseHomeConfigurationResolver,
+}) {
+  const homeDirectoryPath = path.join(temporaryDirectoryPath, resolverHomeName);
+  const apieaseDirectoryPath = path.join(homeDirectoryPath, '.apiease');
+  const environmentDeclarationFilePath = path.join(apieaseDirectoryPath, 'environment');
+  const environmentVariablesFilePath = path.join(apieaseDirectoryPath, `.env.${environment}`);
+
+  await fs.mkdir(apieaseDirectoryPath, { recursive: true });
+  await fs.writeFile(environmentDeclarationFilePath, `${environment}\n`, 'utf8');
+  await fs.writeFile(environmentVariablesFilePath, `APIEASE_API_KEY=${apiKey}\n`, 'utf8');
+
+  return {
+    apiEaseHomeConfigurationResolver: new ApiEaseHomeConfigurationResolver({
+      homeDirectoryPath,
+    }),
+    environmentDeclarationFilePath,
+    environmentVariablesFilePath,
+  };
+}

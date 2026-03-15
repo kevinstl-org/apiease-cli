@@ -165,6 +165,74 @@ describe('CreateRequestCommand', () => {
       ]);
     });
 
+    it('should prefer the explicit api key and skip home configuration resolution when both are available', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const requestDefinition = {
+        name: 'Create product',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/products',
+      };
+      const createRequestCalls = [];
+      let resolveConfigurationCallCount = 0;
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest(options) {
+            createRequestCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              request: {
+                id: 'request-1',
+              },
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveConfiguration() {
+            resolveConfigurationCallCount += 1;
+            throw new Error('home configuration should not be resolved');
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'explicit-api-key',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(resolveConfigurationCallCount, 0);
+      assert.deepEqual(createRequestCalls, [
+        {
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'explicit-api-key',
+          shopDomain: 'cool-shop.myshopify.com',
+          request: requestDefinition,
+        },
+      ]);
+    });
+
     it('should write raw json output and return zero when the json flag is provided', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
