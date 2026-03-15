@@ -29,7 +29,7 @@ apiease
 ## Commands
 
 ```bash
-apiease init <project-name>
+apiease init [project-name]
 apiease create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
 ```
 
@@ -72,7 +72,11 @@ cd my-project
 git init
 ```
 
-If the destination already contains a `.git` directory, the CLI omits the `git init` suggestion.
+For existing directories:
+
+- The CLI reports `Project initialized successfully.` instead of `Project created successfully.`
+- The CLI omits `git init` when the destination already contains a `.git` directory.
+- The CLI omits the entire `Next steps:` section when there are no remaining next steps to show.
 
 ## Configure Authentication
 

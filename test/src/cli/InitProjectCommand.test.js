@@ -85,7 +85,7 @@ describe('InitProjectCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
-    it('should copy into an existing destination directory when no template paths collide', async () => {
+    it('should initialize an existing destination directory when no template paths collide', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
       const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-failure-'));
@@ -130,7 +130,7 @@ describe('InitProjectCommand', () => {
         [
           'Creating APIEase project: my-project',
           'Using template: ../apiease-template',
-          'Project created successfully.',
+          'Project initialized successfully.',
           '',
           'Next steps:',
           'cd my-project',
@@ -184,7 +184,7 @@ describe('InitProjectCommand', () => {
       assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'README.md'), 'utf8'), 'existing readme\n');
     });
 
-    it('should omit git init from next steps when the destination already has a git directory', async () => {
+    it('should omit git init from next steps when initializing an existing git directory', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
       const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-git-dir-'));
@@ -223,7 +223,7 @@ describe('InitProjectCommand', () => {
         [
           'Creating APIEase project: my-project',
           'Using template: ../apiease-template',
-          'Project created successfully.',
+          'Project initialized successfully.',
           '',
           'Next steps:',
           'cd my-project',
@@ -272,10 +272,55 @@ describe('InitProjectCommand', () => {
         [
           'Creating APIEase project: .',
           'Using template: ../apiease-template',
-          'Project created successfully.',
+          'Project initialized successfully.',
           '',
           'Next steps:',
           'git init',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should omit the next steps section when initializing the current git directory', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-current-git-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+
+      await fs.mkdir(path.join(templateDirectoryPath, 'resources'), { recursive: true });
+      await fs.mkdir(path.join(workingDirectoryPath, '.git'), { recursive: true });
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              templateDirectoryPath,
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Creating APIEase project: .',
+          'Using template: ../apiease-template',
+          'Project initialized successfully.',
           '',
         ].join('\n'),
       );

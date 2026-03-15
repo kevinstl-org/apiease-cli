@@ -25,6 +25,7 @@ class InitProjectCommand {
 
     const templateSource = this.templateProjectSourceResolver.resolveTemplateSource();
     const destinationDirectoryPath = path.resolve(currentWorkingDirectoryPath, parseResult.projectName);
+    const destinationAlreadyExists = (await this.readPathStats(destinationDirectoryPath)) !== null;
     const destinationValidationResult = await this.validateDestinationDirectoryPath(destinationDirectoryPath);
 
     if (!destinationValidationResult.ok) {
@@ -59,6 +60,7 @@ class InitProjectCommand {
     const hasExistingGitDirectory = await this.hasGitDirectory(destinationDirectoryPath);
     this.stdout.write(
       this.buildSuccessOutput({
+        destinationAlreadyExists,
         hasExistingGitDirectory,
         projectName: parseResult.projectName,
       }),
@@ -176,22 +178,28 @@ class InitProjectCommand {
     ].join('\n');
   }
 
-  buildSuccessOutput({ hasExistingGitDirectory, projectName }) {
-    const outputLines = [
-      'Project created successfully.',
-      '',
-      'Next steps:',
-    ];
+  buildSuccessOutput({ destinationAlreadyExists, hasExistingGitDirectory, projectName }) {
+    const nextStepLines = [];
 
     if (projectName !== '.') {
-      outputLines.push(`cd ${projectName}`);
+      nextStepLines.push(`cd ${projectName}`);
     }
 
     if (!hasExistingGitDirectory) {
-      outputLines.push('git init');
+      nextStepLines.push('git init');
     }
 
-    outputLines.push('');
+    const outputLines = [
+      destinationAlreadyExists ? 'Project initialized successfully.' : 'Project created successfully.',
+      '',
+    ];
+
+    if (nextStepLines.length > 0) {
+      outputLines.push('Next steps:');
+      outputLines.push(...nextStepLines);
+      outputLines.push('');
+    }
+
     return outputLines.join('\n');
   }
 }
