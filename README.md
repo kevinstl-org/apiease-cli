@@ -20,6 +20,51 @@ To expose the command globally while working locally:
 npm link
 ```
 
+## Configure Authentication
+
+When `--api-key` is omitted, `apiease-cli` loads the active APIEase environment from your home directory and resolves `APIEASE_API_KEY` from the matching env file.
+
+Create the APIEase home directory:
+
+```bash
+mkdir -p ~/.apiease
+```
+
+Declare the active environment in `~/.apiease/environment`. The only supported values are `local`, `staging`, and `production`.
+
+For a local setup:
+
+```bash
+printf 'local\n' > ~/.apiease/environment
+printf 'APIEASE_API_KEY=your-local-api-key\n' > ~/.apiease/.env.local
+```
+
+For a staging setup:
+
+```bash
+printf 'staging\n' > ~/.apiease/environment
+printf 'APIEASE_API_KEY=your-staging-api-key\n' > ~/.apiease/.env.staging
+```
+
+For a production setup:
+
+```bash
+printf 'production\n' > ~/.apiease/environment
+printf 'APIEASE_API_KEY=your-production-api-key\n' > ~/.apiease/.env.production
+```
+
+Authentication precedence is:
+
+1. `--api-key`
+2. `APIEASE_API_KEY` from `~/.apiease/.env.<environment>` selected by `~/.apiease/environment`
+
+If the home configuration is missing, invalid, or unreadable, the CLI fails fast with a structured error. The most common fixes are:
+
+- Create `~/.apiease/environment` if it does not exist.
+- Set `~/.apiease/environment` to exactly `local`, `staging`, or `production`.
+- Create the matching `~/.apiease/.env.<environment>` file for the selected environment.
+- Add a non-empty `APIEASE_API_KEY` entry to that env file.
+
 ## Create a Request
 
 Create a JSON file that contains the request definition you want to send to APIEase. For example:
@@ -39,11 +84,19 @@ Run the CLI from the repository root:
 ./bin/apiease-cli create \
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
-  --shop-domain your-shop.myshopify.com \
-  --api-key your-apiease-api-key
+  --shop-domain your-shop.myshopify.com
 ```
 
 If you used `npm link` or installed the package, the command is:
+
+```bash
+apiease-cli create \
+  --file ./request-definition.json \
+  --base-url https://your-apiease-host.example.com \
+  --shop-domain your-shop.myshopify.com
+```
+
+To override the home configuration for a single command, pass `--api-key` explicitly:
 
 ```bash
 apiease-cli create \
@@ -62,18 +115,18 @@ Add `--json` when you want machine-readable output:
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com \
-  --api-key your-apiease-api-key \
   --json
 ```
 
 ## Command Shape
 
 ```bash
-apiease-cli create --file <path> --base-url <url> --shop-domain <shop-domain> --api-key <api-key> [--json]
+apiease-cli create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
 ```
 
 ## Notes
 
 - Only the `create` command is in scope.
 - The request definition file must be valid JSON with an object as the root value.
+- `--api-key` is optional. When omitted, the CLI resolves `APIEASE_API_KEY` from `~/.apiease/.env.<environment>`.
 - Default output is human-readable. `--json` emits the raw structured result.
