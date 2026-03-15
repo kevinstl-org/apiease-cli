@@ -46,6 +46,7 @@ class InitProjectCommand {
     await fs.mkdir(destinationDirectoryPath, { recursive: true });
 
     this.stdout.write(this.buildStartOutput({
+      destinationAlreadyExists,
       displayTemplateSource: templateSource.displayTemplateSource,
       projectName: parseResult.projectName,
     }));
@@ -170,9 +171,9 @@ class InitProjectCommand {
     return path.normalize(sourcePath).split(path.sep).filter(Boolean);
   }
 
-  buildStartOutput({ displayTemplateSource, projectName }) {
+  buildStartOutput({ destinationAlreadyExists, displayTemplateSource, projectName }) {
     return [
-      `Creating APIEase project: ${projectName}`,
+      `${destinationAlreadyExists ? 'Initializing' : 'Creating'} APIEase project: ${projectName}`,
       `Using template: ${displayTemplateSource}`,
       '',
     ].join('\n');

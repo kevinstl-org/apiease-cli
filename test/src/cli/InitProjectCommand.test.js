@@ -128,7 +128,7 @@ describe('InitProjectCommand', () => {
       assert.equal(
         stdoutChunks.join(''),
         [
-          'Creating APIEase project: my-project',
+          'Initializing APIEase project: my-project',
           'Using template: ../apiease-template',
           'Project initialized successfully.',
           '',
@@ -221,7 +221,7 @@ describe('InitProjectCommand', () => {
       assert.equal(
         stdoutChunks.join(''),
         [
-          'Creating APIEase project: my-project',
+          'Initializing APIEase project: my-project',
           'Using template: ../apiease-template',
           'Project initialized successfully.',
           '',
@@ -270,7 +270,7 @@ describe('InitProjectCommand', () => {
       assert.equal(
         stdoutChunks.join(''),
         [
-          'Creating APIEase project: .',
+          'Initializing APIEase project: .',
           'Using template: ../apiease-template',
           'Project initialized successfully.',
           '',
@@ -318,7 +318,7 @@ describe('InitProjectCommand', () => {
       assert.equal(
         stdoutChunks.join(''),
         [
-          'Creating APIEase project: .',
+          'Initializing APIEase project: .',
           'Using template: ../apiease-template',
           'Project initialized successfully.',
           '',

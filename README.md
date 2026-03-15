@@ -74,6 +74,7 @@ git init
 
 For existing directories:
 
+- The CLI reports `Initializing APIEase project: ...` instead of `Creating APIEase project: ...`.
 - The CLI reports `Project initialized successfully.` instead of `Project created successfully.`
 - The CLI omits `git init` when the destination already contains a `.git` directory.
 - The CLI omits the entire `Next steps:` section when there are no remaining next steps to show.
