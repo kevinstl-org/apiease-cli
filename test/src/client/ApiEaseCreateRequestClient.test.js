@@ -25,7 +25,7 @@ describe('ApiEaseCreateRequestClient', () => {
   });
 
   describe('createRequest', () => {
-    it('should post the validated request payload to the programmatic create endpoint', async () => {
+    it('should post the validated request payload to the versioned requests resource endpoint', async () => {
       // Arrange
       const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
       const validationResult = {
@@ -80,7 +80,7 @@ describe('ApiEaseCreateRequestClient', () => {
       // Assert
       assert.deepEqual(validationCalls, [request]);
       assert.equal(fetchCalls.length, 1);
-      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/programmatic/requests');
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/requests');
       assert.equal(fetchCalls[0].options.method, 'POST');
       assert.equal(fetchCalls[0].options.headers['content-type'], 'application/json');
       assert.equal(fetchCalls[0].options.headers['x-apiease-api-key'], 'api-key-1');
@@ -95,6 +95,57 @@ describe('ApiEaseCreateRequestClient', () => {
           ...request,
         },
       });
+    });
+
+    it('should not post to the legacy programmatic requests endpoint', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const request = {
+        name: 'Create order',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/orders',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: {
+          validate() {
+            return {
+              isValid: true,
+              errorCode: null,
+              message: '',
+              fieldErrors: [],
+            };
+          },
+        },
+        fetchImplementation: async (url) => {
+          fetchCalls.push(url);
+          return {
+            status: 201,
+            async json() {
+              return {
+                ok: true,
+                request: {
+                  id: 'request-2',
+                  ...request,
+                },
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.deepEqual(fetchCalls, ['https://apiease.example.com/root/api/v1/resources/requests']);
+      assert.notEqual(fetchCalls[0], 'https://apiease.example.com/root/api/programmatic/requests');
     });
 
     it('should return backend failure payloads with the response status', async () => {

@@ -1,6 +1,6 @@
 import { ApiEaseCreateRequestContractValidator } from './ApiEaseCreateRequestContractValidator.js';
 
-const CREATE_REQUEST_PATH = 'api/programmatic/requests';
+const CREATE_REQUEST_PATH = 'api/v1/resources/requests';
 const JSON_CONTENT_TYPE = 'application/json';
 const INVALID_REQUEST_STATUS = 422;
 const DEFAULT_FAILURE_STATUS = 500;
