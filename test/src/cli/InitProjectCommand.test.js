@@ -183,6 +183,55 @@ describe('InitProjectCommand', () => {
       );
       assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'README.md'), 'utf8'), 'existing readme\n');
     });
+
+    it('should omit git init from next steps when the destination already has a git directory', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-git-dir-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const destinationDirectoryPath = path.join(workingDirectoryPath, 'my-project');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+
+      await fs.mkdir(path.join(templateDirectoryPath, 'resources'), { recursive: true });
+      await fs.mkdir(path.join(destinationDirectoryPath, '.git'), { recursive: true });
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              templateDirectoryPath,
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init', 'my-project'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Creating APIEase project: my-project',
+          'Using template: ../apiease-template',
+          'Project created successfully.',
+          '',
+          'Next steps:',
+          'cd my-project',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
   });
 });
 

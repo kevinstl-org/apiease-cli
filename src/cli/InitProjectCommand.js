@@ -56,7 +56,8 @@ class InitProjectCommand {
       filter: (sourcePath) => this.shouldCopyPath(sourcePath),
     });
 
-    this.stdout.write(this.buildSuccessOutput(parseResult.projectName));
+    const hasExistingGitDirectory = await this.hasGitDirectory(destinationDirectoryPath);
+    this.stdout.write(this.buildSuccessOutput(parseResult.projectName, hasExistingGitDirectory));
     return 0;
   }
 
@@ -149,6 +150,11 @@ class InitProjectCommand {
     }
   }
 
+  async hasGitDirectory(destinationDirectoryPath) {
+    const gitDirectoryStats = await this.readPathStats(path.join(destinationDirectoryPath, '.git'));
+    return gitDirectoryStats?.isDirectory() === true;
+  }
+
   shouldCopyPath(sourcePath) {
     return !this.buildPathSegments(sourcePath).some((pathSegment) => EXCLUDED_DIRECTORY_NAMES.has(pathSegment));
   }
@@ -165,15 +171,20 @@ class InitProjectCommand {
     ].join('\n');
   }
 
-  buildSuccessOutput(projectName) {
-    return [
+  buildSuccessOutput(projectName, hasExistingGitDirectory) {
+    const outputLines = [
       'Project created successfully.',
       '',
       'Next steps:',
       `cd ${projectName}`,
-      'git init',
-      '',
-    ].join('\n');
+    ];
+
+    if (!hasExistingGitDirectory) {
+      outputLines.push('git init');
+    }
+
+    outputLines.push('');
+    return outputLines.join('\n');
   }
 }
 

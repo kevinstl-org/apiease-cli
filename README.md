@@ -70,6 +70,8 @@ cd my-project
 git init
 ```
 
+If the destination already contains a `.git` directory, the CLI omits the `git init` suggestion.
+
 ## Configure Authentication
 
 When `--api-key` is omitted, `apiease` loads the active APIEase environment from your home directory and resolves `APIEASE_API_KEY` from the matching env file.
