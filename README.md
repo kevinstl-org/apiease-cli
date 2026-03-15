@@ -1,6 +1,6 @@
 # apiease-cli
 
-`apiease-cli` is a Node-based client and thin command-line wrapper for creating APIEase requests through the APIEase programmatic request API.
+`apiease-cli` is a Node-based CLI for bootstrapping APIEase projects and creating APIEase requests.
 
 ## Requirements
 
@@ -20,9 +20,50 @@ To expose the command globally while working locally:
 npm link
 ```
 
+After linking, the installed command is:
+
+```bash
+apiease
+```
+
+## Commands
+
+```bash
+apiease init <project-name>
+apiease create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
+```
+
+## Initialize a Project
+
+Create a new project from the local template repository:
+
+```bash
+apiease init my-project
+```
+
+Current development behavior:
+
+- The CLI resolves the template from `../apiease-template`.
+- The template is copied directly into `./my-project`.
+- The template `.git` directory is excluded.
+- `node_modules` is excluded if it exists in the template.
+- Existing non-empty destination directories are not overwritten.
+
+Expected output:
+
+```text
+Creating APIEase project: my-project
+Using template: ../apiease-template
+Project created successfully.
+
+Next steps:
+cd my-project
+git init
+```
+
 ## Configure Authentication
 
-When `--api-key` is omitted, `apiease-cli` loads the active APIEase environment from your home directory and resolves `APIEASE_API_KEY` from the matching env file.
+When `--api-key` is omitted, `apiease` loads the active APIEase environment from your home directory and resolves `APIEASE_API_KEY` from the matching env file.
 
 Create the APIEase home directory:
 
@@ -72,9 +113,9 @@ Create a JSON file that contains the request definition you want to send to APIE
 ```json
 {
   "name": "CLI demo request",
-  "requestType": "http",
+  "type": "http",
   "method": "GET",
-  "url": "https://example.com/products"
+  "address": "https://example.com/products"
 }
 ```
 
@@ -90,7 +131,7 @@ Run the CLI from the repository root:
 If you used `npm link` or installed the package, the command is:
 
 ```bash
-apiease-cli create \
+apiease create \
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com
@@ -99,7 +140,7 @@ apiease-cli create \
 To override the home configuration for a single command, pass `--api-key` explicitly:
 
 ```bash
-apiease-cli create \
+apiease create \
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com \
@@ -118,15 +159,10 @@ Add `--json` when you want machine-readable output:
   --json
 ```
 
-## Command Shape
-
-```bash
-apiease-cli create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
-```
-
 ## Notes
 
-- Only the `create` command is in scope.
+- The public installed command name is `apiease`.
+- `init` currently copies the local development template from `../apiease-template`.
 - The request definition file must be valid JSON with an object as the root value.
 - `--api-key` is optional. When omitted, the CLI resolves `APIEASE_API_KEY` from `~/.apiease/.env.<environment>`.
 - Default output is human-readable. `--json` emits the raw structured result.
