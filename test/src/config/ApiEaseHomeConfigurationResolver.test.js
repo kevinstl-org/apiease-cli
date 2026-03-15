@@ -262,6 +262,65 @@ describe('ApiEaseHomeConfigurationResolver', () => {
       });
     });
   });
+
+  describe('resolveEnvironmentVariables', () => {
+    it('should resolve the matching home env variables including APIEASE_BASE_URL and APIEASE_SHOP_DOMAIN', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const { apiEaseHomeConfigurationResolver, environmentDeclarationFilePath, environmentVariablesFilePath } =
+        await createResolverWithHomeConfiguration({
+          temporaryDirectoryPath,
+          resolverHomeName: 'resolve-environment-variables-home',
+          environment: 'local',
+          apiKey: 'local-api-key',
+          apiBaseUrl: 'https://apiease.example.com/root',
+          shopDomain: 'cool-shop.myshopify.com',
+          ApiEaseHomeConfigurationResolver,
+        });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveEnvironmentVariables();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: true,
+        environment: 'local',
+        environmentDeclarationFilePath,
+        environmentVariablesFilePath,
+        environmentVariables: {
+          APIEASE_API_KEY: 'local-api-key',
+          APIEASE_BASE_URL: 'https://apiease.example.com/root',
+          APIEASE_SHOP_DOMAIN: 'cool-shop.myshopify.com',
+        },
+      });
+    });
+
+    it('should return a structured error when the selected env file is missing', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const homeDirectoryPath = path.join(temporaryDirectoryPath, 'resolve-environment-variables-missing-env-file-home');
+      const apieaseDirectoryPath = path.join(homeDirectoryPath, '.apiease');
+      const environmentDeclarationFilePath = path.join(apieaseDirectoryPath, 'environment');
+      const environmentVariablesFilePath = path.join(apieaseDirectoryPath, '.env.production');
+      await fs.mkdir(apieaseDirectoryPath, { recursive: true });
+      await fs.writeFile(environmentDeclarationFilePath, 'production\n', 'utf8');
+      const apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver({
+        homeDirectoryPath,
+      });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveEnvironmentVariables();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: false,
+        errorCode: 'APIEASE_HOME_ENV_FILE_NOT_FOUND',
+        message: `APIEASE home environment file was not found: ${environmentVariablesFilePath}`,
+        filePath: environmentVariablesFilePath,
+        fieldErrors: [],
+      });
+    });
+  });
 });
 
 async function createResolverWithHomeConfiguration({
@@ -269,6 +328,8 @@ async function createResolverWithHomeConfiguration({
   resolverHomeName,
   environment,
   apiKey,
+  apiBaseUrl,
+  shopDomain,
   ApiEaseHomeConfigurationResolver,
 }) {
   const homeDirectoryPath = path.join(temporaryDirectoryPath, resolverHomeName);
@@ -278,7 +339,14 @@ async function createResolverWithHomeConfiguration({
 
   await fs.mkdir(apieaseDirectoryPath, { recursive: true });
   await fs.writeFile(environmentDeclarationFilePath, `${environment}\n`, 'utf8');
-  await fs.writeFile(environmentVariablesFilePath, `APIEASE_API_KEY=${apiKey}\n`, 'utf8');
+  const environmentVariableLines = [`APIEASE_API_KEY=${apiKey}`];
+  if (apiBaseUrl) {
+    environmentVariableLines.push(`APIEASE_BASE_URL=${apiBaseUrl}`);
+  }
+  if (shopDomain) {
+    environmentVariableLines.push(`APIEASE_SHOP_DOMAIN=${shopDomain}`);
+  }
+  await fs.writeFile(environmentVariablesFilePath, `${environmentVariableLines.join('\n')}\n`, 'utf8');
 
   return {
     apiEaseHomeConfigurationResolver: new ApiEaseHomeConfigurationResolver({

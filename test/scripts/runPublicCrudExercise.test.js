@@ -17,6 +17,11 @@ describe('runPublicCrudExercise', () => {
       const stdoutChunks = [];
       const stderrChunks = [];
       const constructorArguments = [];
+      const apiEaseHomeConfigurationResolver = {
+        async resolveEnvironmentVariables() {
+          throw new Error('Home configuration should not be read');
+        },
+      };
       class FakeApiEasePublicCrudExercise {
         constructor(argumentsObject) {
           constructorArguments.push(argumentsObject);
@@ -37,13 +42,14 @@ describe('runPublicCrudExercise', () => {
       // Act
       const exitCode = await runPublicCrudExercise({
         environmentVariables: {
-          APIEASE_API_BASE_URL: 'https://apiease.example.com/root',
+          APIEASE_BASE_URL: 'https://apiease.example.com/root',
           APIEASE_API_KEY: 'api-key-1',
           APIEASE_SHOP_DOMAIN: 'cool-shop.myshopify.com',
         },
         stdout: createWritableStream(stdoutChunks),
         stderr: createWritableStream(stderrChunks),
         apiEasePublicCrudExerciseClass: FakeApiEasePublicCrudExercise,
+        apiEaseHomeConfigurationResolver,
       });
 
       // Assert
@@ -57,19 +63,77 @@ describe('runPublicCrudExercise', () => {
       assert.match(stdoutChunks.join(''), /exercise-123/);
     });
 
-    it('should fail fast when required environment variables are missing', async () => {
+    it('should load missing values from the apiease home env files', async () => {
       // Arrange
       const { runPublicCrudExercise } = await import(moduleUrl);
       const stdoutChunks = [];
       const stderrChunks = [];
+      const constructorArguments = [];
+      const apiEaseHomeConfigurationResolver = {
+        async resolveEnvironmentVariables() {
+          return {
+            ok: true,
+            environmentVariables: {
+              APIEASE_BASE_URL: 'https://apiease.example.com/root',
+              APIEASE_API_KEY: 'api-key-1',
+              APIEASE_SHOP_DOMAIN: 'cool-shop.myshopify.com',
+            },
+          };
+        },
+      };
+      class FakeApiEasePublicCrudExercise {
+        constructor(argumentsObject) {
+          constructorArguments.push(argumentsObject);
+        }
+
+        async run() {
+          return {
+            exerciseId: 'exercise-123',
+            cleanupResults: [],
+          };
+        }
+      }
 
       // Act
       const exitCode = await runPublicCrudExercise({
-        environmentVariables: {
-          APIEASE_API_BASE_URL: 'https://apiease.example.com/root',
-        },
+        environmentVariables: {},
         stdout: createWritableStream(stdoutChunks),
         stderr: createWritableStream(stderrChunks),
+        apiEasePublicCrudExerciseClass: FakeApiEasePublicCrudExercise,
+        apiEaseHomeConfigurationResolver,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(stderrChunks.length, 0);
+      assert.equal(constructorArguments.length, 1);
+      assert.equal(constructorArguments[0].apiBaseUrl, 'https://apiease.example.com/root');
+      assert.equal(constructorArguments[0].apiKey, 'api-key-1');
+      assert.equal(constructorArguments[0].shopDomain, 'cool-shop.myshopify.com');
+    });
+
+    it('should fail when environment variables and apiease home config together still miss required values', async () => {
+      // Arrange
+      const { runPublicCrudExercise } = await import(moduleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const apiEaseHomeConfigurationResolver = {
+        async resolveEnvironmentVariables() {
+          return {
+            ok: true,
+            environmentVariables: {
+              APIEASE_API_KEY: 'api-key-1',
+            },
+          };
+        },
+      };
+
+      // Act
+      const exitCode = await runPublicCrudExercise({
+        environmentVariables: {},
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+        apiEaseHomeConfigurationResolver,
       });
 
       // Assert
@@ -77,7 +141,7 @@ describe('runPublicCrudExercise', () => {
       assert.equal(stdoutChunks.length, 0);
       assert.match(
         stderrChunks.join(''),
-        /Missing required environment variables: APIEASE_API_KEY, APIEASE_SHOP_DOMAIN/,
+        /Missing required environment variables: APIEASE_BASE_URL, APIEASE_SHOP_DOMAIN/,
       );
     });
   });

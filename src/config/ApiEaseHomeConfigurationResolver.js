@@ -4,6 +4,8 @@ import path from 'node:path';
 
 const APIEASE_DIRECTORY_NAME = '.apiease';
 const APIEASE_API_KEY_NAME = 'APIEASE_API_KEY';
+const APIEASE_BASE_URL_NAME = 'APIEASE_BASE_URL';
+const APIEASE_SHOP_DOMAIN_NAME = 'APIEASE_SHOP_DOMAIN';
 const SUPPORTED_ENVIRONMENTS = ['local', 'staging', 'production'];
 
 class ApiEaseHomeConfigurationResolver {
@@ -16,6 +18,30 @@ class ApiEaseHomeConfigurationResolver {
   }
 
   async resolveConfiguration() {
+    const environmentVariablesResult = await this.resolveEnvironmentVariables();
+    if (!environmentVariablesResult.ok) {
+      return environmentVariablesResult;
+    }
+
+    const apiKey = environmentVariablesResult.environmentVariables[APIEASE_API_KEY_NAME];
+    if (!apiKey) {
+      return this.buildFailureResult(
+        'APIEASE_HOME_API_KEY_MISSING',
+        `APIEASE_API_KEY was not found in environment file: ${environmentVariablesResult.environmentVariablesFilePath}`,
+        environmentVariablesResult.environmentVariablesFilePath,
+      );
+    }
+
+    return {
+      ok: true,
+      environment: environmentVariablesResult.environment,
+      apiKey,
+      environmentDeclarationFilePath: environmentVariablesResult.environmentDeclarationFilePath,
+      environmentVariablesFilePath: environmentVariablesResult.environmentVariablesFilePath,
+    };
+  }
+
+  async resolveEnvironmentVariables() {
     const environmentDeclarationFilePath = this.buildEnvironmentDeclarationFilePath();
     const environmentResult = await this.readEnvironment(environmentDeclarationFilePath);
     if (!environmentResult.ok) {
@@ -23,17 +49,21 @@ class ApiEaseHomeConfigurationResolver {
     }
 
     const environmentVariablesFilePath = this.buildEnvironmentVariablesFilePath(environmentResult.environment);
-    const apiKeyResult = await this.readApiKey(environmentVariablesFilePath);
-    if (!apiKeyResult.ok) {
-      return apiKeyResult;
+    const environmentVariablesResult = await this.readEnvironmentVariablesFile(environmentVariablesFilePath);
+    if (!environmentVariablesResult.ok) {
+      return environmentVariablesResult;
     }
 
     return {
       ok: true,
       environment: environmentResult.environment,
-      apiKey: apiKeyResult.apiKey,
       environmentDeclarationFilePath,
       environmentVariablesFilePath,
+      environmentVariables: {
+        [APIEASE_API_KEY_NAME]: environmentVariablesResult.environmentVariables[APIEASE_API_KEY_NAME],
+        [APIEASE_BASE_URL_NAME]: environmentVariablesResult.environmentVariables[APIEASE_BASE_URL_NAME],
+        [APIEASE_SHOP_DOMAIN_NAME]: environmentVariablesResult.environmentVariables[APIEASE_SHOP_DOMAIN_NAME],
+      },
     };
   }
 
@@ -71,7 +101,7 @@ class ApiEaseHomeConfigurationResolver {
     };
   }
 
-  async readApiKey(environmentVariablesFilePath) {
+  async readEnvironmentVariablesFile(environmentVariablesFilePath) {
     const fileContentResult = await this.readFileContent({
       filePath: environmentVariablesFilePath,
       notFoundErrorCode: 'APIEASE_HOME_ENV_FILE_NOT_FOUND',
@@ -82,18 +112,9 @@ class ApiEaseHomeConfigurationResolver {
       return fileContentResult;
     }
 
-    const apiKey = this.parseEnvironmentVariables(fileContentResult.fileContent)[APIEASE_API_KEY_NAME];
-    if (!apiKey) {
-      return this.buildFailureResult(
-        'APIEASE_HOME_API_KEY_MISSING',
-        `APIEASE_API_KEY was not found in environment file: ${environmentVariablesFilePath}`,
-        environmentVariablesFilePath,
-      );
-    }
-
     return {
       ok: true,
-      apiKey,
+      environmentVariables: this.parseEnvironmentVariables(fileContentResult.fileContent),
     };
   }
 

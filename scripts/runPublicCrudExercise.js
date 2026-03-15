@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ApiEaseHomeConfigurationResolver } from '../src/config/ApiEaseHomeConfigurationResolver.js';
 import { ApiEasePublicCrudExercise } from '../src/integration/ApiEasePublicCrudExercise.js';
 
 async function runPublicCrudExercise({
@@ -8,8 +9,20 @@ async function runPublicCrudExercise({
   stdout = process.stdout,
   stderr = process.stderr,
   apiEasePublicCrudExerciseClass = ApiEasePublicCrudExercise,
+  apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
 } = {}) {
-  const missingEnvironmentVariables = resolveMissingEnvironmentVariables(environmentVariables);
+  const resolvedExecutionConfiguration = await resolveExecutionConfiguration({
+    environmentVariables,
+    apiEaseHomeConfigurationResolver,
+  });
+  if (!resolvedExecutionConfiguration.ok) {
+    stderr.write(`${resolvedExecutionConfiguration.message}\n`);
+    return 1;
+  }
+
+  const missingEnvironmentVariables = resolveMissingEnvironmentVariables(
+    resolvedExecutionConfiguration.environmentVariables,
+  );
   if (missingEnvironmentVariables.length > 0) {
     stderr.write(
       `Missing required environment variables: ${missingEnvironmentVariables.join(', ')}\n`,
@@ -18,9 +31,9 @@ async function runPublicCrudExercise({
   }
 
   const apiEasePublicCrudExercise = new apiEasePublicCrudExerciseClass({
-    apiBaseUrl: environmentVariables.APIEASE_API_BASE_URL,
-    apiKey: environmentVariables.APIEASE_API_KEY,
-    shopDomain: environmentVariables.APIEASE_SHOP_DOMAIN,
+    apiBaseUrl: resolvedExecutionConfiguration.environmentVariables.APIEASE_BASE_URL,
+    apiKey: resolvedExecutionConfiguration.environmentVariables.APIEASE_API_KEY,
+    shopDomain: resolvedExecutionConfiguration.environmentVariables.APIEASE_SHOP_DOMAIN,
     stepReporter: (message) => {
       stdout.write(`${message}\n`);
     },
@@ -37,9 +50,38 @@ async function runPublicCrudExercise({
   }
 }
 
+async function resolveExecutionConfiguration({
+  environmentVariables,
+  apiEaseHomeConfigurationResolver,
+}) {
+  const providedEnvironmentVariables = pickDefinedEnvironmentVariables(environmentVariables);
+  if (resolveMissingEnvironmentVariables(providedEnvironmentVariables).length === 0) {
+    return {
+      ok: true,
+      environmentVariables: providedEnvironmentVariables,
+    };
+  }
+
+  const homeConfigurationResult = await apiEaseHomeConfigurationResolver.resolveEnvironmentVariables();
+  if (!homeConfigurationResult.ok) {
+    return {
+      ok: true,
+      environmentVariables: providedEnvironmentVariables,
+    };
+  }
+
+  return {
+    ok: true,
+    environmentVariables: {
+      ...pickDefinedEnvironmentVariables(homeConfigurationResult.environmentVariables),
+      ...providedEnvironmentVariables,
+    },
+  };
+}
+
 function resolveMissingEnvironmentVariables(environmentVariables) {
   const requiredEnvironmentVariableNames = [
-    'APIEASE_API_BASE_URL',
+    'APIEASE_BASE_URL',
     'APIEASE_API_KEY',
     'APIEASE_SHOP_DOMAIN',
   ];
@@ -48,6 +90,15 @@ function resolveMissingEnvironmentVariables(environmentVariables) {
     const environmentVariableValue = environmentVariables[environmentVariableName];
     return typeof environmentVariableValue !== 'string' || environmentVariableValue.length === 0;
   });
+}
+
+function pickDefinedEnvironmentVariables(environmentVariables = {}) {
+  return Object.entries(environmentVariables).reduce((resolvedEnvironmentVariables, [name, value]) => {
+    if (typeof value === 'string' && value.length > 0) {
+      resolvedEnvironmentVariables[name] = value;
+    }
+    return resolvedEnvironmentVariables;
+  }, {});
 }
 
 function writeCleanupResults(stderr, cleanupResults = []) {
