@@ -25,10 +25,20 @@ class InitProjectCommand {
 
     const templateSource = this.templateProjectSourceResolver.resolveTemplateSource();
     const destinationDirectoryPath = path.resolve(currentWorkingDirectoryPath, parseResult.projectName);
-    const destinationValidationResult = await this.validateDestinationDirectory(destinationDirectoryPath);
+    const destinationValidationResult = await this.validateDestinationDirectoryPath(destinationDirectoryPath);
 
     if (!destinationValidationResult.ok) {
       this.stderr.write(`${destinationValidationResult.message}\n`);
+      return 1;
+    }
+
+    const collisionResult = await this.findTemplateCollision(
+      templateSource.templateDirectoryPath,
+      destinationDirectoryPath,
+    );
+
+    if (!collisionResult.ok) {
+      this.stderr.write(`${collisionResult.message}\n`);
       return 1;
     }
 
@@ -41,6 +51,8 @@ class InitProjectCommand {
 
     await fs.cp(templateSource.templateDirectoryPath, destinationDirectoryPath, {
       recursive: true,
+      force: false,
+      errorOnExist: true,
       filter: (sourcePath) => this.shouldCopyPath(sourcePath),
     });
 
@@ -69,25 +81,68 @@ class InitProjectCommand {
     };
   }
 
-  async validateDestinationDirectory(destinationDirectoryPath) {
-    try {
-      const destinationDirectoryEntries = await fs.readdir(destinationDirectoryPath);
-
-      if (destinationDirectoryEntries.length > 0) {
-        return {
-          ok: false,
-          message: `Destination directory already exists and is not empty: ${destinationDirectoryPath}`,
-        };
-      }
-
+  async validateDestinationDirectoryPath(destinationDirectoryPath) {
+    const destinationPathStats = await this.readPathStats(destinationDirectoryPath);
+    if (!destinationPathStats) {
       return {
         ok: true,
       };
+    }
+
+    if (destinationPathStats.isDirectory()) {
+      return {
+        ok: true,
+      };
+    }
+
+    return {
+      ok: false,
+      message: `Destination path already exists and is not a directory: ${destinationDirectoryPath}`,
+    };
+  }
+
+  async findTemplateCollision(templateDirectoryPath, destinationDirectoryPath) {
+    const templateEntries = await fs.readdir(templateDirectoryPath, { withFileTypes: true });
+
+    for (const templateEntry of templateEntries) {
+      if (EXCLUDED_DIRECTORY_NAMES.has(templateEntry.name)) {
+        continue;
+      }
+
+      const templateEntryPath = path.join(templateDirectoryPath, templateEntry.name);
+      const destinationEntryPath = path.join(destinationDirectoryPath, templateEntry.name);
+      const destinationEntryStats = await this.readPathStats(destinationEntryPath);
+
+      if (!destinationEntryStats) {
+        continue;
+      }
+
+      if (templateEntry.isDirectory() && destinationEntryStats.isDirectory()) {
+        const nestedCollisionResult = await this.findTemplateCollision(templateEntryPath, destinationEntryPath);
+        if (!nestedCollisionResult.ok) {
+          return nestedCollisionResult;
+        }
+
+        continue;
+      }
+
+      return {
+        ok: false,
+        message: `Template copy would overwrite an existing path: ${destinationEntryPath}`,
+      };
+    }
+
+    return {
+      ok: true,
+    };
+  }
+
+  async readPathStats(targetPath) {
+    try {
+      return await fs.lstat(targetPath);
     } catch (error) {
       if (error?.code === 'ENOENT') {
-        return {
-          ok: true,
-        };
+        return null;
       }
 
       throw error;

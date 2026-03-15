@@ -82,7 +82,7 @@ describe('InitProjectCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
-    it('should fail when the destination directory already exists and is not empty', async () => {
+    it('should copy into an existing destination directory when no template paths collide', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
       const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-failure-'));
@@ -116,14 +116,69 @@ describe('InitProjectCommand', () => {
       });
 
       // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(
+        await fs.readFile(path.join(destinationDirectoryPath, 'package.json'), 'utf8'),
+        '{\n  "name": "apiease-template"\n}\n',
+      );
+      assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'existing.txt'), 'utf8'), 'keep me\n');
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Creating APIEase project: my-project',
+          'Using template: ../apiease-template',
+          'Project created successfully.',
+          '',
+          'Next steps:',
+          'cd my-project',
+          'git init',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should fail when an existing destination file would be overwritten by the template', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-collision-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const destinationDirectoryPath = path.join(workingDirectoryPath, 'my-project');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+
+      await fs.mkdir(templateDirectoryPath, { recursive: true });
+      await fs.mkdir(destinationDirectoryPath, { recursive: true });
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+      await fs.writeFile(path.join(destinationDirectoryPath, 'README.md'), 'existing readme\n');
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              templateDirectoryPath,
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init', 'my-project'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
       assert.equal(exitCode, 1);
       assert.equal(stdoutChunks.join(''), '');
       assert.equal(
         stderrChunks.join(''),
-        `Destination directory already exists and is not empty: ${destinationDirectoryPath}\n`,
+        `Template copy would overwrite an existing path: ${path.join(destinationDirectoryPath, 'README.md')}\n`,
       );
-      await assert.rejects(fs.access(path.join(destinationDirectoryPath, 'package.json')));
-      assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'existing.txt'), 'utf8'), 'keep me\n');
+      assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'README.md'), 'utf8'), 'existing readme\n');
     });
   });
 });

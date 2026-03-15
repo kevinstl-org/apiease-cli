@@ -41,13 +41,22 @@ Create a new project from the local template repository:
 apiease init my-project
 ```
 
+Initialize the current directory, for example after cloning an empty GitHub repository:
+
+```bash
+git clone <your-empty-repo-url>
+cd <your-repo-directory>
+apiease init .
+```
+
 Current development behavior:
 
 - The CLI resolves the template from `../apiease-template`.
 - The template is copied directly into `./my-project`.
 - The template `.git` directory is excluded.
 - `node_modules` is excluded if it exists in the template.
-- Existing non-empty destination directories are not overwritten.
+- Existing files and folders are allowed when they do not collide with template paths.
+- The command fails if a template file or folder would overwrite an existing path.
 
 Expected output:
 
