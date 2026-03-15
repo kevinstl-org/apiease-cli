@@ -3,6 +3,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CreateRequestCommand } from '../src/cli/CreateRequestCommand.js';
+import { InitProjectCommand } from '../src/cli/InitProjectCommand.js';
 import { RequestDefinitionFileLoader } from '../src/cli/RequestDefinitionFileLoader.js';
 import { ApiEaseCreateRequestClient } from '../src/client/ApiEaseCreateRequestClient.js';
 import { ApiEaseCreateRequestContractValidator } from '../src/client/ApiEaseCreateRequestContractValidator.js';
@@ -10,6 +11,7 @@ import { ApiEaseCreateRequestContractValidator } from '../src/client/ApiEaseCrea
 const JSON_FLAG = '--json';
 const DEFAULT_FAILURE_STATUS = 500;
 const UNEXPECTED_CLI_ERROR = 'UNEXPECTED_CLI_ERROR';
+const INIT_COMMAND_NAME = 'init';
 
 function buildCreateRequestCommand({ stdout = process.stdout, stderr = process.stderr } = {}) {
   const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
@@ -26,14 +28,23 @@ function buildCreateRequestCommand({ stdout = process.stdout, stderr = process.s
   });
 }
 
+function buildInitProjectCommand({ stdout = process.stdout, stderr = process.stderr } = {}) {
+  return new InitProjectCommand({
+    stdout,
+    stderr,
+  });
+}
+
 async function runCli({
   commandArguments = process.argv.slice(2),
   createRequestCommand = buildCreateRequestCommand(),
+  initProjectCommand = buildInitProjectCommand(),
   stdout = process.stdout,
   stderr = process.stderr,
 } = {}) {
   try {
-    return await createRequestCommand.run(commandArguments);
+    const command = commandArguments[0] === INIT_COMMAND_NAME ? initProjectCommand : createRequestCommand;
+    return await command.run(commandArguments);
   } catch (error) {
     const failureResult = buildUnexpectedFailureResult(error);
     const output = buildFailureOutput({
