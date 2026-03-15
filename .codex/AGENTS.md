@@ -90,3 +90,23 @@ These guidelines are intended to keep the codebase modular, easy to navigate, an
 - Business decisions, persistence, and side effects must happen server-side.
 - The frontend must only handle UI state and rendering; it must not be a source of truth or perform persistence or routing logic.
 - If existing code violates this, refactor toward server-side authority before adding features.
+
+
+## Documentation And Delivery Conventions
+- Product and customer-facing feature documentation belongs in the separate `../apiease-docs` project.
+- When updating `../apiease-docs`, place the page in the appropriate Docusaurus section and update `sidebar.js`.
+- Every implementation handoff must include a proposed commit message ending with a period, even if the user did not ask for one. Put it in the final completion summary as a dedicated line starting with "Commit message:".
+
+## apiease-cli template project
+- There is a template project at ../apiease-template
+- This repository represents the canonical starter project that new APIEase CLI users will begin with.
+- The CLI will use this project as the source template when creating a new project with the `apiease init` command.
+
+### Development behavior
+- During local development the CLI should read the template directly from `../apiease-template`.
+- This allows changes to the template to be tested immediately without publishing or downloading anything.
+
+### Production behavior
+- When the CLI is published and installed by users, it will obtain the template from the public `apiease-template` repository.
+- The CLI should not require users to clone the template manually.
+
