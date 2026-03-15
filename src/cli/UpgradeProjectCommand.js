@@ -1,6 +1,8 @@
+import { ProjectMetadataFileService } from '../project/ProjectMetadataFileService.js';
+import { ProjectUpgradeApplierService } from '../project/ProjectUpgradeApplierService.js';
 import { ProjectUpgradePlanService } from '../project/ProjectUpgradePlanService.js';
 import { TemplateProjectManifestBuilder } from '../template/TemplateProjectManifestBuilder.js';
-import { ProjectMetadataFileService } from '../project/ProjectMetadataFileService.js';
+import { TemplateProjectOwnershipPolicy } from '../template/TemplateProjectOwnershipPolicy.js';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
 
@@ -12,16 +14,20 @@ const USAGE_TEXT = 'Usage: apiease upgrade [--check] [--dry-run]';
 class UpgradeProjectCommand {
   constructor({
     projectUpgradePlanService = new ProjectUpgradePlanService(),
+    projectUpgradeApplierService = new ProjectUpgradeApplierService(),
     projectMetadataFileService = new ProjectMetadataFileService(),
     templateProjectManifestBuilder = new TemplateProjectManifestBuilder(),
+    templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy(),
     templateProjectSourceResolver = new TemplateProjectSourceResolver(),
     templateProjectVersionResolver = new TemplateProjectVersionResolver(),
     stdout = process.stdout,
     stderr = process.stderr,
   } = {}) {
     this.projectUpgradePlanService = projectUpgradePlanService;
+    this.projectUpgradeApplierService = projectUpgradeApplierService;
     this.projectMetadataFileService = projectMetadataFileService;
     this.templateProjectManifestBuilder = templateProjectManifestBuilder;
+    this.templateProjectOwnershipPolicy = templateProjectOwnershipPolicy;
     this.templateProjectSourceResolver = templateProjectSourceResolver;
     this.templateProjectVersionResolver = templateProjectVersionResolver;
     this.stdout = stdout;
@@ -48,37 +54,67 @@ class UpgradeProjectCommand {
     const currentProjectTemplateVersion = projectMetadataResult.projectMetadata.template?.version?.value;
 
     if (parseResult.mode === 'dryRun') {
-      const storedTemplateManifest = projectMetadataResult.projectMetadata.template?.manifest;
-      if (!storedTemplateManifest) {
-        this.stderr.write(this.buildFailureOutput({
-          errorCode: TEMPLATE_MANIFEST_NOT_FOUND_ERROR_CODE,
-          message: 'APIEASE project metadata does not include a template manifest. Run "apiease init" again to adopt the current project state.',
-        }));
+      const upgradePlanResult = await this.buildUpgradePlan({
+        currentWorkingDirectoryPath,
+        projectMetadata: projectMetadataResult.projectMetadata,
+        templateSource,
+      });
+      if (!upgradePlanResult.ok) {
+        this.stderr.write(this.buildFailureOutput(upgradePlanResult));
         return 1;
       }
-
-      const currentTemplateManifest = await this.templateProjectManifestBuilder.buildTemplateManifest(
-        templateSource.templateDirectoryPath,
-      );
-      const upgradePlan = await this.projectUpgradePlanService.buildUpgradePlan({
-        currentProjectDirectoryPath: currentWorkingDirectoryPath,
-        currentTemplateManifest,
-        storedTemplateManifest,
-      });
 
       this.stdout.write(
         this.buildDryRunOutput({
           currentProjectTemplateVersion,
           templateVersion,
-          upgradePlan,
+          upgradePlan: upgradePlanResult.upgradePlan,
         }),
       );
-      return this.hasPlannedChanges(upgradePlan) ? 1 : 0;
+      return this.hasPlannedChanges(upgradePlanResult.upgradePlan) ? 1 : 0;
     }
 
-    if (currentProjectTemplateVersion === templateVersion.value) {
+    if (parseResult.mode === 'check' && currentProjectTemplateVersion === templateVersion.value) {
       this.stdout.write('APIEASE project template is up to date.\n');
       return 0;
+    }
+
+    if (parseResult.mode === 'apply') {
+      const upgradePlanResult = await this.buildUpgradePlan({
+        currentWorkingDirectoryPath,
+        projectMetadata: projectMetadataResult.projectMetadata,
+        templateSource,
+      });
+      if (!upgradePlanResult.ok) {
+        this.stderr.write(this.buildFailureOutput(upgradePlanResult));
+        return 1;
+      }
+
+      await this.projectUpgradeApplierService.applyUpgradePlan({
+        currentProjectDirectoryPath: currentWorkingDirectoryPath,
+        templateDirectoryPath: templateSource.templateDirectoryPath,
+        upgradePlan: upgradePlanResult.upgradePlan,
+      });
+      await this.projectMetadataFileService.writeProjectMetadata({
+        projectDirectoryPath: currentWorkingDirectoryPath,
+        projectMetadata: this.buildUpdatedProjectMetadata({
+          currentTemplateManifest: upgradePlanResult.currentTemplateManifest,
+          projectMetadata: projectMetadataResult.projectMetadata,
+          templateSource,
+          templateVersion: upgradePlanResult.upgradePlan.skipPaths.length === 0
+            ? templateVersion
+            : projectMetadataResult.projectMetadata.template.version,
+          upgradePlan: upgradePlanResult.upgradePlan,
+        }),
+      });
+      this.stdout.write(
+        this.buildApplyOutput({
+          currentProjectTemplateVersion,
+          templateVersion,
+          upgradePlan: upgradePlanResult.upgradePlan,
+        }),
+      );
+      return upgradePlanResult.upgradePlan.skipPaths.length === 0 ? 0 : 1;
     }
 
     this.stdout.write(
@@ -90,6 +126,33 @@ class UpgradeProjectCommand {
       ].join('\n'),
     );
     return 1;
+  }
+
+  async buildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateSource }) {
+    const storedTemplateManifest = projectMetadata.template?.manifest;
+    if (!storedTemplateManifest) {
+      return {
+        ok: false,
+        ...this.buildManifestNotFoundFailure(),
+      };
+    }
+
+    const currentTemplateManifest = await this.templateProjectManifestBuilder.buildTemplateManifest(
+      templateSource.templateDirectoryPath,
+    );
+    const managedStoredTemplateManifest = this.templateProjectOwnershipPolicy.filterTemplateManifest(
+      storedTemplateManifest,
+    );
+
+    return {
+      currentTemplateManifest,
+      ok: true,
+      upgradePlan: await this.projectUpgradePlanService.buildUpgradePlan({
+        currentProjectDirectoryPath: currentWorkingDirectoryPath,
+        currentTemplateManifest,
+        storedTemplateManifest: managedStoredTemplateManifest,
+      }),
+    };
   }
 
   parseCommandArguments(commandArguments) {
@@ -112,7 +175,12 @@ class UpgradeProjectCommand {
 
     return {
       ok: true,
-      mode: commandArguments[1] === DRY_RUN_FLAG ? 'dryRun' : 'check',
+      mode:
+        commandArguments[1] === CHECK_FLAG
+          ? 'check'
+          : commandArguments[1] === DRY_RUN_FLAG
+            ? 'dryRun'
+            : 'apply',
     };
   }
 
@@ -123,6 +191,13 @@ class UpgradeProjectCommand {
       `Message: ${projectMetadataResult.message}`,
       '',
     ].join('\n');
+  }
+
+  buildManifestNotFoundFailure() {
+    return {
+      errorCode: TEMPLATE_MANIFEST_NOT_FOUND_ERROR_CODE,
+      message: 'APIEASE project metadata does not include a template manifest. Run "apiease init" again to adopt the current project state.',
+    };
   }
 
   buildDryRunOutput({ currentProjectTemplateVersion, templateVersion, upgradePlan }) {
@@ -139,6 +214,67 @@ class UpgradeProjectCommand {
     this.appendSection(outputLines, 'Skip conflict:', upgradePlan.skipPaths);
 
     return outputLines.join('\n');
+  }
+
+  buildApplyOutput({ currentProjectTemplateVersion, templateVersion, upgradePlan }) {
+    const outputLines = [
+      upgradePlan.skipPaths.length === 0
+        ? 'APIEASE project template upgraded successfully.'
+        : 'APIEASE project template upgrade applied with conflicts.',
+      `Current project template version: ${currentProjectTemplateVersion}`,
+      `Latest template version: ${templateVersion.value}`,
+      '',
+    ];
+
+    this.appendSection(outputLines, 'Added:', upgradePlan.addPaths);
+    this.appendSection(outputLines, 'Updated:', upgradePlan.updatePaths);
+    this.appendSection(outputLines, 'Removed:', upgradePlan.removePaths);
+    this.appendSection(outputLines, 'Skipped conflicting paths:', upgradePlan.skipPaths);
+
+    return outputLines.join('\n');
+  }
+
+  buildUpdatedProjectMetadata({ currentTemplateManifest, projectMetadata, templateSource, templateVersion, upgradePlan }) {
+    return {
+      ...projectMetadata,
+      template: {
+        ...projectMetadata.template,
+        displayTemplateSource: templateSource.displayTemplateSource,
+        manifest: this.buildUpdatedTemplateManifest({
+          currentTemplateManifest,
+          storedTemplateManifest: projectMetadata.template.manifest,
+          upgradePlan,
+        }),
+        publicRepositoryUrl: templateSource.publicRepositoryUrl,
+        sourceType: templateSource.sourceType,
+        version: templateVersion,
+      },
+    };
+  }
+
+  buildUpdatedTemplateManifest({ currentTemplateManifest, storedTemplateManifest, upgradePlan }) {
+    const updatedTemplateManifest = {};
+    const skippedPaths = new Set(upgradePlan.skipPaths);
+    const managedPaths = new Set([
+      ...Object.keys(currentTemplateManifest),
+      ...Object.keys(storedTemplateManifest),
+    ]);
+
+    for (const managedPath of [...managedPaths].sort()) {
+      if (skippedPaths.has(managedPath)) {
+        if (storedTemplateManifest[managedPath]) {
+          updatedTemplateManifest[managedPath] = storedTemplateManifest[managedPath];
+        }
+
+        continue;
+      }
+
+      if (currentTemplateManifest[managedPath]) {
+        updatedTemplateManifest[managedPath] = currentTemplateManifest[managedPath];
+      }
+    }
+
+    return updatedTemplateManifest;
   }
 
   appendSection(outputLines, heading, paths) {

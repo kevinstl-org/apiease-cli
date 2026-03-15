@@ -30,6 +30,7 @@ apiease
 
 ```bash
 apiease init [project-name]
+apiease upgrade
 apiease upgrade [--check]
 apiease upgrade --dry-run
 apiease create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
@@ -59,6 +60,7 @@ Current development behavior:
 - The template is copied directly into `./my-project`.
 - The CLI writes project metadata to `.apiease/project.json`.
 - The metadata includes the template git version and a manifest of template-managed file hashes.
+- Customer-owned template files are copied but excluded from the stored manifest: `README.md`, `CUSTOM_README.md`, and `CUSTOM_AGENT_GUIDANCE.md`.
 - The template `.git` and `.idea` directories are excluded.
 - `node_modules` is excluded if it exists in the template.
 - Existing files and folders are allowed when they do not collide with template paths.
@@ -125,8 +127,25 @@ Current dry-run behavior:
 
 - It compares the stored template manifest from `.apiease/project.json` to the current template manifest.
 - It classifies template-managed file changes as `Add`, `Update`, `Remove`, or `Skip conflict`.
+- It ignores customer-owned template files: `README.md`, `CUSTOM_README.md`, and `CUSTOM_AGENT_GUIDANCE.md`.
 - It never writes project files.
 - It exits `1` when there are planned changes or conflicts to review.
+
+Apply safe template-managed upgrades:
+
+```bash
+apiease upgrade
+```
+
+Current apply behavior:
+
+- It adds missing template-managed files.
+- It updates template-managed files that still match their previously stored template baseline.
+- It removes deleted template-managed files only when the project copy still matches the stored baseline.
+- It skips conflicting template-managed files instead of overwriting them.
+- It ignores user-added files that are not part of the stored template manifest unless they collide with a newly added template-managed path.
+- It updates `.apiease/project.json` after applying safe changes.
+- It exits `1` when any managed conflicts remain after applying the safe changes.
 
 ## Configure Authentication
 

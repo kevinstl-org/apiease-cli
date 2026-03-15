@@ -243,6 +243,308 @@ describe('UpgradeProjectCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should apply safe project upgrades and write updated metadata when run without flags', async () => {
+      // Arrange
+      const { UpgradeProjectCommand } = await import(upgradeProjectCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const writeCalls = [];
+      const applyCalls = [];
+      const upgradeProjectCommand = new UpgradeProjectCommand({
+        projectMetadataFileService: {
+          async readProjectMetadata() {
+            return {
+              ok: true,
+              projectMetadata: {
+                cliVersion: '0.1.0-test',
+                template: {
+                  displayTemplateSource: '../apiease-template',
+                  manifest: {
+                    'updated.txt': 'old-hash',
+                    'removed.txt': 'remove-hash',
+                    'README.md': 'customer-owned-readme-hash',
+                  },
+                  publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+                  sourceType: 'localDevelopment',
+                  version: {
+                    type: 'gitCommit',
+                    value: 'template-sha-1',
+                  },
+                },
+              },
+            };
+          },
+          async writeProjectMetadata(writePayload) {
+            writeCalls.push(writePayload);
+          },
+        },
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath: '/tmp/apiease-template',
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-2',
+            };
+          },
+        },
+        templateProjectManifestBuilder: {
+          async buildTemplateManifest() {
+            return {
+              'updated.txt': 'new-hash',
+              'added.txt': 'added-hash',
+            };
+          },
+        },
+        projectUpgradePlanService: {
+          async buildUpgradePlan(upgradePlanInput) {
+            applyCalls.push({
+              kind: 'plan',
+              upgradePlanInput,
+            });
+            return {
+              addPaths: ['added.txt'],
+              removePaths: ['removed.txt'],
+              skipPaths: [],
+              updatePaths: ['updated.txt'],
+            };
+          },
+        },
+        projectUpgradeApplierService: {
+          async applyUpgradePlan(applyPayload) {
+            applyCalls.push({
+              applyPayload,
+              kind: 'apply',
+            });
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await upgradeProjectCommand.run(['upgrade'], {
+        currentWorkingDirectoryPath: '/tmp/project',
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(applyCalls, [
+        {
+          kind: 'plan',
+          upgradePlanInput: {
+            currentProjectDirectoryPath: '/tmp/project',
+            currentTemplateManifest: {
+              'added.txt': 'added-hash',
+              'updated.txt': 'new-hash',
+            },
+            storedTemplateManifest: {
+              'removed.txt': 'remove-hash',
+              'updated.txt': 'old-hash',
+            },
+          },
+        },
+        {
+          applyPayload: {
+            currentProjectDirectoryPath: '/tmp/project',
+            templateDirectoryPath: '/tmp/apiease-template',
+            upgradePlan: {
+              addPaths: ['added.txt'],
+              removePaths: ['removed.txt'],
+              skipPaths: [],
+              updatePaths: ['updated.txt'],
+            },
+          },
+          kind: 'apply',
+        },
+      ]);
+      assert.deepEqual(writeCalls, [
+        {
+          projectDirectoryPath: '/tmp/project',
+          projectMetadata: {
+            cliVersion: '0.1.0-test',
+            template: {
+              displayTemplateSource: '../apiease-template',
+              manifest: {
+                'added.txt': 'added-hash',
+                'updated.txt': 'new-hash',
+              },
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              version: {
+                type: 'gitCommit',
+                value: 'template-sha-2',
+              },
+            },
+          },
+        },
+      ]);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'APIEASE project template upgraded successfully.',
+          'Current project template version: template-sha-1',
+          'Latest template version: template-sha-2',
+          '',
+          'Added:',
+          'added.txt',
+          '',
+          'Updated:',
+          'updated.txt',
+          '',
+          'Removed:',
+          'removed.txt',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should apply safe upgrades while preserving the previous template version when managed conflicts remain', async () => {
+      // Arrange
+      const { UpgradeProjectCommand } = await import(upgradeProjectCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const writeCalls = [];
+      const applyCalls = [];
+      const upgradeProjectCommand = new UpgradeProjectCommand({
+        projectMetadataFileService: {
+          async readProjectMetadata() {
+            return {
+              ok: true,
+              projectMetadata: {
+                cliVersion: '0.1.0-test',
+                template: {
+                  displayTemplateSource: '../apiease-template',
+                  manifest: {
+                    'updated.txt': 'old-hash',
+                    'conflict.txt': 'conflict-old-hash',
+                  },
+                  publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+                  sourceType: 'localDevelopment',
+                  version: {
+                    type: 'gitCommit',
+                    value: 'template-sha-1',
+                  },
+                },
+              },
+            };
+          },
+          async writeProjectMetadata(writePayload) {
+            writeCalls.push(writePayload);
+          },
+        },
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath: '/tmp/apiease-template',
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-2',
+            };
+          },
+        },
+        templateProjectManifestBuilder: {
+          async buildTemplateManifest() {
+            return {
+              'updated.txt': 'new-hash',
+              'conflict.txt': 'conflict-new-hash',
+            };
+          },
+        },
+        projectUpgradePlanService: {
+          async buildUpgradePlan() {
+            return {
+              addPaths: [],
+              removePaths: [],
+              skipPaths: ['conflict.txt'],
+              updatePaths: ['updated.txt'],
+            };
+          },
+        },
+        projectUpgradeApplierService: {
+          async applyUpgradePlan(applyPayload) {
+            applyCalls.push(applyPayload);
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await upgradeProjectCommand.run(['upgrade'], {
+        currentWorkingDirectoryPath: '/tmp/project',
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.deepEqual(applyCalls, [
+        {
+          currentProjectDirectoryPath: '/tmp/project',
+          templateDirectoryPath: '/tmp/apiease-template',
+          upgradePlan: {
+            addPaths: [],
+            removePaths: [],
+            skipPaths: ['conflict.txt'],
+            updatePaths: ['updated.txt'],
+          },
+        },
+      ]);
+      assert.deepEqual(writeCalls, [
+        {
+          projectDirectoryPath: '/tmp/project',
+          projectMetadata: {
+            cliVersion: '0.1.0-test',
+            template: {
+              displayTemplateSource: '../apiease-template',
+              manifest: {
+                'conflict.txt': 'conflict-old-hash',
+                'updated.txt': 'new-hash',
+              },
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              version: {
+                type: 'gitCommit',
+                value: 'template-sha-1',
+              },
+            },
+          },
+        },
+      ]);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'APIEASE project template upgrade applied with conflicts.',
+          'Current project template version: template-sha-1',
+          'Latest template version: template-sha-2',
+          '',
+          'Updated:',
+          'updated.txt',
+          '',
+          'Skipped conflicting paths:',
+          'conflict.txt',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should fail dry run when the stored project metadata does not include a template manifest', async () => {
       // Arrange
       const { UpgradeProjectCommand } = await import(upgradeProjectCommandModuleUrl);

@@ -13,7 +13,7 @@ const templateProjectManifestBuilderModuleUrl = pathToFileURL(
 
 describe('TemplateProjectManifestBuilder', () => {
   describe('buildTemplateManifest', () => {
-    it('should build a relative-path manifest for template files while excluding ignored directories', async () => {
+    it('should build a relative-path manifest for managed template files while excluding ignored directories', async () => {
       // Arrange
       const { TemplateProjectManifestBuilder } = await import(templateProjectManifestBuilderModuleUrl);
       const templateProjectManifestBuilder = new TemplateProjectManifestBuilder();
@@ -29,6 +29,8 @@ describe('TemplateProjectManifestBuilder', () => {
       await fs.writeFile(path.join(templateDirectoryPath, '.idea', 'workspace.xml'), '<xml />\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'node_modules', 'left-pad', 'index.js'), 'module.exports = 1;\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+      await fs.writeFile(path.join(templateDirectoryPath, 'CUSTOM_AGENT_GUIDANCE.md'), 'custom guidance\n');
+      await fs.writeFile(path.join(templateDirectoryPath, 'CUSTOM_README.md'), 'custom readme\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'resources', 'requests', 'example.json'), '{}\n');
 
       // Act
@@ -37,11 +39,9 @@ describe('TemplateProjectManifestBuilder', () => {
       // Assert
       assert.deepEqual(Object.keys(manifest).sort(), [
         '.gitignore',
-        'README.md',
         'resources/requests/example.json',
       ]);
       assert.equal(typeof manifest['.gitignore'], 'string');
-      assert.equal(typeof manifest['README.md'], 'string');
       assert.equal(typeof manifest['resources/requests/example.json'], 'string');
     });
   });

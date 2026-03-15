@@ -1,10 +1,17 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { TemplateProjectOwnershipPolicy } from './TemplateProjectOwnershipPolicy.js';
 
 const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', 'node_modules']);
 
 class TemplateProjectManifestBuilder {
+  constructor({
+    templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy(),
+  } = {}) {
+    this.templateProjectOwnershipPolicy = templateProjectOwnershipPolicy;
+  }
+
   async buildTemplateManifest(templateDirectoryPath) {
     const manifest = {};
     await this.collectManifestEntries({
@@ -35,9 +42,12 @@ class TemplateProjectManifestBuilder {
       }
 
       if (directoryEntry.isFile()) {
-        manifest[this.buildRelativePath(rootDirectoryPath, entryPath)] = this.buildContentHash(
-          await fs.readFile(entryPath),
-        );
+        const relativeTemplatePath = this.buildRelativePath(rootDirectoryPath, entryPath);
+        if (!this.templateProjectOwnershipPolicy.isTemplateManagedPath(relativeTemplatePath)) {
+          continue;
+        }
+
+        manifest[relativeTemplatePath] = this.buildContentHash(await fs.readFile(entryPath));
       }
     }
   }

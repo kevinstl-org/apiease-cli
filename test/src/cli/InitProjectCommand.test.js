@@ -31,6 +31,9 @@ describe('InitProjectCommand', () => {
       await fs.writeFile(path.join(templateDirectoryPath, '.idea', '.gitignore'), '# idea\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'node_modules', 'left-pad', 'index.js'), 'export default 1;\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'package.json'), '{\n  "name": "apiease-template"\n}\n');
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+      await fs.writeFile(path.join(templateDirectoryPath, 'CUSTOM_README.md'), 'custom readme\n');
+      await fs.writeFile(path.join(templateDirectoryPath, 'CUSTOM_AGENT_GUIDANCE.md'), 'custom guidance\n');
       await fs.writeFile(path.join(templateDirectoryPath, '.env'), 'APIEASE=1\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'src', 'index.js'), 'export const app = true;\n');
 
@@ -297,7 +300,7 @@ describe('InitProjectCommand', () => {
       );
       assert.equal(projectMetadata.cliVersion, '0.1.0-test');
       assert.equal(projectMetadata.template.displayTemplateSource, '../apiease-template');
-      assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), ['.gitignore', 'README.md']);
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), ['.gitignore']);
       for (const manifestHash of Object.values(projectMetadata.template.manifest)) {
         assert.equal(typeof manifestHash, 'string');
         assert.notEqual(manifestHash.length, 0);
