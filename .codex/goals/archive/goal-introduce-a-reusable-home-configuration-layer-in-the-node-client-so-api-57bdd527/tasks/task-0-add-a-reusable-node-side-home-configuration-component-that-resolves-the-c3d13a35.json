@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-14T23:48:31Z",
-  "updatedAt": "2026-03-15T00:06:27Z",
+  "updatedAt": "2026-03-15T00:34:41Z",
   "context": [
     "This layer should become the single Node-client source of truth for home-directory configuration.",
     "Supported environment values are `local`, `staging`, and `production`."
@@ -45,6 +45,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-15T00:34:41Z"
   }
 }

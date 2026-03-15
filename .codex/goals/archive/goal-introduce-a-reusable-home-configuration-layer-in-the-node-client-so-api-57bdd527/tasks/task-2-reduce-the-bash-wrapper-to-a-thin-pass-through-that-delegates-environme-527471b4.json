@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-14T23:48:34Z",
-  "updatedAt": "2026-03-15T00:13:10Z",
+  "updatedAt": "2026-03-15T00:34:42Z",
   "context": [
     "The wrapper should no longer own environment-selection or env-file parsing behavior."
   ],
@@ -40,6 +40,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-15T00:34:42Z"
   }
 }
