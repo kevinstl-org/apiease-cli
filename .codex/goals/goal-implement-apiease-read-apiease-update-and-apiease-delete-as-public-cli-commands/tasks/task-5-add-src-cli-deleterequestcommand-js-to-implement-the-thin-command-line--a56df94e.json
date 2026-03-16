@@ -4,7 +4,7 @@
   "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
   "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "cli",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:17Z",
-  "updatedAt": "2026-03-16T19:08:26Z",
+  "updatedAt": "2026-03-16T19:26:30Z",
   "context": [
     "Delete needs the same API key resolution precedence and output-mode support used by the other public request commands.",
     "Unlike create and update, delete should not depend on RequestDefinitionFileLoader."
