@@ -4,7 +4,7 @@
   "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
   "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "client",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:14Z",
-  "updatedAt": "2026-03-16T19:08:26Z",
+  "updatedAt": "2026-03-16T19:18:17Z",
   "context": [
     "The public CRUD exercise already uses DELETE api/v1/resources/requests/:requestId for request cleanup.",
     "Delete needs the same base URL normalization and authentication headers as the other request clients."
