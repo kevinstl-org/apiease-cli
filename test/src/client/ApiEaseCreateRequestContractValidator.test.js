@@ -122,6 +122,43 @@ test('ApiEaseCreateRequestContractValidator validate should require type-specifi
   ]);
 });
 
+test('ApiEaseCreateRequestContractValidator validate should allow flow requests with flow and liquid parameter types', async () => {
+  // Arrange
+  const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
+  const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
+  const payload = {
+    type: 'flow',
+    parameters: [
+      {
+        type: 'flow',
+        name: 'orderId',
+        value: 'gid://shopify/Order/1',
+      },
+      {
+        type: 'liquid',
+        name: 'message',
+        value: 'Ready to import',
+      },
+      {
+        type: 'system',
+        name: 'IMMEDIATE_FLOW_RESPONSE',
+        value: 'true',
+      },
+    ],
+  };
+
+  // Act
+  const result = apiEaseCreateRequestContractValidator.validate(payload);
+
+  // Assert
+  assert.deepEqual(result, {
+    isValid: true,
+    errorCode: null,
+    message: '',
+    fieldErrors: [],
+  });
+});
+
 test('ApiEaseCreateRequestContractValidator validate should report invalid nested parameter and trigger fields by path', async () => {
   // Arrange
   const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
@@ -162,6 +199,34 @@ test('ApiEaseCreateRequestContractValidator validate should report invalid neste
       path: 'triggers[0].proxyEndpoint.path',
       code: 'MIN_LENGTH',
       message: 'Must not be empty',
+    },
+  ]);
+});
+
+test('ApiEaseCreateRequestContractValidator validate should reject unsupported parameter types even when flow and liquid are allowed', async () => {
+  // Arrange
+  const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
+  const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
+  const payload = {
+    type: 'flow',
+    parameters: [
+      {
+        type: 'liquidParam',
+        name: 'message',
+        value: 'Ready to import',
+      },
+    ],
+  };
+
+  // Act
+  const result = apiEaseCreateRequestContractValidator.validate(payload);
+
+  // Assert
+  assert.deepEqual(result.fieldErrors, [
+    {
+      path: 'parameters[0].type',
+      code: 'INVALID_VALUE',
+      message: 'Field is invalid',
     },
   ]);
 });

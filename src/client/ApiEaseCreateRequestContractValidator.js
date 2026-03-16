@@ -1,5 +1,5 @@
-const REQUEST_TYPES = ['http', 'liquid', 'system'];
-const PARAMETER_TYPES = ['body', 'header', 'path', 'query', 'system'];
+const REQUEST_TYPES = ['http', 'flow', 'liquid', 'system'];
+const PARAMETER_TYPES = ['body', 'flow', 'header', 'liquid', 'path', 'query', 'system'];
 const TRIGGER_TYPES = ['webhook', 'cron', 'proxyEndpoint'];
 const TOP_LEVEL_FIELDS = ['id', 'name', 'type', 'method', 'address', 'liquid', 'parameters', 'triggers'];
 const PARAMETER_FIELDS = ['type', 'name', 'value', 'sensitive'];
