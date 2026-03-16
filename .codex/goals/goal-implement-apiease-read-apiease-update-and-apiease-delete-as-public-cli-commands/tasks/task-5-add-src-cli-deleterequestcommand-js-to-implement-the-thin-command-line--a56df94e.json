@@ -1,0 +1,47 @@
+{
+  "id": "task-5-add-src-cli-deleterequestcommand-js-to-implement-the-thin-command-line--a56df94e",
+  "text": "Add src/cli/DeleteRequestCommand.js to implement the thin command-line delete flow on top of the delete client.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "cli",
+    "delete",
+    "command"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:17Z",
+  "updatedAt": "2026-03-16T19:08:26Z",
+  "context": [
+    "Delete needs the same API key resolution precedence and output-mode support used by the other public request commands.",
+    "Unlike create and update, delete should not depend on RequestDefinitionFileLoader."
+  ],
+  "steps": [
+    "Parse the delete command arguments for request id, API base URL, shop domain, optional API key, and optional JSON output.",
+    "Resolve the API key through ApiEaseHomeConfigurationResolver when --api-key is omitted.",
+    "Call the delete client and render either a human-readable confirmation or raw JSON output."
+  ],
+  "constraints": [
+    "Keep the command focused on deleting a single request resource by id.",
+    "Do not require a request definition file or body for delete."
+  ],
+  "acceptanceCriteria": [
+    "The command supports apiease delete --request-id <id> --base-url <url> --shop-domain <shop-domain> with optional --api-key <api-key> and --json.",
+    "Missing required arguments fail fast with usage-level output and no API call.",
+    "Default output clearly reports delete success or failure and JSON mode emits the raw structured client result.",
+    "Success exits zero and failures exit non-zero."
+  ],
+  "sequenceIndex": 5,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

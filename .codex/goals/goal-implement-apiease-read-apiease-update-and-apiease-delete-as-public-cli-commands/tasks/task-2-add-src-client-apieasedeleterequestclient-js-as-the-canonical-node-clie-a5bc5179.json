@@ -1,0 +1,46 @@
+{
+  "id": "task-2-add-src-client-apieasedeleterequestclient-js-as-the-canonical-node-clie-a5bc5179",
+  "text": "Add src/client/ApiEaseDeleteRequestClient.js as the canonical Node client for deleting a single request by id.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "client",
+    "delete",
+    "requests"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:14Z",
+  "updatedAt": "2026-03-16T19:08:26Z",
+  "context": [
+    "The public CRUD exercise already uses DELETE api/v1/resources/requests/:requestId for request cleanup.",
+    "Delete needs the same base URL normalization and authentication headers as the other request clients."
+  ],
+  "steps": [
+    "Implement a deleteRequest method that accepts apiBaseUrl, apiKey, shopDomain, and requestId.",
+    "Call the versioned request item endpoint with DELETE and no request body.",
+    "Return structured success and failure results that the CLI can render in human-readable and JSON modes."
+  ],
+  "constraints": [
+    "Keep the delete flow focused on request resources only.",
+    "Do not require a file input or request payload for delete."
+  ],
+  "acceptanceCriteria": [
+    "The client issues DELETE requests to api/v1/resources/requests/<encoded requestId> using the standard APIEase authentication headers.",
+    "Successful backend responses are surfaced as structured success results without inventing extra CLI-only fields.",
+    "Backend failures, transport errors, and non-JSON failures return ok false results with machine-readable status, errorCode, message, and fieldErrors."
+  ],
+  "sequenceIndex": 2,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

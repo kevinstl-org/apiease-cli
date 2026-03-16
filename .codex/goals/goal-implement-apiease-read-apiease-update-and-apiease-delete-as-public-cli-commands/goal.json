@@ -1,0 +1,5 @@
+{
+  "id": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "text": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "priority": 50
+}

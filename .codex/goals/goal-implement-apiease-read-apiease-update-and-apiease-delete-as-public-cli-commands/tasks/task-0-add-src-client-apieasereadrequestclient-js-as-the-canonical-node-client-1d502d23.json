@@ -1,0 +1,46 @@
+{
+  "id": "task-0-add-src-client-apieasereadrequestclient-js-as-the-canonical-node-client-1d502d23",
+  "text": "Add src/client/ApiEaseReadRequestClient.js as the canonical Node client for reading a single request by id.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "client",
+    "read",
+    "requests"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:12Z",
+  "updatedAt": "2026-03-16T19:08:25Z",
+  "context": [
+    "The existing create client already targets the versioned request resource under api/v1/resources/requests.",
+    "The public CRUD exercise in src/integration/ApiEasePublicCrudExercise.js already uses GET api/v1/resources/requests/:requestId for request reads."
+  ],
+  "steps": [
+    "Implement a readRequest method that accepts apiBaseUrl, apiKey, shopDomain, and requestId.",
+    "Call the versioned request item endpoint with GET and the same authentication headers used by the create client.",
+    "Normalize JSON success responses, backend failures, transport failures, and non-JSON failures into the structured result shape already used by the CLI."
+  ],
+  "constraints": [
+    "Keep HTTP transport behavior inside the client class and do not move CLI parsing into src/client.",
+    "Do not call the legacy programmatic requests endpoint."
+  ],
+  "acceptanceCriteria": [
+    "The client issues GET requests to api/v1/resources/requests/<encoded requestId> using x-apiease-api-key and x-shop-myshopify-domain headers.",
+    "Successful JSON responses return the backend payload with status merged into the result object.",
+    "Transport errors and non-JSON responses return ok false results with machine-readable status, errorCode, message, and fieldErrors."
+  ],
+  "sequenceIndex": 0,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

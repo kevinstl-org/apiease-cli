@@ -1,0 +1,46 @@
+{
+  "id": "task-6-update-bin-apiease-cli-js-to-wire-create-read-update-and-delete-as-expl-5613e69b",
+  "text": "Update bin/apiease-cli.js to wire create, read, update, and delete as explicit public CLI commands.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "cli",
+    "entrypoint",
+    "routing"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:18Z",
+  "updatedAt": "2026-03-16T19:08:26Z",
+  "context": [
+    "The current entrypoint only resolves init and upgrade explicitly and otherwise falls through to create.",
+    "The new public command surface needs explicit dispatch for create, read, update, delete, init, and upgrade while keeping the bin entrypoint thin."
+  ],
+  "steps": [
+    "Instantiate the new read, update, and delete command classes with the required clients and shared collaborators.",
+    "Replace create-by-default dispatch with explicit command resolution for the full public command set.",
+    "Add top-level usage and unexpected-error handling that works for all commands without create-specific wording."
+  ],
+  "constraints": [
+    "Keep business logic in src/cli and src/client rather than moving it into bin/apiease-cli.js.",
+    "Preserve existing init, upgrade, create, JSON failure output, and exit-code behavior unless the new explicit command model requires a top-level usage failure for unknown commands."
+  ],
+  "acceptanceCriteria": [
+    "runCli delegates create, read, update, delete, init, and upgrade to the correct command objects based on the first argument.",
+    "Unknown or missing commands fail with non-zero top-level usage output instead of silently routing to create.",
+    "Unexpected runtime failures still emit structured JSON when --json is present and no longer hardcode create-only human-readable error text for read, update, or delete."
+  ],
+  "sequenceIndex": 6,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

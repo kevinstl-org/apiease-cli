@@ -1,0 +1,46 @@
+{
+  "id": "task-1-add-src-client-apieaseupdaterequestclient-js-as-the-canonical-node-clie-eb95f938",
+  "text": "Add src/client/ApiEaseUpdateRequestClient.js as the canonical Node client for updating a single request by id.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "client",
+    "update",
+    "requests"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:13Z",
+  "updatedAt": "2026-03-16T19:08:25Z",
+  "context": [
+    "The public CRUD exercise already uses PUT api/v1/resources/requests/:requestId for request updates.",
+    "Request update payloads should stay aligned with the existing request contract validation used for create."
+  ],
+  "steps": [
+    "Implement an updateRequest method that accepts apiBaseUrl, apiKey, shopDomain, requestId, and request.",
+    "Reuse the existing request contract validator before making the API call so update payloads follow the same request shape expectations as create.",
+    "Call the versioned request item endpoint with PUT and normalize success and failure responses into the established CLI result shape."
+  ],
+  "constraints": [
+    "Do not introduce a second CLI-specific request schema for updates.",
+    "Do not move file loading or argument parsing into the client."
+  ],
+  "acceptanceCriteria": [
+    "The client issues PUT requests to api/v1/resources/requests/<encoded requestId> with the validated JSON request body and standard authentication headers.",
+    "Invalid request payloads fail locally with the same machine-readable validation structure already used for request contract failures.",
+    "Backend JSON responses, transport errors, and non-JSON failures are returned as structured results consumable by the CLI layer."
+  ],
+  "sequenceIndex": 1,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

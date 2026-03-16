@@ -1,0 +1,47 @@
+{
+  "id": "task-3-add-src-cli-readrequestcommand-js-to-implement-the-thin-command-line-re-62ad30f0",
+  "text": "Add src/cli/ReadRequestCommand.js to implement the thin command-line read flow on top of the read client.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "cli",
+    "read",
+    "command"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:15Z",
+  "updatedAt": "2026-03-16T19:08:26Z",
+  "context": [
+    "Follow the existing CreateRequestCommand pattern for argument parsing, API key resolution, output selection, and exit codes.",
+    "Read should resolve API keys through ApiEaseHomeConfigurationResolver when --api-key is omitted."
+  ],
+  "steps": [
+    "Parse the read command arguments needed to identify a single request and connect to APIEase.",
+    "Resolve the API key using the same explicit-flag-over-home-configuration precedence used by create.",
+    "Call the read client and render either human-readable output or raw JSON output."
+  ],
+  "constraints": [
+    "Keep the command class thin and delegate all transport logic to the client.",
+    "Require an explicit request identifier argument instead of inferring it from positional input."
+  ],
+  "acceptanceCriteria": [
+    "The command supports apiease read --request-id <id> --base-url <url> --shop-domain <shop-domain> with optional --api-key <api-key> and --json.",
+    "Missing required arguments fail fast with usage-level output and no API call.",
+    "Default output is human-readable and JSON mode emits the raw structured client result.",
+    "Success exits zero and failures exit non-zero."
+  ],
+  "sequenceIndex": 3,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

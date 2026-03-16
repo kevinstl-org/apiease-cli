@@ -1,0 +1,47 @@
+{
+  "id": "task-4-add-src-cli-updaterequestcommand-js-to-implement-the-thin-command-line--dbbd57f2",
+  "text": "Add src/cli/UpdateRequestCommand.js to implement the thin command-line update flow on top of the update client.",
+  "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
+  "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "cli",
+    "update",
+    "command"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-16T19:04:16Z",
+  "updatedAt": "2026-03-16T19:08:26Z",
+  "context": [
+    "The existing RequestDefinitionFileLoader already provides the CLI-side request JSON loading behavior used by create.",
+    "Update should follow the same API key resolution and output-mode conventions as the existing create command."
+  ],
+  "steps": [
+    "Parse the update command arguments for request id, request definition file path, API base URL, shop domain, optional API key, and optional JSON output.",
+    "Load the updated request definition through RequestDefinitionFileLoader and resolve the API key through ApiEaseHomeConfigurationResolver when needed.",
+    "Call the update client and render human-readable or JSON output with the correct exit code."
+  ],
+  "constraints": [
+    "Keep request file parsing in the existing loader instead of duplicating JSON file handling in the command.",
+    "Do not embed contract validation or HTTP transport logic in src/cli."
+  ],
+  "acceptanceCriteria": [
+    "The command supports apiease update --request-id <id> --file <path> --base-url <url> --shop-domain <shop-domain> with optional --api-key <api-key> and --json.",
+    "File loading failures, API key resolution failures, validation failures, and backend failures are surfaced through the existing structured CLI result pattern.",
+    "Default output clearly reports a successful request update and JSON mode emits the raw structured result.",
+    "Success exits zero and failures exit non-zero."
+  ],
+  "sequenceIndex": 4,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
