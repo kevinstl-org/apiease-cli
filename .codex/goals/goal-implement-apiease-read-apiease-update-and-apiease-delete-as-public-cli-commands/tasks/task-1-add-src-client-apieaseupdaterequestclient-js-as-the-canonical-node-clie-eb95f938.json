@@ -4,7 +4,7 @@
   "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
   "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "client",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:13Z",
-  "updatedAt": "2026-03-16T19:08:25Z",
+  "updatedAt": "2026-03-16T19:15:19Z",
   "context": [
     "The public CRUD exercise already uses PUT api/v1/resources/requests/:requestId for request updates.",
     "Request update payloads should stay aligned with the existing request contract validation used for create."
