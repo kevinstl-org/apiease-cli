@@ -68,6 +68,84 @@ describe('apiease-cli', () => {
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
     });
 
+    it('should delegate read command arguments to ReadRequestCommand and return its exit code', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const commandArguments = ['read', '--request-id', 'request-123'];
+      const receivedCommandArguments = [];
+      const readRequestCommand = {
+        async run(incomingCommandArguments) {
+          receivedCommandArguments.push(incomingCommandArguments);
+          return 0;
+        },
+      };
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments,
+        createRequestCommand: createUnexpectedCommand('create'),
+        readRequestCommand,
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
+    it('should delegate update command arguments to UpdateRequestCommand and return its exit code', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const commandArguments = ['update', '--request-id', 'request-123', '--file', '/tmp/request.json'];
+      const receivedCommandArguments = [];
+      const updateRequestCommand = {
+        async run(incomingCommandArguments) {
+          receivedCommandArguments.push(incomingCommandArguments);
+          return 0;
+        },
+      };
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments,
+        createRequestCommand: createUnexpectedCommand('create'),
+        updateRequestCommand,
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
+    it('should delegate delete command arguments to DeleteRequestCommand and return its exit code', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const commandArguments = ['delete', '--request-id', 'request-123'];
+      const receivedCommandArguments = [];
+      const deleteRequestCommand = {
+        async run(incomingCommandArguments) {
+          receivedCommandArguments.push(incomingCommandArguments);
+          return 0;
+        },
+      };
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments,
+        createRequestCommand: createUnexpectedCommand('create'),
+        deleteRequestCommand,
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
     it('should delegate upgrade command arguments to UpgradeProjectCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
@@ -102,6 +180,95 @@ describe('apiease-cli', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
+    it('should return one and write top-level usage output when the command is missing', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stderrChunks = [];
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: [],
+        createRequestCommand: createUnexpectedCommand('create'),
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Missing command.',
+        'Usage: apiease-cli <command> [options]',
+        '',
+        'Commands:',
+        '  create   Create a request from a definition file.',
+        '  read     Read a request by id.',
+        '  update   Update a request by id from a definition file.',
+        '  delete   Delete a request by id.',
+        '  init     Initialize a new APIEase project.',
+        '  upgrade  Upgrade an existing APIEase project.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write top-level usage output when the command is unknown', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stderrChunks = [];
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['publish'],
+        createRequestCommand: createUnexpectedCommand('create'),
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Unknown command: publish',
+        'Usage: apiease-cli <command> [options]',
+        '',
+        'Commands:',
+        '  create   Create a request from a definition file.',
+        '  read     Read a request by id.',
+        '  update   Update a request by id from a definition file.',
+        '  delete   Delete a request by id.',
+        '  init     Initialize a new APIEase project.',
+        '  upgrade  Upgrade an existing APIEase project.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write a generic human-readable failure when an unexpected runtime error is thrown', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stderrChunks = [];
+      const readRequestCommand = {
+        async run() {
+          throw new Error('Unexpected boom');
+        },
+      };
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['read'],
+        readRequestCommand,
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Command failed.',
+        'Error Code: UNEXPECTED_CLI_ERROR',
+        'Message: Unexpected boom',
+        'Status: 500',
+        '',
+      ].join('\n'));
     });
 
     it('should return one and write a structured json failure when an unexpected runtime error is thrown', async () => {
@@ -245,6 +412,14 @@ function createWritableStream(chunks) {
   return {
     write(chunk) {
       chunks.push(chunk);
+    },
+  };
+}
+
+function createUnexpectedCommand(commandName) {
+  return {
+    async run() {
+      throw new Error(`${commandName} command should not run`);
     },
   };
 }

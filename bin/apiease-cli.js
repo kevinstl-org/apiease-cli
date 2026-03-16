@@ -4,18 +4,39 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CreateRequestCommand } from '../src/cli/CreateRequestCommand.js';
+import { DeleteRequestCommand } from '../src/cli/DeleteRequestCommand.js';
 import { InitProjectCommand } from '../src/cli/InitProjectCommand.js';
+import { ReadRequestCommand } from '../src/cli/ReadRequestCommand.js';
 import { UpgradeProjectCommand } from '../src/cli/UpgradeProjectCommand.js';
+import { UpdateRequestCommand } from '../src/cli/UpdateRequestCommand.js';
 import { RequestDefinitionFileLoader } from '../src/cli/RequestDefinitionFileLoader.js';
 import { ApiEaseCreateRequestClient } from '../src/client/ApiEaseCreateRequestClient.js';
 import { ApiEaseCreateRequestContractValidator } from '../src/client/ApiEaseCreateRequestContractValidator.js';
+import { ApiEaseDeleteRequestClient } from '../src/client/ApiEaseDeleteRequestClient.js';
+import { ApiEaseReadRequestClient } from '../src/client/ApiEaseReadRequestClient.js';
+import { ApiEaseUpdateRequestClient } from '../src/client/ApiEaseUpdateRequestClient.js';
 
 const JSON_FLAG = '--json';
 const DEFAULT_FAILURE_STATUS = 500;
 const UNEXPECTED_CLI_ERROR = 'UNEXPECTED_CLI_ERROR';
+const CREATE_COMMAND_NAME = 'create';
+const DELETE_COMMAND_NAME = 'delete';
 const INIT_COMMAND_NAME = 'init';
+const READ_COMMAND_NAME = 'read';
 const UPGRADE_COMMAND_NAME = 'upgrade';
+const UPDATE_COMMAND_NAME = 'update';
 const CLI_VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+const USAGE_TEXT = [
+  'Usage: apiease-cli <command> [options]',
+  '',
+  'Commands:',
+  '  create   Create a request from a definition file.',
+  '  read     Read a request by id.',
+  '  update   Update a request by id from a definition file.',
+  '  delete   Delete a request by id.',
+  '  init     Initialize a new APIEase project.',
+  '  upgrade  Upgrade an existing APIEase project.',
+].join('\n');
 
 function buildCreateRequestCommand({ stdout = process.stdout, stderr = process.stderr } = {}) {
   const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
@@ -27,6 +48,41 @@ function buildCreateRequestCommand({ stdout = process.stdout, stderr = process.s
   return new CreateRequestCommand({
     requestDefinitionFileLoader,
     apiEaseCreateRequestClient,
+    stdout,
+    stderr,
+  });
+}
+
+function buildReadRequestCommand({ stdout = process.stdout, stderr = process.stderr } = {}) {
+  const apiEaseReadRequestClient = new ApiEaseReadRequestClient();
+
+  return new ReadRequestCommand({
+    apiEaseReadRequestClient,
+    stdout,
+    stderr,
+  });
+}
+
+function buildUpdateRequestCommand({ stdout = process.stdout, stderr = process.stderr } = {}) {
+  const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
+  const apiEaseUpdateRequestClient = new ApiEaseUpdateRequestClient({
+    apiEaseCreateRequestContractValidator,
+  });
+  const requestDefinitionFileLoader = new RequestDefinitionFileLoader();
+
+  return new UpdateRequestCommand({
+    requestDefinitionFileLoader,
+    apiEaseUpdateRequestClient,
+    stdout,
+    stderr,
+  });
+}
+
+function buildDeleteRequestCommand({ stdout = process.stdout, stderr = process.stderr } = {}) {
+  const apiEaseDeleteRequestClient = new ApiEaseDeleteRequestClient();
+
+  return new DeleteRequestCommand({
+    apiEaseDeleteRequestClient,
     stdout,
     stderr,
   });
@@ -50,26 +106,37 @@ function buildUpgradeProjectCommand({ stdout = process.stdout, stderr = process.
 async function runCli({
   commandArguments = process.argv.slice(2),
   createRequestCommand = buildCreateRequestCommand(),
+  readRequestCommand = buildReadRequestCommand(),
+  updateRequestCommand = buildUpdateRequestCommand(),
+  deleteRequestCommand = buildDeleteRequestCommand(),
   initProjectCommand = buildInitProjectCommand(),
   upgradeProjectCommand = buildUpgradeProjectCommand(),
   stdout = process.stdout,
   stderr = process.stderr,
 } = {}) {
+  const commandResult = resolveCommand({
+    commandArguments,
+    createRequestCommand,
+    readRequestCommand,
+    updateRequestCommand,
+    deleteRequestCommand,
+    initProjectCommand,
+    upgradeProjectCommand,
+  });
+  if (!commandResult.ok) {
+    stderr.write(`${commandResult.message}\n${USAGE_TEXT}\n`);
+    return 1;
+  }
+
   try {
-    const command = resolveCommand({
-      commandArguments,
-      createRequestCommand,
-      initProjectCommand,
-      upgradeProjectCommand,
-    });
-    return await command.run(commandArguments);
+    return await commandResult.command.run(commandArguments);
   } catch (error) {
     const failureResult = buildUnexpectedFailureResult(error);
     const output = buildFailureOutput({
       commandArguments,
       failureResult,
     });
-    writeFailureOutput({ stdout, stderr, commandArguments, output });
+    writeFailureOutput({ stderr, output });
     return 1;
   }
 }
@@ -77,18 +144,66 @@ async function runCli({
 function resolveCommand({
   commandArguments,
   createRequestCommand,
+  readRequestCommand,
+  updateRequestCommand,
+  deleteRequestCommand,
   initProjectCommand,
   upgradeProjectCommand,
 }) {
-  if (commandArguments[0] === INIT_COMMAND_NAME) {
-    return initProjectCommand;
+  const commandName = commandArguments[0];
+  if (!commandName) {
+    return {
+      ok: false,
+      message: 'Missing command.',
+    };
   }
 
-  if (commandArguments[0] === UPGRADE_COMMAND_NAME) {
-    return upgradeProjectCommand;
+  if (commandName === CREATE_COMMAND_NAME) {
+    return {
+      ok: true,
+      command: createRequestCommand,
+    };
   }
 
-  return createRequestCommand;
+  if (commandName === READ_COMMAND_NAME) {
+    return {
+      ok: true,
+      command: readRequestCommand,
+    };
+  }
+
+  if (commandName === UPDATE_COMMAND_NAME) {
+    return {
+      ok: true,
+      command: updateRequestCommand,
+    };
+  }
+
+  if (commandName === DELETE_COMMAND_NAME) {
+    return {
+      ok: true,
+      command: deleteRequestCommand,
+    };
+  }
+
+  if (commandName === INIT_COMMAND_NAME) {
+    return {
+      ok: true,
+      command: initProjectCommand,
+    };
+  }
+
+  if (commandName === UPGRADE_COMMAND_NAME) {
+    return {
+      ok: true,
+      command: upgradeProjectCommand,
+    };
+  }
+
+  return {
+    ok: false,
+    message: `Unknown command: ${commandName}`,
+  };
 }
 
 function buildUnexpectedFailureResult(error) {
@@ -111,7 +226,7 @@ function buildFailureOutput({ commandArguments, failureResult }) {
   }
 
   return [
-    'Request creation failed.',
+    'Command failed.',
     `Error Code: ${failureResult.errorCode}`,
     `Message: ${failureResult.message}`,
     `Status: ${failureResult.status}`,
@@ -119,14 +234,8 @@ function buildFailureOutput({ commandArguments, failureResult }) {
   ].join('\n');
 }
 
-function writeFailureOutput({ stdout, stderr, commandArguments, output }) {
-  if (commandArguments.includes(JSON_FLAG)) {
-    stderr.write(output);
-    return;
-  }
-
+function writeFailureOutput({ stderr, output }) {
   stderr.write(output);
-  stdout.write('');
 }
 
 async function runEntrypoint() {
