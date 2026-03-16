@@ -4,7 +4,7 @@
   "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
   "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "client",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:12Z",
-  "updatedAt": "2026-03-16T19:08:25Z",
+  "updatedAt": "2026-03-16T19:11:50Z",
   "context": [
     "The existing create client already targets the versioned request resource under api/v1/resources/requests.",
     "The public CRUD exercise in src/integration/ApiEasePublicCrudExercise.js already uses GET api/v1/resources/requests/:requestId for request reads."

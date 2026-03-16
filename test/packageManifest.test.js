@@ -30,6 +30,17 @@ describe('package manifest', () => {
       // Assert
       assert.equal(typeof packageRootModule.ApiEaseCreateRequestClient, 'function');
     });
+
+    it('should expose the canonical read-request client from the package root', async () => {
+      // Arrange
+      const packageRootUrl = pathToFileURL(path.join(projectDirectoryPath, 'src', 'index.js')).href;
+
+      // Act
+      const packageRootModule = await import(packageRootUrl);
+
+      // Assert
+      assert.equal(typeof packageRootModule.ApiEaseReadRequestClient, 'function');
+    });
   });
 
   describe('bin', () => {
