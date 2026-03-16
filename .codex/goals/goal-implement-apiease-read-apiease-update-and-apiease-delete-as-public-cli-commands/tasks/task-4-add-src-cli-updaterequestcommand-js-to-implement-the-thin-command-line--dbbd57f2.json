@@ -4,7 +4,7 @@
   "goalId": "goal-implement-apiease-read-apiease-update-and-apiease-delete-as-public-cli-commands",
   "goal": "Implement apiease read, apiease update, and apiease delete as public CLI commands.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "cli",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:16Z",
-  "updatedAt": "2026-03-16T19:08:26Z",
+  "updatedAt": "2026-03-16T19:23:48Z",
   "context": [
     "The existing RequestDefinitionFileLoader already provides the CLI-side request JSON loading behavior used by create.",
     "Update should follow the same API key resolution and output-mode conventions as the existing create command."
