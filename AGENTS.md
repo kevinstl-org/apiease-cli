@@ -94,6 +94,7 @@ describe('MyClass', () => {
 
 ## Commit & Pull Request Guidelines
 - Write imperative commit subjects under about 72 characters (for example `Add upgrade conflict reporting`).
+- Every implementation handoff must include a proposed commit message ending with a period, even if the user did not ask for one. Put it in the final completion summary as a dedicated line starting with "Commit message:".
 - PRs should include a concise summary, the test commands you ran, and any notable contract changes such as new flags, output changes, metadata changes, or template upgrade behavior.
 - Call out changes that affect the generated project template or `.apiease/project.json` semantics.
 
