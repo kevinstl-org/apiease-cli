@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:17Z",
-  "updatedAt": "2026-03-16T19:26:30Z",
+  "updatedAt": "2026-03-17T01:47:15Z",
   "context": [
     "Delete needs the same API key resolution precedence and output-mode support used by the other public request commands.",
     "Unlike create and update, delete should not depend on RequestDefinitionFileLoader."
@@ -42,6 +42,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-17T01:47:15Z"
   }
 }

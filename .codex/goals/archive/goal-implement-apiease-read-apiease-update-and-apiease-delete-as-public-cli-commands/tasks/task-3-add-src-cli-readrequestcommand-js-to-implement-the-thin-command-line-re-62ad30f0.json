@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:15Z",
-  "updatedAt": "2026-03-16T19:21:03Z",
+  "updatedAt": "2026-03-17T01:47:14Z",
   "context": [
     "Follow the existing CreateRequestCommand pattern for argument parsing, API key resolution, output selection, and exit codes.",
     "Read should resolve API keys through ApiEaseHomeConfigurationResolver when --api-key is omitted."
@@ -42,6 +42,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-17T01:47:14Z"
   }
 }

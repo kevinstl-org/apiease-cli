@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:13Z",
-  "updatedAt": "2026-03-16T19:15:19Z",
+  "updatedAt": "2026-03-17T01:47:14Z",
   "context": [
     "The public CRUD exercise already uses PUT api/v1/resources/requests/:requestId for request updates.",
     "Request update payloads should stay aligned with the existing request contract validation used for create."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-17T01:47:14Z"
   }
 }

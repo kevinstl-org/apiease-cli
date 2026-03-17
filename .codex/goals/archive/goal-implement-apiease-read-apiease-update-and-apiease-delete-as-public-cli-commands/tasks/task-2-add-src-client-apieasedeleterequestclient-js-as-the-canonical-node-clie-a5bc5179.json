@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:14Z",
-  "updatedAt": "2026-03-16T19:18:17Z",
+  "updatedAt": "2026-03-17T01:47:14Z",
   "context": [
     "The public CRUD exercise already uses DELETE api/v1/resources/requests/:requestId for request cleanup.",
     "Delete needs the same base URL normalization and authentication headers as the other request clients."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-17T01:47:14Z"
   }
 }

@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-16T19:04:16Z",
-  "updatedAt": "2026-03-16T19:23:48Z",
+  "updatedAt": "2026-03-17T01:47:15Z",
   "context": [
     "The existing RequestDefinitionFileLoader already provides the CLI-side request JSON loading behavior used by create.",
     "Update should follow the same API key resolution and output-mode conventions as the existing create command."
@@ -42,6 +42,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-17T01:47:15Z"
   }
 }
