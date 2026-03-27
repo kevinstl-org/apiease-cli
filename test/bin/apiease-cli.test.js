@@ -15,7 +15,7 @@ describe('apiease-cli', () => {
     it('should delegate command arguments to CreateRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['create', '--file', '/tmp/request.json'];
+      const commandArguments = ['create', 'request', '--file', '/tmp/request.json'];
       const receivedCommandArguments = [];
       const createRequestCommand = {
         async run(incomingCommandArguments) {
@@ -71,7 +71,7 @@ describe('apiease-cli', () => {
     it('should delegate read command arguments to ReadRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['read', '--request-id', 'request-123'];
+      const commandArguments = ['read', 'request', '--request-id', 'request-123'];
       const receivedCommandArguments = [];
       const readRequestCommand = {
         async run(incomingCommandArguments) {
@@ -97,7 +97,7 @@ describe('apiease-cli', () => {
     it('should delegate update command arguments to UpdateRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['update', '--request-id', 'request-123', '--file', '/tmp/request.json'];
+      const commandArguments = ['update', 'request', '--request-id', 'request-123', '--file', '/tmp/request.json'];
       const receivedCommandArguments = [];
       const updateRequestCommand = {
         async run(incomingCommandArguments) {
@@ -123,7 +123,7 @@ describe('apiease-cli', () => {
     it('should delegate delete command arguments to DeleteRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['delete', '--request-id', 'request-123'];
+      const commandArguments = ['delete', 'request', '--request-id', 'request-123'];
       const receivedCommandArguments = [];
       const deleteRequestCommand = {
         async run(incomingCommandArguments) {
@@ -202,12 +202,72 @@ describe('apiease-cli', () => {
         'Usage: apiease-cli <command> [options]',
         '',
         'Commands:',
-        '  create   Create a request from a definition file.',
-        '  read     Read a request by id.',
-        '  update   Update a request by id from a definition file.',
-        '  delete   Delete a request by id.',
-        '  init     Initialize a new APIEase project.',
-        '  upgrade  Upgrade an existing APIEase project.',
+        '  create <request|widget|variable>   Create a resource from a definition file.',
+        '  read <request|widget|variable>     Read a resource by identifier.',
+        '  update <request|widget|variable>   Update a resource by identifier from a definition file.',
+        '  delete <request|widget|variable>   Delete a resource by identifier.',
+        '  init                              Initialize a new APIEase project.',
+        '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write top-level usage output when a crud command is missing the resource argument', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stderrChunks = [];
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['create'],
+        createRequestCommand: createUnexpectedCommand('create'),
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Missing required resource argument for create.',
+        'Usage: apiease-cli <command> [options]',
+        '',
+        'Commands:',
+        '  create <request|widget|variable>   Create a resource from a definition file.',
+        '  read <request|widget|variable>     Read a resource by identifier.',
+        '  update <request|widget|variable>   Update a resource by identifier from a definition file.',
+        '  delete <request|widget|variable>   Delete a resource by identifier.',
+        '  init                              Initialize a new APIEase project.',
+        '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write top-level usage output when a crud command resource is unsupported', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stderrChunks = [];
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['read', 'thing'],
+        readRequestCommand: createUnexpectedCommand('read'),
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Unsupported resource for read: thing.',
+        'Usage: apiease-cli <command> [options]',
+        '',
+        'Commands:',
+        '  create <request|widget|variable>   Create a resource from a definition file.',
+        '  read <request|widget|variable>     Read a resource by identifier.',
+        '  update <request|widget|variable>   Update a resource by identifier from a definition file.',
+        '  delete <request|widget|variable>   Delete a resource by identifier.',
+        '  init                              Initialize a new APIEase project.',
+        '  upgrade                           Upgrade an existing APIEase project.',
         '',
       ].join('\n'));
     });
@@ -232,12 +292,12 @@ describe('apiease-cli', () => {
         'Usage: apiease-cli <command> [options]',
         '',
         'Commands:',
-        '  create   Create a request from a definition file.',
-        '  read     Read a request by id.',
-        '  update   Update a request by id from a definition file.',
-        '  delete   Delete a request by id.',
-        '  init     Initialize a new APIEase project.',
-        '  upgrade  Upgrade an existing APIEase project.',
+        '  create <request|widget|variable>   Create a resource from a definition file.',
+        '  read <request|widget|variable>     Read a resource by identifier.',
+        '  update <request|widget|variable>   Update a resource by identifier from a definition file.',
+        '  delete <request|widget|variable>   Delete a resource by identifier.',
+        '  init                              Initialize a new APIEase project.',
+        '  upgrade                           Upgrade an existing APIEase project.',
         '',
       ].join('\n'));
     });
@@ -254,7 +314,7 @@ describe('apiease-cli', () => {
 
       // Act
       const exitCode = await runCli({
-        commandArguments: ['read'],
+        commandArguments: ['read', 'request'],
         readRequestCommand,
         stdout: createWritableStream([]),
         stderr: createWritableStream(stderrChunks),
@@ -283,7 +343,7 @@ describe('apiease-cli', () => {
 
       // Act
       const exitCode = await runCli({
-        commandArguments: ['create', '--json'],
+        commandArguments: ['create', 'request', '--json'],
         createRequestCommand,
         stdout: createWritableStream([]),
         stderr: createWritableStream(stderrChunks),
