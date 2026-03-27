@@ -33,7 +33,7 @@ apiease init [project-name]
 apiease upgrade
 apiease upgrade [--check]
 apiease upgrade --dry-run
-apiease create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]
+apiease create --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 ```
 
 ## Initialize a Project
@@ -149,7 +149,7 @@ Current apply behavior:
 
 ## Configure Authentication
 
-When `--api-key` is omitted, `apiease` loads the active APIEase environment from your home directory and resolves `APIEASE_API_KEY` from the matching env file.
+When `--api-key`, `--base-url`, or `--shop-domain` are omitted, `apiease` loads the active APIEase environment from your home directory and resolves the matching values from the selected env file.
 
 Create the APIEase home directory:
 
@@ -163,27 +163,33 @@ For a local setup:
 
 ```bash
 printf 'local\n' > ~/.apiease/environment
-printf 'APIEASE_API_KEY=your-local-api-key\n' > ~/.apiease/.env.local
+printf 'APIEASE_API_KEY=your-local-api-key\nAPIEASE_BASE_URL=https://your-local-apiease-host.example.com\nAPIEASE_SHOP_DOMAIN=your-local-shop.myshopify.com\n' > ~/.apiease/.env.local
 ```
 
 For a staging setup:
 
 ```bash
 printf 'staging\n' > ~/.apiease/environment
-printf 'APIEASE_API_KEY=your-staging-api-key\n' > ~/.apiease/.env.staging
+printf 'APIEASE_API_KEY=your-staging-api-key\nAPIEASE_BASE_URL=https://your-staging-apiease-host.example.com\nAPIEASE_SHOP_DOMAIN=your-staging-shop.myshopify.com\n' > ~/.apiease/.env.staging
 ```
 
 For a production setup:
 
 ```bash
 printf 'production\n' > ~/.apiease/environment
-printf 'APIEASE_API_KEY=your-production-api-key\n' > ~/.apiease/.env.production
+printf 'APIEASE_API_KEY=your-production-api-key\nAPIEASE_BASE_URL=https://your-production-apiease-host.example.com\nAPIEASE_SHOP_DOMAIN=your-production-shop.myshopify.com\n' > ~/.apiease/.env.production
 ```
 
-Authentication precedence is:
+Configuration precedence is:
 
 1. `--api-key`
 2. `APIEASE_API_KEY` from `~/.apiease/.env.<environment>` selected by `~/.apiease/environment`
+
+1. `--base-url`
+2. `APIEASE_BASE_URL` from `~/.apiease/.env.<environment>` selected by `~/.apiease/environment`
+
+1. `--shop-domain`
+2. `APIEASE_SHOP_DOMAIN` from `~/.apiease/.env.<environment>` selected by `~/.apiease/environment`
 
 If the home configuration is missing, invalid, or unreadable, the CLI fails fast with a structured error. The most common fixes are:
 
@@ -191,6 +197,7 @@ If the home configuration is missing, invalid, or unreadable, the CLI fails fast
 - Set `~/.apiease/environment` to exactly `local`, `staging`, or `production`.
 - Create the matching `~/.apiease/.env.<environment>` file for the selected environment.
 - Add a non-empty `APIEASE_API_KEY` entry to that env file.
+- Add `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` when you want those values to be optional on each CLI command.
 
 ## Create a Request
 
@@ -223,6 +230,13 @@ apiease create \
   --shop-domain your-shop.myshopify.com
 ```
 
+If your active `~/.apiease/.env.<environment>` file already defines `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN`, you can omit those flags:
+
+```bash
+apiease create \
+  --file ./request-definition.json
+```
+
 To override the home configuration for a single command, pass `--api-key` explicitly:
 
 ```bash
@@ -251,4 +265,5 @@ Add `--json` when you want machine-readable output:
 - `init` currently copies the local development template from `../apiease-template`.
 - The request definition file must be valid JSON with an object as the root value.
 - `--api-key` is optional. When omitted, the CLI resolves `APIEASE_API_KEY` from `~/.apiease/.env.<environment>`.
+- `--base-url` and `--shop-domain` are optional when `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` are present in `~/.apiease/.env.<environment>`.
 - Default output is human-readable. `--json` emits the raw structured result.

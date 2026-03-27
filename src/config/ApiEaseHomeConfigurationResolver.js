@@ -24,11 +24,7 @@ class ApiEaseHomeConfigurationResolver {
 
     const apiKey = environmentVariablesResult.environmentVariables[APIEASE_API_KEY_NAME];
     if (!apiKey) {
-      return this.buildFailureResult(
-        'APIEASE_HOME_API_KEY_MISSING',
-        `APIEASE_API_KEY was not found in environment file: ${environmentVariablesResult.environmentVariablesFilePath}`,
-        environmentVariablesResult.environmentVariablesFilePath,
-      );
+      return this.buildApiKeyMissingFailureResult(environmentVariablesResult.environmentVariablesFilePath);
     }
 
     return {
@@ -201,6 +197,14 @@ class ApiEaseHomeConfigurationResolver {
       filePath,
       fieldErrors: [],
     };
+  }
+
+  buildApiKeyMissingFailureResult(environmentVariablesFilePath) {
+    return this.buildFailureResult(
+      'APIEASE_HOME_API_KEY_MISSING',
+      `APIEASE_API_KEY was not found in environment file: ${environmentVariablesFilePath}`,
+      environmentVariablesFilePath,
+    );
   }
 }
 

@@ -128,12 +128,14 @@ describe('CreateRequestCommand', () => {
           },
         },
         apiEaseHomeConfigurationResolver: {
-          async resolveConfiguration() {
+          async resolveEnvironmentVariables() {
             resolveConfigurationCallCount += 1;
             return {
               ok: true,
-              environment: 'staging',
-              apiKey: 'resolved-home-api-key',
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_API_KEY: 'resolved-home-api-key',
+              },
             };
           },
         },
@@ -233,6 +235,77 @@ describe('CreateRequestCommand', () => {
       ]);
     });
 
+    it('should resolve the base url and shop domain from home env variables when those arguments are omitted', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const requestDefinition = {
+        name: 'Create product',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/products',
+      };
+      const createRequestCalls = [];
+      let resolveEnvironmentVariablesCallCount = 0;
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest(options) {
+            createRequestCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              request: {
+                id: 'request-1',
+              },
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            resolveEnvironmentVariablesCallCount += 1;
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_BASE_URL: 'https://apiease.example.com/from-home',
+                APIEASE_SHOP_DOMAIN: 'home-shop.myshopify.com',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        '--file',
+        '/tmp/request.json',
+        '--api-key',
+        'explicit-api-key',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(resolveEnvironmentVariablesCallCount, 1);
+      assert.deepEqual(createRequestCalls, [
+        {
+          apiBaseUrl: 'https://apiease.example.com/from-home',
+          apiKey: 'explicit-api-key',
+          shopDomain: 'home-shop.myshopify.com',
+          request: requestDefinition,
+        },
+      ]);
+    });
+
     it('should write raw json output and return zero when the json flag is provided', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
@@ -310,6 +383,17 @@ describe('CreateRequestCommand', () => {
             };
           },
         },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_API_KEY: 'resolved-home-api-key',
+              },
+            };
+          },
+        },
         stdout: createWritableStream([]),
         stderr: createWritableStream(stderrChunks),
       });
@@ -330,6 +414,64 @@ describe('CreateRequestCommand', () => {
       assert.match(stderrChunks.join(''), /Usage:/);
       assert.match(stderrChunks.join(''), /--shop-domain/);
       assert.doesNotMatch(stderrChunks.join(''), /Missing required arguments: .*--api-key/);
+    });
+
+    it('should fail fast with usage output when base url and shop domain are omitted and not present in home env variables', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let createRequestCallCount = 0;
+      let resolveEnvironmentVariablesCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            resolveEnvironmentVariablesCallCount += 1;
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {},
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        '--file',
+        '/tmp/request.json',
+        '--api-key',
+        'explicit-api-key',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(resolveEnvironmentVariablesCallCount, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(createRequestCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --base-url, --shop-domain/);
+      assert.match(stderrChunks.join(''), /Usage:/);
     });
 
     it('should return non-zero and write raw json when the create client fails in json mode', async () => {
@@ -412,7 +554,7 @@ describe('CreateRequestCommand', () => {
           },
         },
         apiEaseHomeConfigurationResolver: {
-          async resolveConfiguration() {
+          async resolveEnvironmentVariables() {
             return {
               ok: false,
               errorCode: 'APIEASE_HOME_ENVIRONMENT_FILE_NOT_FOUND',

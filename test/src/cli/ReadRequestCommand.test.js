@@ -98,12 +98,14 @@ describe('ReadRequestCommand', () => {
           },
         },
         apiEaseHomeConfigurationResolver: {
-          async resolveConfiguration() {
+          async resolveEnvironmentVariables() {
             resolveConfigurationCallCount += 1;
             return {
               ok: true,
-              environment: 'staging',
-              apiKey: 'resolved-home-api-key',
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_API_KEY: 'resolved-home-api-key',
+              },
             };
           },
         },
@@ -135,6 +137,63 @@ describe('ReadRequestCommand', () => {
       ]);
     });
 
+    it('should resolve the base url and shop domain from home env variables when those arguments are omitted', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const readRequestCalls = [];
+      let resolveEnvironmentVariablesCallCount = 0;
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest(options) {
+            readRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                id: 'request-1',
+              },
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            resolveEnvironmentVariablesCallCount += 1;
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_BASE_URL: 'https://apiease.example.com/from-home',
+                APIEASE_SHOP_DOMAIN: 'home-shop.myshopify.com',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        '--request-id',
+        'request-1',
+        '--api-key',
+        'explicit-api-key',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(resolveEnvironmentVariablesCallCount, 1);
+      assert.deepEqual(readRequestCalls, [
+        {
+          apiBaseUrl: 'https://apiease.example.com/from-home',
+          apiKey: 'explicit-api-key',
+          shopDomain: 'home-shop.myshopify.com',
+          requestId: 'request-1',
+        },
+      ]);
+    });
+
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
       // Arrange
       const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
@@ -147,6 +206,17 @@ describe('ReadRequestCommand', () => {
             return {
               status: 200,
               ok: true,
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_API_KEY: 'resolved-home-api-key',
+              },
             };
           },
         },

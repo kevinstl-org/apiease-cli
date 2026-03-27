@@ -1,16 +1,18 @@
 import { ApiEaseCreateRequestClient } from '../client/ApiEaseCreateRequestClient.js';
 import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
+import { ApiEaseCommandConfigurationResolver } from './ApiEaseCommandConfigurationResolver.js';
 import { RequestDefinitionFileLoader } from './RequestDefinitionFileLoader.js';
 
 const JSON_FLAG = '--json';
-const REQUIRED_OPTION_NAMES = ['--file', '--base-url', '--shop-domain'];
+const COMMAND_REQUIRED_OPTION_NAMES = ['--file'];
+const CONFIGURATION_OPTION_NAMES = ['--base-url', '--shop-domain'];
 const USAGE_TEXT = [
-  'Usage: apiease-cli create --file <path> --base-url <url> --shop-domain <shop-domain> [--api-key <api-key>] [--json]',
+  'Usage: apiease-cli create --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
   '',
   'Options:',
   '  --file <path>                Path to the request definition JSON file.',
-  '  --base-url <url>            APIEase base URL.',
-  '  --shop-domain <shop-domain> Shopify shop domain.',
+  '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
+  '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
   '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
   '  --json                      Emit raw JSON output.',
 ].join('\n');
@@ -20,12 +22,15 @@ class CreateRequestCommand {
     requestDefinitionFileLoader = new RequestDefinitionFileLoader(),
     apiEaseCreateRequestClient = new ApiEaseCreateRequestClient(),
     apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
+    apiEaseCommandConfigurationResolver = new ApiEaseCommandConfigurationResolver({
+      apiEaseHomeConfigurationResolver,
+    }),
     stdout = process.stdout,
     stderr = process.stderr,
   } = {}) {
     this.requestDefinitionFileLoader = requestDefinitionFileLoader;
     this.apiEaseCreateRequestClient = apiEaseCreateRequestClient;
-    this.apiEaseHomeConfigurationResolver = apiEaseHomeConfigurationResolver;
+    this.apiEaseCommandConfigurationResolver = apiEaseCommandConfigurationResolver;
     this.stdout = stdout;
     this.stderr = stderr;
   }
@@ -37,9 +42,9 @@ class CreateRequestCommand {
       return 1;
     }
 
-    const apiKeyResult = await this.resolveApiKey(parseResult.apiKey);
-    if (!apiKeyResult.ok) {
-      this.writeResult(apiKeyResult, parseResult.json);
+    const configurationResult = await this.resolveCommandConfiguration(parseResult);
+    if (!configurationResult.ok) {
+      this.writeConfigurationFailure(configurationResult, parseResult.json);
       return 1;
     }
 
@@ -50,9 +55,9 @@ class CreateRequestCommand {
     }
 
     const result = await this.apiEaseCreateRequestClient.createRequest({
-      apiBaseUrl: parseResult.apiBaseUrl,
-      apiKey: apiKeyResult.apiKey,
-      shopDomain: parseResult.shopDomain,
+      apiBaseUrl: configurationResult.apiBaseUrl,
+      apiKey: configurationResult.apiKey,
+      shopDomain: configurationResult.shopDomain,
       request: requestDefinitionResult.requestDefinition,
     });
     this.writeResult(result, parseResult.json);
@@ -65,7 +70,7 @@ class CreateRequestCommand {
       return this.buildParseFailure('Unsupported command. Only "create" is supported.');
     }
 
-    const missingRequiredOptionNames = this.buildMissingRequiredOptionNames(optionMap);
+    const missingRequiredOptionNames = this.buildMissingRequiredOptionNames(optionMap, COMMAND_REQUIRED_OPTION_NAMES);
     if (missingRequiredOptionNames.length > 0) {
       return this.buildParseFailure(`Missing required arguments: ${missingRequiredOptionNames.join(', ')}`);
     }
@@ -80,15 +85,25 @@ class CreateRequestCommand {
     };
   }
 
-  async resolveApiKey(explicitApiKey) {
-    if (explicitApiKey) {
-      return {
-        ok: true,
-        apiKey: explicitApiKey,
-      };
+  async resolveCommandConfiguration(parseResult) {
+    const configurationResult = await this.apiEaseCommandConfigurationResolver.resolveConfiguration({
+      explicitApiBaseUrl: parseResult.apiBaseUrl,
+      explicitApiKey: parseResult.apiKey,
+      explicitShopDomain: parseResult.shopDomain,
+    });
+    if (!configurationResult.ok) {
+      return configurationResult;
     }
 
-    return await this.apiEaseHomeConfigurationResolver.resolveConfiguration();
+    const missingRequiredOptionNames = this.buildMissingRequiredOptionNames({
+      '--base-url': configurationResult.apiBaseUrl,
+      '--shop-domain': configurationResult.shopDomain,
+    }, CONFIGURATION_OPTION_NAMES);
+    if (missingRequiredOptionNames.length > 0) {
+      return this.buildParseFailure(`Missing required arguments: ${missingRequiredOptionNames.join(', ')}`);
+    }
+
+    return configurationResult;
   }
 
   buildOptionMap(commandArguments) {
@@ -108,8 +123,8 @@ class CreateRequestCommand {
     return optionMap;
   }
 
-  buildMissingRequiredOptionNames(optionMap) {
-    return REQUIRED_OPTION_NAMES.filter((requiredOptionName) => !optionMap[requiredOptionName]);
+  buildMissingRequiredOptionNames(optionMap, requiredOptionNames) {
+    return requiredOptionNames.filter((requiredOptionName) => !optionMap[requiredOptionName]);
   }
 
   buildParseFailure(message) {
@@ -121,6 +136,15 @@ class CreateRequestCommand {
 
   writeUsageFailure(message) {
     this.stderr.write(`${message}\n${USAGE_TEXT}\n`);
+  }
+
+  writeConfigurationFailure(result, json) {
+    if (result.errorCode) {
+      this.writeResult(result, json);
+      return;
+    }
+
+    this.writeUsageFailure(result.message);
   }
 
   writeResult(result, json) {

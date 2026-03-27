@@ -128,12 +128,14 @@ describe('UpdateRequestCommand', () => {
           },
         },
         apiEaseHomeConfigurationResolver: {
-          async resolveConfiguration() {
+          async resolveEnvironmentVariables() {
             resolveConfigurationCallCount += 1;
             return {
               ok: true,
-              environment: 'staging',
-              apiKey: 'resolved-home-api-key',
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_API_KEY: 'resolved-home-api-key',
+              },
             };
           },
         },
@@ -168,6 +170,80 @@ describe('UpdateRequestCommand', () => {
       ]);
     });
 
+    it('should resolve the base url and shop domain from home env variables when those arguments are omitted', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const requestDefinition = {
+        name: 'Update product',
+        type: 'http',
+        method: 'PUT',
+        address: 'https://api.example.com/products/1',
+      };
+      const updateRequestCalls = [];
+      let resolveEnvironmentVariablesCallCount = 0;
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest(options) {
+            updateRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                id: 'request-1',
+              },
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            resolveEnvironmentVariablesCallCount += 1;
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_BASE_URL: 'https://apiease.example.com/from-home',
+                APIEASE_SHOP_DOMAIN: 'home-shop.myshopify.com',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        '--request-id',
+        'request-1',
+        '--file',
+        '/tmp/request.json',
+        '--api-key',
+        'explicit-api-key',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(resolveEnvironmentVariablesCallCount, 1);
+      assert.deepEqual(updateRequestCalls, [
+        {
+          apiBaseUrl: 'https://apiease.example.com/from-home',
+          apiKey: 'explicit-api-key',
+          shopDomain: 'home-shop.myshopify.com',
+          requestId: 'request-1',
+          request: requestDefinition,
+        },
+      ]);
+    });
+
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
@@ -180,6 +256,17 @@ describe('UpdateRequestCommand', () => {
             return {
               status: 200,
               ok: true,
+            };
+          },
+        },
+        apiEaseHomeConfigurationResolver: {
+          async resolveEnvironmentVariables() {
+            return {
+              ok: true,
+              environmentVariablesFilePath: '/tmp/home/.apiease/.env.staging',
+              environmentVariables: {
+                APIEASE_API_KEY: 'resolved-home-api-key',
+              },
             };
           },
         },
