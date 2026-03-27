@@ -65,6 +65,7 @@ describe('UpdateRequestCommand', () => {
       // Act
       const exitCode = await updateRequestCommand.run([
         'update',
+        'request',
         '--request-id',
         'request-1',
         '--file',
@@ -92,6 +93,84 @@ describe('UpdateRequestCommand', () => {
       assert.equal(resolveConfigurationCallCount, 0);
       assert.match(stdoutChunks.join(''), /Request updated successfully\./);
       assert.match(stdoutChunks.join(''), /Request ID: request-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should load the variable file, call the shared resource update client, and return zero for human-readable success output', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const variableDefinition = {
+        name: 'sale_banner',
+        value: 'Spring sale',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const loadRequestDefinitionCalls = [];
+      const updateResourceCalls = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition(filePath) {
+            loadRequestDefinitionCalls.push(filePath);
+            return {
+              ok: true,
+              requestDefinition: variableDefinition,
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            throw new Error('request update client should not be used for variable resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource(options) {
+            updateResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              variable: {
+                ...variableDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'variable',
+        '--variable-name',
+        'sale_banner',
+        '--file',
+        '/tmp/variable.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/variable.json']);
+      assert.deepEqual(updateResourceCalls, [
+        {
+          resourceName: 'variable',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'sale_banner',
+          resource: variableDefinition,
+          failureErrorCode: 'VARIABLE_UPDATE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Variable updated successfully\./);
+      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -146,6 +225,7 @@ describe('UpdateRequestCommand', () => {
       // Act
       const exitCode = await updateRequestCommand.run([
         'update',
+        'request',
         '--request-id',
         'request-1',
         '--file',
@@ -222,6 +302,7 @@ describe('UpdateRequestCommand', () => {
       // Act
       const exitCode = await updateRequestCommand.run([
         'update',
+        'request',
         '--request-id',
         'request-1',
         '--file',
@@ -242,6 +323,126 @@ describe('UpdateRequestCommand', () => {
           request: requestDefinition,
         },
       ]);
+    });
+
+    it('should fail fast with usage output when the resource argument is unsupported', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let updateRequestCallCount = 0;
+      let updateResourceCallCount = 0;
+      const stderrChunks = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            updateRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource() {
+            updateResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'product',
+        '--file',
+        '/tmp/product.json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(updateRequestCallCount, 0);
+      assert.equal(updateResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli update <request\|widget\|variable>/);
+    });
+
+    it('should fail fast with usage output when the selected resource identifier flag is missing', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let updateRequestCallCount = 0;
+      let updateResourceCallCount = 0;
+      const stderrChunks = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            updateRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource() {
+            updateResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'widget',
+        '--request-id',
+        'request-1',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(updateRequestCallCount, 0);
+      assert.equal(updateResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli update widget --widget-id <id> --file <path>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
@@ -277,6 +478,7 @@ describe('UpdateRequestCommand', () => {
       // Act
       const exitCode = await updateRequestCommand.run([
         'update',
+        'request',
         '--request-id',
         'request-1',
         '--file',
@@ -327,6 +529,7 @@ describe('UpdateRequestCommand', () => {
       // Act
       const exitCode = await updateRequestCommand.run([
         'update',
+        'request',
         '--request-id',
         'missing-request',
         '--file',

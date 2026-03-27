@@ -1,27 +1,21 @@
 import { ApiEaseCreateRequestClient } from '../client/ApiEaseCreateRequestClient.js';
+import { ApiEaseCrudResourceClient } from '../client/ApiEaseCrudResourceClient.js';
 import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
+import { CrudResourceDefinitionCollection } from '../crud/CrudResourceDefinitionCollection.js';
 import { ApiEaseCommandConfigurationResolver } from './ApiEaseCommandConfigurationResolver.js';
 import { RequestDefinitionFileLoader } from './RequestDefinitionFileLoader.js';
 
 const JSON_FLAG = '--json';
 const COMMAND_REQUIRED_OPTION_NAMES = ['--file'];
 const CONFIGURATION_OPTION_NAMES = ['--base-url', '--shop-domain'];
-const USAGE_TEXT = [
-  'Usage: apiease-cli create --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
-  '',
-  'Options:',
-  '  --file <path>                Path to the request definition JSON file.',
-  '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
-  '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
-  '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
-  '  --json                      Emit raw JSON output.',
-].join('\n');
 
 class CreateRequestCommand {
   constructor({
     requestDefinitionFileLoader = new RequestDefinitionFileLoader(),
     apiEaseCreateRequestClient = new ApiEaseCreateRequestClient(),
+    apiEaseCrudResourceClient = new ApiEaseCrudResourceClient(),
     apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
+    crudResourceDefinitionCollection = new CrudResourceDefinitionCollection(),
     apiEaseCommandConfigurationResolver = new ApiEaseCommandConfigurationResolver({
       apiEaseHomeConfigurationResolver,
     }),
@@ -30,6 +24,8 @@ class CreateRequestCommand {
   } = {}) {
     this.requestDefinitionFileLoader = requestDefinitionFileLoader;
     this.apiEaseCreateRequestClient = apiEaseCreateRequestClient;
+    this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
+    this.crudResourceDefinitionCollection = crudResourceDefinitionCollection;
     this.apiEaseCommandConfigurationResolver = apiEaseCommandConfigurationResolver;
     this.stdout = stdout;
     this.stderr = stderr;
@@ -38,45 +34,58 @@ class CreateRequestCommand {
   async run(commandArguments = []) {
     const parseResult = this.parseCommandArguments(commandArguments);
     if (!parseResult.ok) {
-      this.writeUsageFailure(parseResult.message);
+      this.writeUsageFailure(parseResult);
       return 1;
     }
 
     const configurationResult = await this.resolveCommandConfiguration(parseResult);
     if (!configurationResult.ok) {
-      this.writeConfigurationFailure(configurationResult, parseResult.json);
+      this.writeConfigurationFailure(configurationResult, parseResult);
       return 1;
     }
 
     const requestDefinitionResult = await this.requestDefinitionFileLoader.loadRequestDefinition(parseResult.filePath);
     if (!requestDefinitionResult.ok) {
-      this.writeResult(requestDefinitionResult, parseResult.json);
+      this.writeResult(requestDefinitionResult, parseResult);
       return 1;
     }
 
-    const result = await this.apiEaseCreateRequestClient.createRequest({
-      apiBaseUrl: configurationResult.apiBaseUrl,
-      apiKey: configurationResult.apiKey,
-      shopDomain: configurationResult.shopDomain,
-      request: requestDefinitionResult.requestDefinition,
+    const result = await this.createResource({
+      parseResult,
+      configurationResult,
+      resourceDefinition: requestDefinitionResult.requestDefinition,
     });
-    this.writeResult(result, parseResult.json);
+    this.writeResult(result, parseResult);
     return result.ok ? 0 : 1;
   }
 
   parseCommandArguments(commandArguments) {
-    const optionMap = this.buildOptionMap(commandArguments);
     if (commandArguments[0] !== 'create') {
       return this.buildParseFailure('Unsupported command. Only "create" is supported.');
     }
 
+    const resourceName = commandArguments[1];
+    if (!resourceName || resourceName.startsWith('--')) {
+      return this.buildParseFailure('Missing required resource argument.');
+    }
+
+    const crudResourceDefinition = this.crudResourceDefinitionCollection.findResourceDefinition(resourceName);
+    if (!crudResourceDefinition) {
+      return this.buildParseFailure(`Unsupported resource: ${resourceName}.`);
+    }
+
+    const optionMap = this.buildOptionMap(commandArguments, 2);
     const missingRequiredOptionNames = this.buildMissingRequiredOptionNames(optionMap, COMMAND_REQUIRED_OPTION_NAMES);
     if (missingRequiredOptionNames.length > 0) {
-      return this.buildParseFailure(`Missing required arguments: ${missingRequiredOptionNames.join(', ')}`);
+      return this.buildParseFailure(
+        `Missing required arguments: ${missingRequiredOptionNames.join(', ')}`,
+        crudResourceDefinition,
+      );
     }
 
     return {
       ok: true,
+      crudResourceDefinition,
       filePath: optionMap['--file'],
       apiBaseUrl: optionMap['--base-url'],
       shopDomain: optionMap['--shop-domain'],
@@ -100,16 +109,39 @@ class CreateRequestCommand {
       '--shop-domain': configurationResult.shopDomain,
     }, CONFIGURATION_OPTION_NAMES);
     if (missingRequiredOptionNames.length > 0) {
-      return this.buildParseFailure(`Missing required arguments: ${missingRequiredOptionNames.join(', ')}`);
+      return this.buildParseFailure(
+        `Missing required arguments: ${missingRequiredOptionNames.join(', ')}`,
+        parseResult.crudResourceDefinition,
+      );
     }
 
     return configurationResult;
   }
 
-  buildOptionMap(commandArguments) {
+  async createResource({ parseResult, configurationResult, resourceDefinition }) {
+    if (parseResult.crudResourceDefinition.resourceName === 'request') {
+      return await this.apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: configurationResult.apiBaseUrl,
+        apiKey: configurationResult.apiKey,
+        shopDomain: configurationResult.shopDomain,
+        request: resourceDefinition,
+      });
+    }
+
+    return await this.apiEaseCrudResourceClient.createResource({
+      resourceName: parseResult.crudResourceDefinition.resourceName,
+      apiBaseUrl: configurationResult.apiBaseUrl,
+      apiKey: configurationResult.apiKey,
+      shopDomain: configurationResult.shopDomain,
+      resource: resourceDefinition,
+      failureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'CREATE'),
+    });
+  }
+
+  buildOptionMap(commandArguments, startIndex) {
     const optionMap = {};
 
-    for (let index = 1; index < commandArguments.length; index += 1) {
+    for (let index = startIndex; index < commandArguments.length; index += 1) {
       const commandArgument = commandArguments[index];
       if (commandArgument === JSON_FLAG) {
         optionMap[JSON_FLAG] = true;
@@ -127,28 +159,64 @@ class CreateRequestCommand {
     return requiredOptionNames.filter((requiredOptionName) => !optionMap[requiredOptionName]);
   }
 
-  buildParseFailure(message) {
+  buildParseFailure(message, crudResourceDefinition = null) {
     return {
       ok: false,
       message,
+      usageText: this.buildUsageText(crudResourceDefinition),
     };
   }
 
-  writeUsageFailure(message) {
-    this.stderr.write(`${message}\n${USAGE_TEXT}\n`);
+  buildUsageText(crudResourceDefinition) {
+    const resourceToken = crudResourceDefinition?.resourceName || this.buildSupportedResourceToken();
+    const fileDescription = crudResourceDefinition
+      ? `Path to the ${crudResourceDefinition.resourceName} definition JSON file.`
+      : 'Path to the resource definition JSON file.';
+    const usageLines = [
+      `Usage: apiease-cli create ${resourceToken} --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
+      '',
+      'Options:',
+    ];
+
+    if (!crudResourceDefinition) {
+      usageLines.push(`  ${this.buildSupportedResourceToken()}      Supported resource name.`);
+    }
+
+    usageLines.push(
+      `  --file <path>                 ${fileDescription}`,
+      '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
+      '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
+      '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
+      '  --json                      Emit raw JSON output.',
+    );
+
+    return usageLines.join('\n');
   }
 
-  writeConfigurationFailure(result, json) {
+  buildSupportedResourceToken() {
+    return `<${this.crudResourceDefinitionCollection.listSupportedResourceNames().join('|')}>`;
+  }
+
+  buildFailureErrorCode(crudResourceDefinition, operationName) {
+    return `${crudResourceDefinition.resourceName.toUpperCase()}_${operationName}_FAILED`;
+  }
+
+  writeUsageFailure(parseFailure) {
+    this.stderr.write(`${parseFailure.message}\n${parseFailure.usageText}\n`);
+  }
+
+  writeConfigurationFailure(result, parseResult) {
     if (result.errorCode) {
-      this.writeResult(result, json);
+      this.writeResult(result, parseResult);
       return;
     }
 
-    this.writeUsageFailure(result.message);
+    this.writeUsageFailure(result);
   }
 
-  writeResult(result, json) {
-    const output = json ? this.buildJsonOutput(result) : this.buildHumanReadableOutput(result);
+  writeResult(result, parseResult) {
+    const json = parseResult?.json === true;
+    const output = json ? this.buildJsonOutput(result) : this.buildHumanReadableOutput(result, parseResult);
     const stream = json || result.ok ? this.stdout : this.stderr;
     stream.write(output);
   }
@@ -157,15 +225,21 @@ class CreateRequestCommand {
     return `${JSON.stringify(result, null, 2)}\n`;
   }
 
-  buildHumanReadableOutput(result) {
-    return result.ok ? this.buildHumanReadableSuccessOutput(result) : this.buildHumanReadableFailureOutput(result);
+  buildHumanReadableOutput(result, parseResult) {
+    return result.ok
+      ? this.buildHumanReadableSuccessOutput(result, parseResult)
+      : this.buildHumanReadableFailureOutput(result, parseResult);
   }
 
-  buildHumanReadableSuccessOutput(result) {
-    const outputLines = ['Request created successfully.'];
+  buildHumanReadableSuccessOutput(result, parseResult) {
+    const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
+    const outputLines = [`${crudResourceDefinition.humanReadableLabel} created successfully.`];
+    const resourceIdentifier = result?.[crudResourceDefinition.responsePayloadKey]?.[crudResourceDefinition.identifierPropertyName];
 
-    if (result.request?.id) {
-      outputLines.push(`Request ID: ${result.request.id}`);
+    if (resourceIdentifier) {
+      outputLines.push(
+        `${crudResourceDefinition.humanReadableLabel} ${this.buildIdentifierLabel(crudResourceDefinition)}: ${resourceIdentifier}`,
+      );
     }
 
     if (result.shopDomain) {
@@ -175,9 +249,10 @@ class CreateRequestCommand {
     return `${outputLines.join('\n')}\n`;
   }
 
-  buildHumanReadableFailureOutput(result) {
+  buildHumanReadableFailureOutput(result, parseResult) {
+    const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
     const outputLines = [
-      'Request creation failed.',
+      `${crudResourceDefinition.humanReadableLabel} creation failed.`,
       `Error Code: ${result.errorCode}`,
       `Message: ${result.message}`,
     ];
@@ -191,6 +266,24 @@ class CreateRequestCommand {
     }
 
     return `${outputLines.join('\n')}\n`;
+  }
+
+  readResultResourceDefinition(result, parseResult) {
+    if (parseResult?.crudResourceDefinition) {
+      return parseResult.crudResourceDefinition;
+    }
+
+    return this.crudResourceDefinitionCollection.listSupportedResourceNames()
+      .map((resourceName) => this.crudResourceDefinitionCollection.readResourceDefinition(resourceName))
+      .find((crudResourceDefinition) => result?.[crudResourceDefinition.responsePayloadKey]) || this.crudResourceDefinitionCollection.readResourceDefinition('request');
+  }
+
+  buildIdentifierLabel(crudResourceDefinition) {
+    if (crudResourceDefinition.identifierValueName === 'id') {
+      return 'ID';
+    }
+
+    return `${crudResourceDefinition.identifierValueName.charAt(0).toUpperCase()}${crudResourceDefinition.identifierValueName.slice(1)}`;
   }
 }
 

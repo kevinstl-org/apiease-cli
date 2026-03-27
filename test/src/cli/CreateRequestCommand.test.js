@@ -68,6 +68,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -92,6 +93,81 @@ describe('CreateRequestCommand', () => {
       assert.equal(resolveConfigurationCallCount, 0);
       assert.match(stdoutChunks.join(''), /Request created successfully\./);
       assert.match(stdoutChunks.join(''), /request-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should load the widget file, call the shared resource create client, and return zero for human-readable success output', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const widgetDefinition = {
+        widgetId: 'widget-1',
+        title: 'Promo banner',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const loadRequestDefinitionCalls = [];
+      const createResourceCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition(filePath) {
+            loadRequestDefinitionCalls.push(filePath);
+            return {
+              ok: true,
+              requestDefinition: widgetDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            throw new Error('request create client should not be used for widget resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            createResourceCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              widget: {
+                ...widgetDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/widget.json']);
+      assert.deepEqual(createResourceCalls, [
+        {
+          resourceName: 'widget',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resource: widgetDefinition,
+          failureErrorCode: 'WIDGET_CREATE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Widget created successfully\./);
+      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -146,6 +222,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -212,6 +289,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -287,6 +365,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--api-key',
@@ -342,6 +421,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -356,6 +436,117 @@ describe('CreateRequestCommand', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+    });
+
+    it('should fail fast with usage output when the resource argument is missing', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let createRequestCallCount = 0;
+      let createResourceCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource() {
+            createResourceCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        '--file',
+        '/tmp/request.json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(createRequestCallCount, 0);
+      assert.equal(createResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required resource argument\./);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli create <request\|widget\|variable>/);
+    });
+
+    it('should fail fast with usage output when the resource argument is unsupported', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let createRequestCallCount = 0;
+      let createResourceCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource() {
+            createResourceCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'product',
+        '--file',
+        '/tmp/product.json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(createRequestCallCount, 0);
+      assert.equal(createResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli create <request\|widget\|variable>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
@@ -401,6 +592,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -459,6 +651,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--api-key',
@@ -512,6 +705,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -570,6 +764,7 @@ describe('CreateRequestCommand', () => {
       // Act
       const exitCode = await createRequestCommand.run([
         'create',
+        'request',
         '--file',
         '/tmp/request.json',
         '--base-url',
