@@ -120,14 +120,39 @@ describe('ApiEaseHomeConfigurationResolver', () => {
       });
     });
 
-    it('should return a structured error when the environment declaration value is invalid', async () => {
+    it('should resolve a custom environment name from the matching home env file', async () => {
       // Arrange
       const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
-      const homeDirectoryPath = path.join(temporaryDirectoryPath, 'invalid-environment-home');
+      const { apiEaseHomeConfigurationResolver, environmentDeclarationFilePath, environmentVariablesFilePath } =
+        await createResolverWithHomeConfiguration({
+          temporaryDirectoryPath,
+          resolverHomeName: 'success-custom-environment-home',
+          environment: 'qa',
+          apiKey: 'qa-api-key',
+          ApiEaseHomeConfigurationResolver,
+        });
+
+      // Act
+      const result = await apiEaseHomeConfigurationResolver.resolveConfiguration();
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: true,
+        environment: 'qa',
+        apiKey: 'qa-api-key',
+        environmentDeclarationFilePath,
+        environmentVariablesFilePath,
+      });
+    });
+
+    it('should return a structured error when the environment declaration value is blank', async () => {
+      // Arrange
+      const { ApiEaseHomeConfigurationResolver } = await import(apiEaseHomeConfigurationResolverModuleUrl);
+      const homeDirectoryPath = path.join(temporaryDirectoryPath, 'blank-environment-home');
       const apieaseDirectoryPath = path.join(homeDirectoryPath, '.apiease');
       const environmentDeclarationFilePath = path.join(apieaseDirectoryPath, 'environment');
       await fs.mkdir(apieaseDirectoryPath, { recursive: true });
-      await fs.writeFile(environmentDeclarationFilePath, 'qa\n', 'utf8');
+      await fs.writeFile(environmentDeclarationFilePath, '\n', 'utf8');
       const apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver({
         homeDirectoryPath,
       });
@@ -139,7 +164,7 @@ describe('ApiEaseHomeConfigurationResolver', () => {
       assert.deepEqual(result, {
         ok: false,
         errorCode: 'APIEASE_HOME_ENVIRONMENT_INVALID',
-        message: `APIEASE home environment must be one of local, staging, production: ${environmentDeclarationFilePath}`,
+        message: `APIEASE home environment must not be blank: ${environmentDeclarationFilePath}`,
         filePath: environmentDeclarationFilePath,
         fieldErrors: [],
       });

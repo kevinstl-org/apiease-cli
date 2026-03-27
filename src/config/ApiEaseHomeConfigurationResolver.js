@@ -6,7 +6,6 @@ const APIEASE_DIRECTORY_NAME = '.apiease';
 const APIEASE_API_KEY_NAME = 'APIEASE_API_KEY';
 const APIEASE_BASE_URL_NAME = 'APIEASE_BASE_URL';
 const APIEASE_SHOP_DOMAIN_NAME = 'APIEASE_SHOP_DOMAIN';
-const SUPPORTED_ENVIRONMENTS = ['local', 'staging', 'production'];
 
 class ApiEaseHomeConfigurationResolver {
   constructor({
@@ -87,10 +86,10 @@ class ApiEaseHomeConfigurationResolver {
     }
 
     const environment = fileContentResult.fileContent.trim();
-    if (!SUPPORTED_ENVIRONMENTS.includes(environment)) {
+    if (!environment) {
       return this.buildFailureResult(
         'APIEASE_HOME_ENVIRONMENT_INVALID',
-        `APIEASE home environment must be one of ${SUPPORTED_ENVIRONMENTS.join(', ')}: ${environmentDeclarationFilePath}`,
+        `APIEASE home environment must not be blank: ${environmentDeclarationFilePath}`,
         environmentDeclarationFilePath,
       );
     }
