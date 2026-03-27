@@ -52,6 +52,7 @@ describe('ReadRequestCommand', () => {
       // Act
       const exitCode = await readRequestCommand.run([
         'read',
+        'request',
         '--request-id',
         'request-1',
         '--base-url',
@@ -76,6 +77,67 @@ describe('ReadRequestCommand', () => {
       assert.match(stdoutChunks.join(''), /Request read successfully\./);
       assert.match(stdoutChunks.join(''), /Request ID: request-1/);
       assert.match(stdoutChunks.join(''), /Name: Create product/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should call the shared resource read client for variable resources and return zero for human-readable success output', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const readResourceCalls = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            throw new Error('request read client should not be used for variable resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource(options) {
+            readResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              variable: {
+                name: 'sale_banner',
+                value: 'Spring sale',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'variable',
+        '--variable-name',
+        'sale_banner',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(readResourceCalls, [
+        {
+          resourceName: 'variable',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'sale_banner',
+          failureErrorCode: 'VARIABLE_READ_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Variable read successfully\./);
+      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -116,6 +178,7 @@ describe('ReadRequestCommand', () => {
       // Act
       const exitCode = await readRequestCommand.run([
         'read',
+        'request',
         '--request-id',
         'request-1',
         '--base-url',
@@ -175,6 +238,7 @@ describe('ReadRequestCommand', () => {
       // Act
       const exitCode = await readRequestCommand.run([
         'read',
+        'request',
         '--request-id',
         'request-1',
         '--api-key',
@@ -192,6 +256,146 @@ describe('ReadRequestCommand', () => {
           requestId: 'request-1',
         },
       ]);
+    });
+
+    it('should fail fast with usage output when the resource argument is missing', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      let readRequestCallCount = 0;
+      let readResourceCallCount = 0;
+      const stderrChunks = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            readRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource() {
+            readResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        '--request-id',
+        'request-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(readRequestCallCount, 0);
+      assert.equal(readResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required resource argument\./);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli read <request\|widget\|variable>/);
+    });
+
+    it('should fail fast with usage output when the resource argument is unsupported', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      let readRequestCallCount = 0;
+      let readResourceCallCount = 0;
+      const stderrChunks = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            readRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource() {
+            readResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'product',
+        '--request-id',
+        'request-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(readRequestCallCount, 0);
+      assert.equal(readResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli read <request\|widget\|variable>/);
+    });
+
+    it('should fail fast with usage output when the selected resource identifier flag is missing', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      let readRequestCallCount = 0;
+      let readResourceCallCount = 0;
+      const stderrChunks = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            readRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource() {
+            readResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'widget',
+        '--request-id',
+        'request-1',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(readRequestCallCount, 0);
+      assert.equal(readResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli read widget --widget-id <id>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
@@ -227,6 +431,7 @@ describe('ReadRequestCommand', () => {
       // Act
       const exitCode = await readRequestCommand.run([
         'read',
+        'request',
         '--request-id',
         'request-1',
         '--base-url',
@@ -265,6 +470,7 @@ describe('ReadRequestCommand', () => {
       // Act
       const exitCode = await readRequestCommand.run([
         'read',
+        'request',
         '--request-id',
         'missing-request',
         '--base-url',

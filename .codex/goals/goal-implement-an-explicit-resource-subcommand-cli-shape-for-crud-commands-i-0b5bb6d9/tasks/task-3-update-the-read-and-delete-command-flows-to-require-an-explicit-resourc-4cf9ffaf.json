@@ -4,7 +4,7 @@
   "goalId": "goal-implement-an-explicit-resource-subcommand-cli-shape-for-crud-commands-i-0b5bb6d9",
   "goal": "Implement an explicit resource-subcommand CLI shape for CRUD commands in .\n\nScope:\n- Change the CLI so CRUD commands require a resource name immediately after the verb.\n- Supported resources for this change are , , and .\n- Examples of the intended command shape:\n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n\nRequirements:\n- Do not preserve backward compatibility for bare commands like  or .\n- Update top-level command routing, per-command argument parsing, usage/help text, and README examples/documentation to reflect the new required resource argument.\n- Keep the CLI verb-first. Do not switch to a resource-first structure like .\n- Align command naming, help text, exit behavior, and tests with the new explicit resource requirement.\n- Add or update tests for both valid and invalid command shapes.\n- Follow the repository’s required TDD workflow, including the full test suite run before edits and again after completion.",
   "project": "apiease-cli",
-  "status": "approved",
+  "status": "complete",
   "priority": "high",
   "tags": [
     "cli",
@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:12Z",
-  "updatedAt": "2026-03-27T17:31:15Z",
+  "updatedAt": "2026-03-27T17:55:36Z",
   "context": [
     "The current read and delete commands only support `--request-id` and assume request-only wording throughout their usage and output.",
     "The new CLI contract needs explicit read/delete support for request, widget, and variable resources."

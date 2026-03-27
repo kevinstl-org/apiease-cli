@@ -1,25 +1,18 @@
 import { ApiEaseDeleteRequestClient } from '../client/ApiEaseDeleteRequestClient.js';
+import { ApiEaseCrudResourceClient } from '../client/ApiEaseCrudResourceClient.js';
 import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
+import { CrudResourceDefinitionCollection } from '../crud/CrudResourceDefinitionCollection.js';
 import { ApiEaseCommandConfigurationResolver } from './ApiEaseCommandConfigurationResolver.js';
 
 const JSON_FLAG = '--json';
-const COMMAND_REQUIRED_OPTION_NAMES = ['--request-id'];
 const CONFIGURATION_OPTION_NAMES = ['--base-url', '--shop-domain'];
-const USAGE_TEXT = [
-  'Usage: apiease-cli delete --request-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
-  '',
-  'Options:',
-  '  --request-id <id>           APIEase request identifier.',
-  '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
-  '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
-  '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
-  '  --json                      Emit raw JSON output.',
-].join('\n');
 
 class DeleteRequestCommand {
   constructor({
     apiEaseDeleteRequestClient = new ApiEaseDeleteRequestClient(),
+    apiEaseCrudResourceClient = new ApiEaseCrudResourceClient(),
     apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
+    crudResourceDefinitionCollection = new CrudResourceDefinitionCollection(),
     apiEaseCommandConfigurationResolver = new ApiEaseCommandConfigurationResolver({
       apiEaseHomeConfigurationResolver,
     }),
@@ -27,6 +20,8 @@ class DeleteRequestCommand {
     stderr = process.stderr,
   } = {}) {
     this.apiEaseDeleteRequestClient = apiEaseDeleteRequestClient;
+    this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
+    this.crudResourceDefinitionCollection = crudResourceDefinitionCollection;
     this.apiEaseCommandConfigurationResolver = apiEaseCommandConfigurationResolver;
     this.stdout = stdout;
     this.stderr = stderr;
@@ -35,40 +30,51 @@ class DeleteRequestCommand {
   async run(commandArguments = []) {
     const parseResult = this.parseCommandArguments(commandArguments);
     if (!parseResult.ok) {
-      this.writeUsageFailure(parseResult.message);
+      this.writeUsageFailure(parseResult);
       return 1;
     }
 
     const configurationResult = await this.resolveCommandConfiguration(parseResult);
     if (!configurationResult.ok) {
-      this.writeConfigurationFailure(configurationResult, parseResult.json);
+      this.writeConfigurationFailure(configurationResult, parseResult);
       return 1;
     }
 
-    const result = await this.apiEaseDeleteRequestClient.deleteRequest({
-      apiBaseUrl: configurationResult.apiBaseUrl,
-      apiKey: configurationResult.apiKey,
-      shopDomain: configurationResult.shopDomain,
-      requestId: parseResult.requestId,
-    });
-    this.writeResult(result, parseResult.json);
+    const result = await this.deleteResource({ parseResult, configurationResult });
+    this.writeResult(result, parseResult);
     return result.ok ? 0 : 1;
   }
 
   parseCommandArguments(commandArguments) {
-    const optionMap = this.buildOptionMap(commandArguments);
     if (commandArguments[0] !== 'delete') {
       return this.buildParseFailure('Unsupported command. Only "delete" is supported.');
     }
 
-    const missingRequiredOptionNames = this.buildMissingRequiredOptionNames(optionMap, COMMAND_REQUIRED_OPTION_NAMES);
+    const resourceName = commandArguments[1];
+    if (!resourceName || resourceName.startsWith('--')) {
+      return this.buildParseFailure('Missing required resource argument.');
+    }
+
+    const crudResourceDefinition = this.crudResourceDefinitionCollection.findResourceDefinition(resourceName);
+    if (!crudResourceDefinition) {
+      return this.buildParseFailure(`Unsupported resource: ${resourceName}.`);
+    }
+
+    const optionMap = this.buildOptionMap(commandArguments, 2);
+    const missingRequiredOptionNames = this.buildMissingRequiredOptionNames(optionMap, [
+      crudResourceDefinition.identifierOptionName,
+    ]);
     if (missingRequiredOptionNames.length > 0) {
-      return this.buildParseFailure(`Missing required arguments: ${missingRequiredOptionNames.join(', ')}`);
+      return this.buildParseFailure(
+        `Missing required arguments: ${missingRequiredOptionNames.join(', ')}`,
+        crudResourceDefinition,
+      );
     }
 
     return {
       ok: true,
-      requestId: optionMap['--request-id'],
+      crudResourceDefinition,
+      resourceIdentifier: optionMap[crudResourceDefinition.identifierOptionName],
       apiBaseUrl: optionMap['--base-url'],
       shopDomain: optionMap['--shop-domain'],
       apiKey: optionMap['--api-key'],
@@ -91,16 +97,39 @@ class DeleteRequestCommand {
       '--shop-domain': configurationResult.shopDomain,
     }, CONFIGURATION_OPTION_NAMES);
     if (missingRequiredOptionNames.length > 0) {
-      return this.buildParseFailure(`Missing required arguments: ${missingRequiredOptionNames.join(', ')}`);
+      return this.buildParseFailure(
+        `Missing required arguments: ${missingRequiredOptionNames.join(', ')}`,
+        parseResult.crudResourceDefinition,
+      );
     }
 
     return configurationResult;
   }
 
-  buildOptionMap(commandArguments) {
+  async deleteResource({ parseResult, configurationResult }) {
+    if (parseResult.crudResourceDefinition.resourceName === 'request') {
+      return await this.apiEaseDeleteRequestClient.deleteRequest({
+        apiBaseUrl: configurationResult.apiBaseUrl,
+        apiKey: configurationResult.apiKey,
+        shopDomain: configurationResult.shopDomain,
+        requestId: parseResult.resourceIdentifier,
+      });
+    }
+
+    return await this.apiEaseCrudResourceClient.deleteResource({
+      resourceName: parseResult.crudResourceDefinition.resourceName,
+      apiBaseUrl: configurationResult.apiBaseUrl,
+      apiKey: configurationResult.apiKey,
+      shopDomain: configurationResult.shopDomain,
+      resourceIdentifier: parseResult.resourceIdentifier,
+      failureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'DELETE'),
+    });
+  }
+
+  buildOptionMap(commandArguments, startIndex) {
     const optionMap = {};
 
-    for (let index = 1; index < commandArguments.length; index += 1) {
+    for (let index = startIndex; index < commandArguments.length; index += 1) {
       const commandArgument = commandArguments[index];
       if (commandArgument === JSON_FLAG) {
         optionMap[JSON_FLAG] = true;
@@ -118,28 +147,71 @@ class DeleteRequestCommand {
     return requiredOptionNames.filter((requiredOptionName) => !optionMap[requiredOptionName]);
   }
 
-  buildParseFailure(message) {
+  buildParseFailure(message, crudResourceDefinition = null) {
     return {
       ok: false,
       message,
+      usageText: this.buildUsageText(crudResourceDefinition),
     };
   }
 
-  writeUsageFailure(message) {
-    this.stderr.write(`${message}\n${USAGE_TEXT}\n`);
+  buildUsageText(crudResourceDefinition) {
+    const resourceToken = crudResourceDefinition?.resourceName || this.buildSupportedResourceToken();
+    const identifierOptionName = crudResourceDefinition?.identifierOptionName || '<resource-identifier>';
+    const identifierValueName = crudResourceDefinition?.identifierValueName || 'value';
+    const usageLines = [
+      `Usage: apiease-cli delete ${resourceToken} ${identifierOptionName} <${identifierValueName}> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
+      '',
+      'Options:',
+    ];
+
+    if (!crudResourceDefinition) {
+      usageLines.push(`  ${this.buildSupportedResourceToken()}      Supported resource name.`);
+      for (const resourceName of this.crudResourceDefinitionCollection.listSupportedResourceNames()) {
+        usageLines.push(this.buildIdentifierOptionLine(this.crudResourceDefinitionCollection.readResourceDefinition(resourceName)));
+      }
+    } else {
+      usageLines.push(this.buildIdentifierOptionLine(crudResourceDefinition));
+    }
+
+    usageLines.push(
+      '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
+      '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
+      '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
+      '  --json                      Emit raw JSON output.',
+    );
+
+    return usageLines.join('\n');
   }
 
-  writeConfigurationFailure(result, json) {
+  buildSupportedResourceToken() {
+    return `<${this.crudResourceDefinitionCollection.listSupportedResourceNames().join('|')}>`;
+  }
+
+  buildIdentifierOptionLine(crudResourceDefinition) {
+    return `  ${crudResourceDefinition.identifierOptionName} <${crudResourceDefinition.identifierValueName}>           APIEase ${crudResourceDefinition.resourceName} ${crudResourceDefinition.identifierValueName}.`;
+  }
+
+  buildFailureErrorCode(crudResourceDefinition, operationName) {
+    return `${crudResourceDefinition.resourceName.toUpperCase()}_${operationName}_FAILED`;
+  }
+
+  writeUsageFailure(parseFailure) {
+    this.stderr.write(`${parseFailure.message}\n${parseFailure.usageText}\n`);
+  }
+
+  writeConfigurationFailure(result, parseResult) {
     if (result.errorCode) {
-      this.writeResult(result, json);
+      this.writeResult(result, parseResult);
       return;
     }
 
-    this.writeUsageFailure(result.message);
+    this.writeUsageFailure(result);
   }
 
-  writeResult(result, json) {
-    const output = json ? this.buildJsonOutput(result) : this.buildHumanReadableOutput(result);
+  writeResult(result, parseResult) {
+    const json = parseResult?.json === true;
+    const output = json ? this.buildJsonOutput(result) : this.buildHumanReadableOutput(result, parseResult);
     const stream = json || result.ok ? this.stdout : this.stderr;
     stream.write(output);
   }
@@ -148,15 +220,21 @@ class DeleteRequestCommand {
     return `${JSON.stringify(result, null, 2)}\n`;
   }
 
-  buildHumanReadableOutput(result) {
-    return result.ok ? this.buildHumanReadableSuccessOutput(result) : this.buildHumanReadableFailureOutput(result);
+  buildHumanReadableOutput(result, parseResult) {
+    return result.ok
+      ? this.buildHumanReadableSuccessOutput(result, parseResult)
+      : this.buildHumanReadableFailureOutput(result, parseResult);
   }
 
-  buildHumanReadableSuccessOutput(result) {
-    const outputLines = ['Request deleted successfully.'];
+  buildHumanReadableSuccessOutput(result, parseResult) {
+    const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
+    const outputLines = [`${crudResourceDefinition.humanReadableLabel} deleted successfully.`];
+    const resourceIdentifier = result?.[crudResourceDefinition.responsePayloadKey]?.[crudResourceDefinition.identifierPropertyName];
 
-    if (result.request?.id) {
-      outputLines.push(`Request ID: ${result.request.id}`);
+    if (resourceIdentifier) {
+      outputLines.push(
+        `${crudResourceDefinition.humanReadableLabel} ${this.buildIdentifierLabel(crudResourceDefinition)}: ${resourceIdentifier}`,
+      );
     }
 
     if (result.shopDomain) {
@@ -166,9 +244,10 @@ class DeleteRequestCommand {
     return `${outputLines.join('\n')}\n`;
   }
 
-  buildHumanReadableFailureOutput(result) {
+  buildHumanReadableFailureOutput(result, parseResult) {
+    const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
     const outputLines = [
-      'Request delete failed.',
+      `${crudResourceDefinition.humanReadableLabel} delete failed.`,
       `Error Code: ${result.errorCode}`,
       `Message: ${result.message}`,
     ];
@@ -182,6 +261,24 @@ class DeleteRequestCommand {
     }
 
     return `${outputLines.join('\n')}\n`;
+  }
+
+  readResultResourceDefinition(result, parseResult) {
+    if (parseResult?.crudResourceDefinition) {
+      return parseResult.crudResourceDefinition;
+    }
+
+    return this.crudResourceDefinitionCollection.listSupportedResourceNames()
+      .map((resourceName) => this.crudResourceDefinitionCollection.readResourceDefinition(resourceName))
+      .find((crudResourceDefinition) => result?.[crudResourceDefinition.responsePayloadKey]) || this.crudResourceDefinitionCollection.readResourceDefinition('request');
+  }
+
+  buildIdentifierLabel(crudResourceDefinition) {
+    if (crudResourceDefinition.identifierValueName === 'id') {
+      return 'ID';
+    }
+
+    return `${crudResourceDefinition.identifierValueName.charAt(0).toUpperCase()}${crudResourceDefinition.identifierValueName.slice(1)}`;
   }
 }
 
