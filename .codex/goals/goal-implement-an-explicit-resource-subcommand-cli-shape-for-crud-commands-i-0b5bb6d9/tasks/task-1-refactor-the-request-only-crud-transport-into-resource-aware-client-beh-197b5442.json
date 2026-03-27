@@ -1,0 +1,46 @@
+{
+  "id": "task-1-refactor-the-request-only-crud-transport-into-resource-aware-client-beh-197b5442",
+  "text": "Refactor the request-only CRUD transport into resource-aware client behavior that can operate on `requests`, `widgets`, and `variables`.",
+  "goalId": "goal-implement-an-explicit-resource-subcommand-cli-shape-for-crud-commands-i-0b5bb6d9",
+  "goal": "Implement an explicit resource-subcommand CLI shape for CRUD commands in .\n\nScope:\n- Change the CLI so CRUD commands require a resource name immediately after the verb.\n- Supported resources for this change are , , and .\n- Examples of the intended command shape:\n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n\nRequirements:\n- Do not preserve backward compatibility for bare commands like  or .\n- Update top-level command routing, per-command argument parsing, usage/help text, and README examples/documentation to reflect the new required resource argument.\n- Keep the CLI verb-first. Do not switch to a resource-first structure like .\n- Align command naming, help text, exit behavior, and tests with the new explicit resource requirement.\n- Add or update tests for both valid and invalid command shapes.\n- Follow the repository’s required TDD workflow, including the full test suite run before edits and again after completion.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "client",
+    "crud",
+    "api"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-27T17:23:12Z",
+  "updatedAt": "2026-03-27T17:31:15Z",
+  "context": [
+    "The four existing request client classes share nearly identical auth-header, JSON parsing, and non-JSON failure handling.",
+    "Widget and variable CRUD currently exist only inside the integration exercise and are not exposed through reusable CLI-facing clients."
+  ],
+  "steps": [
+    "Generalize or replace the request-only transport logic so create, read, update, and delete can target any supported resource path.",
+    "Preserve the existing authentication headers, response parsing, and structured failure-result shape.",
+    "Keep request payload validation on request create/update flows, without forcing request-specific validation onto widget or variable payloads."
+  ],
+  "constraints": [
+    "Use the versioned resource endpoints under `/api/v1/resources/<resource>`.",
+    "Keep transport logic in `src/client/` rather than pushing it into the bin entrypoint or command classes."
+  ],
+  "acceptanceCriteria": [
+    "Create, read, update, and delete can call the `requests`, `widgets`, and `variables` endpoints through reusable client-side logic.",
+    "Request create/update still validate request payloads before making network calls.",
+    "Resource-aware client behavior preserves the current JSON and non-JSON error handling contract."
+  ],
+  "sequenceIndex": 1,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

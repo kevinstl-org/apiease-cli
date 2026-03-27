@@ -1,0 +1,46 @@
+{
+  "id": "task-5-bring-the-cli-contract-tests-in-line-with-the-explicit-verb-resource-co-90d1a69f",
+  "text": "Bring the CLI contract tests in line with the explicit verb-resource command shape across all supported CRUD resources.",
+  "goalId": "goal-implement-an-explicit-resource-subcommand-cli-shape-for-crud-commands-i-0b5bb6d9",
+  "goal": "Implement an explicit resource-subcommand CLI shape for CRUD commands in .\n\nScope:\n- Change the CLI so CRUD commands require a resource name immediately after the verb.\n- Supported resources for this change are , , and .\n- Examples of the intended command shape:\n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n\nRequirements:\n- Do not preserve backward compatibility for bare commands like  or .\n- Update top-level command routing, per-command argument parsing, usage/help text, and README examples/documentation to reflect the new required resource argument.\n- Keep the CLI verb-first. Do not switch to a resource-first structure like .\n- Align command naming, help text, exit behavior, and tests with the new explicit resource requirement.\n- Add or update tests for both valid and invalid command shapes.\n- Follow the repository’s required TDD workflow, including the full test suite run before edits and again after completion.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "tests",
+    "cli",
+    "contract"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-27T17:23:13Z",
+  "updatedAt": "2026-03-27T17:31:15Z",
+  "context": [
+    "Existing bin-level and per-command tests assume bare request verbs and request-only help text.",
+    "The goal explicitly requires updated coverage for both valid and invalid command shapes."
+  ],
+  "steps": [
+    "Update top-level routing tests to assert verb-plus-resource dispatch and usage failures for invalid shapes.",
+    "Update per-command parsing and output tests so they cover the three supported resources and their resource-specific identifier flags.",
+    "Add explicit negative coverage for old bare CRUD forms, missing resources, and unsupported resource names."
+  ],
+  "constraints": [
+    "Keep assertions aligned with exact help text, exit behavior, and canonical flag names.",
+    "Cover both valid and invalid command shapes, not just happy paths."
+  ],
+  "acceptanceCriteria": [
+    "Automated CLI coverage proves that `create`, `read`, `update`, and `delete` route and parse correctly for `request`, `widget`, and `variable`.",
+    "Automated CLI coverage proves that bare forms like `apiease create` and `apiease read` now fail with usage-level errors.",
+    "Automated CLI coverage proves that unsupported resource tokens are rejected before any client call occurs."
+  ],
+  "sequenceIndex": 5,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

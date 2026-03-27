@@ -1,0 +1,46 @@
+{
+  "id": "task-6-update-readme-md-to-document-the-required-request-widget-variable-subco-283dc99c",
+  "text": "Update `README.md` to document the required `request|widget|variable` subcommands for CRUD operations.",
+  "goalId": "goal-implement-an-explicit-resource-subcommand-cli-shape-for-crud-commands-i-0b5bb6d9",
+  "goal": "Implement an explicit resource-subcommand CLI shape for CRUD commands in .\n\nScope:\n- Change the CLI so CRUD commands require a resource name immediately after the verb.\n- Supported resources for this change are , , and .\n- Examples of the intended command shape:\n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n\nRequirements:\n- Do not preserve backward compatibility for bare commands like  or .\n- Update top-level command routing, per-command argument parsing, usage/help text, and README examples/documentation to reflect the new required resource argument.\n- Keep the CLI verb-first. Do not switch to a resource-first structure like .\n- Align command naming, help text, exit behavior, and tests with the new explicit resource requirement.\n- Add or update tests for both valid and invalid command shapes.\n- Follow the repository’s required TDD workflow, including the full test suite run before edits and again after completion.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "medium",
+  "tags": [
+    "docs",
+    "readme",
+    "cli"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-27T17:23:13Z",
+  "updatedAt": "2026-03-27T17:31:15Z",
+  "context": [
+    "The current README documents only request creation and still implies bare CRUD verbs.",
+    "The goal explicitly requires README examples and documentation to reflect the new required resource argument."
+  ],
+  "steps": [
+    "Refresh the command reference so CRUD entries show the explicit resource position after the verb.",
+    "Replace obsolete bare-command examples with verb-first resource-subcommand examples.",
+    "Ensure the README includes examples for the supported resources without changing the separate `init` and `upgrade` sections beyond what the new top-level help requires."
+  ],
+  "constraints": [
+    "Keep examples aligned with the public command name `apiease`.",
+    "Do not document or imply a resource-first syntax."
+  ],
+  "acceptanceCriteria": [
+    "README command examples show CRUD usage as `apiease <verb> <resource> ...`.",
+    "README no longer implies that bare commands like `apiease create` or `apiease read` are valid.",
+    "README reflects the supported resource tokens `request`, `widget`, and `variable` consistently with the CLI help text."
+  ],
+  "sequenceIndex": 6,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}

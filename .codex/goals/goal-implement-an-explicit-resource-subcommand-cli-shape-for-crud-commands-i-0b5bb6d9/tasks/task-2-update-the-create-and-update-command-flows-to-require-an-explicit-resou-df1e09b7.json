@@ -1,0 +1,47 @@
+{
+  "id": "task-2-update-the-create-and-update-command-flows-to-require-an-explicit-resou-df1e09b7",
+  "text": "Update the create and update command flows to require an explicit resource token and to use resource-aware file loading, identifier parsing, help text, and output.",
+  "goalId": "goal-implement-an-explicit-resource-subcommand-cli-shape-for-crud-commands-i-0b5bb6d9",
+  "goal": "Implement an explicit resource-subcommand CLI shape for CRUD commands in .\n\nScope:\n- Change the CLI so CRUD commands require a resource name immediately after the verb.\n- Supported resources for this change are , , and .\n- Examples of the intended command shape:\n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n  - \n\nRequirements:\n- Do not preserve backward compatibility for bare commands like  or .\n- Update top-level command routing, per-command argument parsing, usage/help text, and README examples/documentation to reflect the new required resource argument.\n- Keep the CLI verb-first. Do not switch to a resource-first structure like .\n- Align command naming, help text, exit behavior, and tests with the new explicit resource requirement.\n- Add or update tests for both valid and invalid command shapes.\n- Follow the repository’s required TDD workflow, including the full test suite run before edits and again after completion.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "cli",
+    "create",
+    "update"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-27T17:23:12Z",
+  "updatedAt": "2026-03-27T17:31:15Z",
+  "context": [
+    "The current create and update commands assume request-only verbs and hardcode request-specific usage text and success messages.",
+    "Body-based CRUD operations for all three supported resources will still need a JSON file input."
+  ],
+  "steps": [
+    "Parse `create <resource>` and `update <resource>` instead of bare `create` and `update`.",
+    "Keep `--file` as the required body input for create and update across the supported resources.",
+    "Require the resource-specific identifier flag on update, using `--request-id`, `--widget-id`, and `--variable-name`.",
+    "Emit resource-specific usage/help text and human-readable output while preserving raw JSON mode."
+  ],
+  "constraints": [
+    "Do not accept bare commands like `apiease create` or `apiease update`.",
+    "Do not switch to a resource-first structure."
+  ],
+  "acceptanceCriteria": [
+    "Valid command shapes include `create request`, `create widget`, `create variable`, `update request`, `update widget`, and `update variable`.",
+    "Update requires the correct identifier flag for the selected resource before any API call is attempted.",
+    "Missing or unsupported resources fail with usage-level output instead of falling through to request-specific behavior."
+  ],
+  "sequenceIndex": 2,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
