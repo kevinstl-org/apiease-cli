@@ -1,7 +1,6 @@
 const CUSTOMER_OWNED_TEMPLATE_PATHS = new Set([
   'CUSTOM_AGENT_GUIDANCE.md',
   'CUSTOM_README.md',
-  'README.md',
 ]);
 
 class TemplateProjectOwnershipPolicy {

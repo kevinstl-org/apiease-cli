@@ -17,14 +17,12 @@ describe('TemplateProjectOwnershipPolicy', () => {
       const templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy();
 
       // Act
-      const isReadmeManaged = templateProjectOwnershipPolicy.isTemplateManagedPath('README.md');
       const isCustomReadmeManaged = templateProjectOwnershipPolicy.isTemplateManagedPath('CUSTOM_README.md');
       const isCustomAgentGuidanceManaged = templateProjectOwnershipPolicy.isTemplateManagedPath(
         'CUSTOM_AGENT_GUIDANCE.md',
       );
 
       // Assert
-      assert.equal(isReadmeManaged, false);
       assert.equal(isCustomReadmeManaged, false);
       assert.equal(isCustomAgentGuidanceManaged, false);
     });
@@ -35,12 +33,14 @@ describe('TemplateProjectOwnershipPolicy', () => {
       const templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy();
 
       // Act
+      const isReadmeManaged = templateProjectOwnershipPolicy.isTemplateManagedPath('README.md');
       const isConfigManaged = templateProjectOwnershipPolicy.isTemplateManagedPath('apiease.config.js');
       const isWidgetManaged = templateProjectOwnershipPolicy.isTemplateManagedPath(
         'resources/widgets/example-widget.json',
       );
 
       // Assert
+      assert.equal(isReadmeManaged, true);
       assert.equal(isConfigManaged, true);
       assert.equal(isWidgetManaged, true);
     });

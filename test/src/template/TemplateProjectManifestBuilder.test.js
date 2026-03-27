@@ -39,9 +39,11 @@ describe('TemplateProjectManifestBuilder', () => {
       // Assert
       assert.deepEqual(Object.keys(manifest).sort(), [
         '.gitignore',
+        'README.md',
         'resources/requests/example.json',
       ]);
       assert.equal(typeof manifest['.gitignore'], 'string');
+      assert.equal(typeof manifest['README.md'], 'string');
       assert.equal(typeof manifest['resources/requests/example.json'], 'string');
     });
   });

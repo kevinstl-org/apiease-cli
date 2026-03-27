@@ -260,9 +260,9 @@ describe('UpgradeProjectCommand', () => {
                 template: {
                   displayTemplateSource: '../apiease-template',
                   manifest: {
+                    'README.md': 'readme-old-hash',
                     'updated.txt': 'old-hash',
                     'removed.txt': 'remove-hash',
-                    'README.md': 'customer-owned-readme-hash',
                   },
                   publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
                   sourceType: 'localDevelopment',
@@ -301,6 +301,7 @@ describe('UpgradeProjectCommand', () => {
             return {
               'updated.txt': 'new-hash',
               'added.txt': 'added-hash',
+              'README.md': 'readme-new-hash',
             };
           },
         },
@@ -314,7 +315,7 @@ describe('UpgradeProjectCommand', () => {
               addPaths: ['added.txt'],
               removePaths: ['removed.txt'],
               skipPaths: [],
-              updatePaths: ['updated.txt'],
+              updatePaths: ['README.md', 'updated.txt'],
             };
           },
         },
@@ -344,9 +345,11 @@ describe('UpgradeProjectCommand', () => {
             currentProjectDirectoryPath: '/tmp/project',
             currentTemplateManifest: {
               'added.txt': 'added-hash',
+              'README.md': 'readme-new-hash',
               'updated.txt': 'new-hash',
             },
             storedTemplateManifest: {
+              'README.md': 'readme-old-hash',
               'removed.txt': 'remove-hash',
               'updated.txt': 'old-hash',
             },
@@ -360,7 +363,7 @@ describe('UpgradeProjectCommand', () => {
               addPaths: ['added.txt'],
               removePaths: ['removed.txt'],
               skipPaths: [],
-              updatePaths: ['updated.txt'],
+              updatePaths: ['README.md', 'updated.txt'],
             },
           },
           kind: 'apply',
@@ -375,6 +378,7 @@ describe('UpgradeProjectCommand', () => {
               displayTemplateSource: '../apiease-template',
               manifest: {
                 'added.txt': 'added-hash',
+                'README.md': 'readme-new-hash',
                 'updated.txt': 'new-hash',
               },
               publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
@@ -398,6 +402,7 @@ describe('UpgradeProjectCommand', () => {
           'added.txt',
           '',
           'Updated:',
+          'README.md',
           'updated.txt',
           '',
           'Removed:',

@@ -93,6 +93,7 @@ describe('InitProjectCommand', () => {
       });
       assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), [
         '.env',
+        'README.md',
         'package.json',
         'src/index.js',
       ]);
@@ -300,7 +301,7 @@ describe('InitProjectCommand', () => {
       );
       assert.equal(projectMetadata.cliVersion, '0.1.0-test');
       assert.equal(projectMetadata.template.displayTemplateSource, '../apiease-template');
-      assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), ['.gitignore']);
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest).sort(), ['.gitignore', 'README.md']);
       for (const manifestHash of Object.values(projectMetadata.template.manifest)) {
         assert.equal(typeof manifestHash, 'string');
         assert.notEqual(manifestHash.length, 0);

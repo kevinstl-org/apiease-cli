@@ -69,7 +69,8 @@ Current development behavior:
 - The template is copied directly into `./my-project`.
 - The CLI writes project metadata to `.apiease/project.json`.
 - The metadata includes the template git version and a manifest of template-managed file hashes.
-- Customer-owned template files are copied but excluded from the stored manifest: `README.md`, `CUSTOM_README.md`, and `CUSTOM_AGENT_GUIDANCE.md`.
+- Customer-owned template files are copied but excluded from the stored manifest: `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md`.
+- The template-owned `README.md` is tracked in the manifest and can be refreshed by `apiease upgrade` like other managed template files.
 - The template `.git` and `.idea` directories are excluded.
 - `node_modules` is excluded if it exists in the template.
 - Existing files and folders are allowed when they do not collide with template paths.
@@ -136,7 +137,8 @@ Current dry-run behavior:
 
 - It compares the stored template manifest from `.apiease/project.json` to the current template manifest.
 - It classifies template-managed file changes as `Add`, `Update`, `Remove`, or `Skip conflict`.
-- It ignores customer-owned template files: `README.md`, `CUSTOM_README.md`, and `CUSTOM_AGENT_GUIDANCE.md`.
+- It ignores customer-owned template files: `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md`.
+- It treats the template `README.md` as template-managed, so README updates can be added, updated, removed, or skipped as conflicts.
 - It never writes project files.
 - It exits `1` when there are planned changes or conflicts to review.
 
