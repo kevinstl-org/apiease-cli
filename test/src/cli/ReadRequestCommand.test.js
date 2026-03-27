@@ -141,6 +141,67 @@ describe('ReadRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should call the shared resource read client for widget resources and return zero for human-readable success output', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const readResourceCalls = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            throw new Error('request read client should not be used for widget resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource(options) {
+            readResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              widget: {
+                widgetId: 'widget-1',
+                title: 'Promo banner',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'widget',
+        '--widget-id',
+        'widget-1',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(readResourceCalls, [
+        {
+          resourceName: 'widget',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'widget-1',
+          failureErrorCode: 'WIDGET_READ_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Widget read successfully\./);
+      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);

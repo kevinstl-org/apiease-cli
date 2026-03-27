@@ -135,6 +135,66 @@ describe('DeleteRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should call the shared resource delete client for variable resources and return zero for human-readable success output', async () => {
+      // Arrange
+      const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const deleteResourceCalls = [];
+      const deleteRequestCommand = new DeleteRequestCommand({
+        apiEaseDeleteRequestClient: {
+          async deleteRequest() {
+            throw new Error('request delete client should not be used for variable resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async deleteResource(options) {
+            deleteResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              variable: {
+                name: 'sale_banner',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await deleteRequestCommand.run([
+        'delete',
+        'variable',
+        '--variable-name',
+        'sale_banner',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(deleteResourceCalls, [
+        {
+          resourceName: 'variable',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'sale_banner',
+          failureErrorCode: 'VARIABLE_DELETE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Variable deleted successfully\./);
+      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);

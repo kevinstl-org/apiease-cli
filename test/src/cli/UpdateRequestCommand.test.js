@@ -174,6 +174,84 @@ describe('UpdateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should load the widget file, call the shared resource update client, and return zero for human-readable success output', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const widgetDefinition = {
+        widgetId: 'widget-1',
+        title: 'Promo banner',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const loadRequestDefinitionCalls = [];
+      const updateResourceCalls = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition(filePath) {
+            loadRequestDefinitionCalls.push(filePath);
+            return {
+              ok: true,
+              requestDefinition: widgetDefinition,
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            throw new Error('request update client should not be used for widget resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource(options) {
+            updateResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              widget: {
+                ...widgetDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'widget',
+        '--widget-id',
+        'widget-1',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/widget.json']);
+      assert.deepEqual(updateResourceCalls, [
+        {
+          resourceName: 'widget',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'widget-1',
+          resource: widgetDefinition,
+          failureErrorCode: 'WIDGET_UPDATE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Widget updated successfully\./);
+      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
@@ -323,6 +401,63 @@ describe('UpdateRequestCommand', () => {
           request: requestDefinition,
         },
       ]);
+    });
+
+    it('should fail fast with usage output when the resource argument is missing', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let updateRequestCallCount = 0;
+      let updateResourceCallCount = 0;
+      const stderrChunks = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            updateRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource() {
+            updateResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        '--request-id',
+        'request-1',
+        '--file',
+        '/tmp/request.json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(updateRequestCallCount, 0);
+      assert.equal(updateResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required resource argument\./);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli update <request\|widget\|variable>/);
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {

@@ -171,6 +171,81 @@ describe('CreateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should load the variable file, call the shared resource create client, and return zero for human-readable success output', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const variableDefinition = {
+        name: 'sale_banner',
+        value: 'Spring sale',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const loadRequestDefinitionCalls = [];
+      const createResourceCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition(filePath) {
+            loadRequestDefinitionCalls.push(filePath);
+            return {
+              ok: true,
+              requestDefinition: variableDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            throw new Error('request create client should not be used for variable resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            createResourceCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              variable: {
+                ...variableDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'variable',
+        '--file',
+        '/tmp/variable.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/variable.json']);
+      assert.deepEqual(createResourceCalls, [
+        {
+          resourceName: 'variable',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resource: variableDefinition,
+          failureErrorCode: 'VARIABLE_CREATE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Variable created successfully\./);
+      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);

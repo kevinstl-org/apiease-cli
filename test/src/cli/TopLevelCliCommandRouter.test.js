@@ -4,27 +4,73 @@ import { TopLevelCliCommandRouter } from '../../../src/cli/TopLevelCliCommandRou
 
 describe('TopLevelCliCommandRouter', () => {
   describe('resolveCommand', () => {
-    it('should resolve a crud command when the resource argument is supported', () => {
+    it('should resolve a crud command for every supported resource argument', () => {
       // Arrange
       const topLevelCliCommandRouter = new TopLevelCliCommandRouter();
       const createRequestCommand = { name: 'create' };
+      const readRequestCommand = { name: 'read' };
+      const updateRequestCommand = { name: 'update' };
+      const deleteRequestCommand = { name: 'delete' };
 
       // Act
-      const result = topLevelCliCommandRouter.resolveCommand({
-        commandArguments: ['create', 'widget', '--file', '/tmp/widget.json'],
-        createRequestCommand,
-        readRequestCommand: { name: 'read' },
-        updateRequestCommand: { name: 'update' },
-        deleteRequestCommand: { name: 'delete' },
-        initProjectCommand: { name: 'init' },
-        upgradeProjectCommand: { name: 'upgrade' },
-      });
+      const results = [
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['create', 'request', '--file', '/tmp/request.json'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['read', 'widget', '--widget-id', 'widget-1'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['update', 'variable', '--variable-name', 'sale_banner', '--file', '/tmp/variable.json'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['delete', 'request', '--request-id', 'request-1'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+      ];
 
       // Assert
-      assert.deepEqual(result, {
-        ok: true,
-        command: createRequestCommand,
-      });
+      assert.deepEqual(results, [
+        {
+          ok: true,
+          command: createRequestCommand,
+        },
+        {
+          ok: true,
+          command: readRequestCommand,
+        },
+        {
+          ok: true,
+          command: updateRequestCommand,
+        },
+        {
+          ok: true,
+          command: deleteRequestCommand,
+        },
+      ]);
     });
 
     it('should return a usage failure when a crud command is missing the resource argument', () => {
@@ -46,6 +92,28 @@ describe('TopLevelCliCommandRouter', () => {
       assert.deepEqual(result, {
         ok: false,
         message: 'Missing required resource argument for delete.',
+      });
+    });
+
+    it('should return a usage failure when a legacy bare crud shape provides an option flag instead of a resource argument', () => {
+      // Arrange
+      const topLevelCliCommandRouter = new TopLevelCliCommandRouter();
+
+      // Act
+      const result = topLevelCliCommandRouter.resolveCommand({
+        commandArguments: ['read', '--request-id', 'request-1'],
+        createRequestCommand: { name: 'create' },
+        readRequestCommand: { name: 'read' },
+        updateRequestCommand: { name: 'update' },
+        deleteRequestCommand: { name: 'delete' },
+        initProjectCommand: { name: 'init' },
+        upgradeProjectCommand: { name: 'upgrade' },
+      });
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: false,
+        message: 'Missing required resource argument for read.',
       });
     });
 

@@ -15,7 +15,7 @@ describe('apiease-cli', () => {
     it('should delegate command arguments to CreateRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['create', 'request', '--file', '/tmp/request.json'];
+      const commandArguments = ['create', 'variable', '--file', '/tmp/variable.json'];
       const receivedCommandArguments = [];
       const createRequestCommand = {
         async run(incomingCommandArguments) {
@@ -71,7 +71,7 @@ describe('apiease-cli', () => {
     it('should delegate read command arguments to ReadRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['read', 'request', '--request-id', 'request-123'];
+      const commandArguments = ['read', 'widget', '--widget-id', 'widget-123'];
       const receivedCommandArguments = [];
       const readRequestCommand = {
         async run(incomingCommandArguments) {
@@ -97,7 +97,7 @@ describe('apiease-cli', () => {
     it('should delegate update command arguments to UpdateRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['update', 'request', '--request-id', 'request-123', '--file', '/tmp/request.json'];
+      const commandArguments = ['update', 'variable', '--variable-name', 'sale_banner', '--file', '/tmp/variable.json'];
       const receivedCommandArguments = [];
       const updateRequestCommand = {
         async run(incomingCommandArguments) {
@@ -123,7 +123,7 @@ describe('apiease-cli', () => {
     it('should delegate delete command arguments to DeleteRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['delete', 'request', '--request-id', 'request-123'];
+      const commandArguments = ['delete', 'widget', '--widget-id', 'widget-123'];
       const receivedCommandArguments = [];
       const deleteRequestCommand = {
         async run(incomingCommandArguments) {
@@ -229,6 +229,36 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing required resource argument for create.',
+        'Usage: apiease-cli <command> [options]',
+        '',
+        'Commands:',
+        '  create <request|widget|variable>   Create a resource from a definition file.',
+        '  read <request|widget|variable>     Read a resource by identifier.',
+        '  update <request|widget|variable>   Update a resource by identifier from a definition file.',
+        '  delete <request|widget|variable>   Delete a resource by identifier.',
+        '  init                              Initialize a new APIEase project.',
+        '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write top-level usage output when a legacy bare crud shape passes an identifier flag where the resource is required', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stderrChunks = [];
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['read', '--request-id', 'request-123'],
+        readRequestCommand: createUnexpectedCommand('read'),
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Missing required resource argument for read.',
         'Usage: apiease-cli <command> [options]',
         '',
         'Commands:',
@@ -405,7 +435,7 @@ describe('apiease-cli', () => {
           '#!/usr/bin/env bash',
           'set -euo pipefail',
           'capture_file_path="$CAPTURE_FILE_PATH"',
-          'printf \'{"entrypointPath":"%s","forwardedArguments":["%s","%s","%s"],"workingDirectoryPath":"%s"}\' "$1" "$2" "$3" "$4" "$PWD" > "$capture_file_path"',
+          'printf \'{"entrypointPath":"%s","forwardedArguments":["%s","%s","%s","%s"],"workingDirectoryPath":"%s"}\' "$1" "$2" "$3" "$4" "$5" "$PWD" > "$capture_file_path"',
           'exit 0',
           '',
         ].join('\n'),
@@ -417,7 +447,7 @@ describe('apiease-cli', () => {
       // Act
       const wrapperExitCode = await runShellScript({
         command: path.join(symlinkDirectoryPath, 'apiease-cli'),
-        commandArguments: ['create', '--file', '/tmp/request.json'],
+        commandArguments: ['create', 'request', '--file', '/tmp/request.json'],
         currentWorkingDirectoryPath: workingDirectoryPath,
         environmentVariables: {
           ...process.env,
@@ -431,7 +461,7 @@ describe('apiease-cli', () => {
       assert.equal(wrapperExitCode, 0);
       assert.deepEqual(capturedInvocation, {
         entrypointPath: path.join(projectDirectoryPath, 'bin', 'apiease-cli.js'),
-        forwardedArguments: ['create', '--file', '/tmp/request.json'],
+        forwardedArguments: ['create', 'request', '--file', '/tmp/request.json'],
         workingDirectoryPath: resolvedWorkingDirectoryPath,
       });
     });
@@ -454,7 +484,7 @@ describe('apiease-cli', () => {
       // Act
       const wrapperExitCode = await runShellScript({
         command: wrapperFilePath,
-        commandArguments: ['create'],
+        commandArguments: ['create', 'request'],
         currentWorkingDirectoryPath: workingDirectoryPath,
         environmentVariables: {
           ...process.env,
