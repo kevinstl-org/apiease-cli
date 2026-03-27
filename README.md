@@ -1,6 +1,6 @@
 # apiease-cli
 
-`apiease-cli` is a Node-based CLI for bootstrapping APIEase projects and creating APIEase requests.
+`apiease-cli` is a Node-based CLI for bootstrapping APIEase projects and managing APIEase `request`, `widget`, and `variable` resources.
 
 ## Requirements
 
@@ -33,7 +33,16 @@ apiease init [project-name]
 apiease upgrade
 apiease upgrade [--check]
 apiease upgrade --dry-run
-apiease create --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease create <request|widget|variable> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read request --request-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read widget --widget-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read variable --variable-name <name> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update request --request-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update widget --widget-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update variable --variable-name <name> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete request --request-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete widget --widget-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete variable --variable-name <name> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 ```
 
 ## Initialize a Project
@@ -199,9 +208,17 @@ If the home configuration is missing, invalid, or unreadable, the CLI fails fast
 - Add a non-empty `APIEASE_API_KEY` entry to that env file.
 - Add `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` when you want those values to be optional on each CLI command.
 
-## Create a Request
+## Manage Resources
 
-Create a JSON file that contains the request definition you want to send to APIEase. For example:
+CRUD commands require a resource name immediately after the verb. Supported resource names are `request`, `widget`, and `variable`.
+
+Bare command shapes such as `apiease create` or `apiease read --request-id ...` are not supported.
+
+Use `--request-id` for `request`, `--widget-id` for `widget`, and `--variable-name` for `variable`.
+
+If you are running from this repository without `npm link`, replace `apiease` with `./bin/apiease-cli` in the examples below.
+
+Create a JSON file that contains the resource definition you want to send to APIEase. For example, a request definition file might look like this:
 
 ```json
 {
@@ -212,20 +229,19 @@ Create a JSON file that contains the request definition you want to send to APIE
 }
 ```
 
-Run the CLI from the repository root:
+Create resources:
 
 ```bash
-./bin/apiease-cli create \
+apiease create request \
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com
-```
-
-If you used `npm link` or installed the package, the command is:
-
-```bash
-apiease create \
-  --file ./request-definition.json \
+apiease create widget \
+  --file ./widget-definition.json \
+  --base-url https://your-apiease-host.example.com \
+  --shop-domain your-shop.myshopify.com
+apiease create variable \
+  --file ./variable-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com
 ```
@@ -233,18 +249,42 @@ apiease create \
 If your active `~/.apiease/.env.<environment>` file already defines `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN`, you can omit those flags:
 
 ```bash
-apiease create \
+apiease create request \
   --file ./request-definition.json
 ```
 
 To override the home configuration for a single command, pass `--api-key` explicitly:
 
 ```bash
-apiease create \
+apiease create request \
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com \
   --api-key your-apiease-api-key
+```
+
+Read resources:
+
+```bash
+apiease read request --request-id request-123
+apiease read widget --widget-id widget-123
+apiease read variable --variable-name sale_banner
+```
+
+Update resources:
+
+```bash
+apiease update request --request-id request-123 --file ./request-definition.json
+apiease update widget --widget-id widget-123 --file ./widget-definition.json
+apiease update variable --variable-name sale_banner --file ./variable-definition.json
+```
+
+Delete resources:
+
+```bash
+apiease delete request --request-id request-123
+apiease delete widget --widget-id widget-123
+apiease delete variable --variable-name sale_banner
 ```
 
 ## JSON Output
@@ -252,7 +292,7 @@ apiease create \
 Add `--json` when you want machine-readable output:
 
 ```bash
-./bin/apiease-cli create \
+apiease create request \
   --file ./request-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com \
@@ -263,7 +303,7 @@ Add `--json` when you want machine-readable output:
 
 - The public installed command name is `apiease`.
 - `init` currently copies the local development template from `../apiease-template`.
-- The request definition file must be valid JSON with an object as the root value.
+- Resource definition files must be valid JSON with an object as the root value.
 - `--api-key` is optional. When omitted, the CLI resolves `APIEASE_API_KEY` from `~/.apiease/.env.<environment>`.
 - `--base-url` and `--shop-domain` are optional when `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` are present in `~/.apiease/.env.<environment>`.
 - Default output is human-readable. `--json` emits the raw structured result.
