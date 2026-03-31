@@ -353,7 +353,7 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required resource argument\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete <request\|widget\|variable>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
@@ -398,7 +398,7 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete <request\|widget\|variable>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the selected resource identifier flag is missing', async () => {

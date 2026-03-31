@@ -24,7 +24,7 @@ describe('CrudResourceDefinitionCollection', () => {
   });
 
   describe('listSupportedResourceNames', () => {
-    it('should return the supported request widget and variable resource names', async () => {
+    it('should return the supported request widget variable and function resource names', async () => {
       // Arrange
       const { CrudResourceDefinitionCollection } = await import(crudResourceDefinitionCollectionModuleUrl);
       const crudResourceDefinitionCollection = new CrudResourceDefinitionCollection();
@@ -33,7 +33,7 @@ describe('CrudResourceDefinitionCollection', () => {
       const result = crudResourceDefinitionCollection.listSupportedResourceNames();
 
       // Assert
-      assert.deepEqual(result, ['request', 'widget', 'variable']);
+      assert.deepEqual(result, ['request', 'widget', 'variable', 'function']);
     });
   });
 
@@ -98,6 +98,26 @@ describe('CrudResourceDefinitionCollection', () => {
       });
     });
 
+    it('should return the function resource definition metadata', async () => {
+      // Arrange
+      const { CrudResourceDefinitionCollection } = await import(crudResourceDefinitionCollectionModuleUrl);
+      const crudResourceDefinitionCollection = new CrudResourceDefinitionCollection();
+
+      // Act
+      const result = crudResourceDefinitionCollection.readResourceDefinition('function');
+
+      // Assert
+      assert.deepEqual(result, {
+        resourceName: 'function',
+        apiPathSegment: 'functions',
+        responsePayloadKey: 'function',
+        humanReadableLabel: 'Function',
+        identifierOptionName: '--function-id',
+        identifierValueName: 'id',
+        identifierPropertyName: 'functionId',
+      });
+    });
+
     it('should throw for an unsupported resource name', async () => {
       // Arrange
       const { CrudResourceDefinitionCollection } = await import(crudResourceDefinitionCollectionModuleUrl);
@@ -109,7 +129,7 @@ describe('CrudResourceDefinitionCollection', () => {
       // Assert
       assert.throws(
         readResourceDefinition,
-        new Error('Unsupported CRUD resource: product. Supported resources: request, widget, variable'),
+        new Error('Unsupported CRUD resource: product. Supported resources: request, widget, variable, function'),
       );
     });
   });

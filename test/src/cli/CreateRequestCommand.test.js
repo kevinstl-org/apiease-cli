@@ -565,7 +565,7 @@ describe('CreateRequestCommand', () => {
       assert.equal(createRequestCallCount, 0);
       assert.equal(createResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required resource argument\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli create <request\|widget\|variable>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli create <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
@@ -621,7 +621,7 @@ describe('CreateRequestCommand', () => {
       assert.equal(createRequestCallCount, 0);
       assert.equal(createResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli create <request\|widget\|variable>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli create <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

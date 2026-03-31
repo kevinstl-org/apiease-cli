@@ -27,6 +27,15 @@ const DEFAULT_RESOURCE_DEFINITIONS = Object.freeze([
     identifierValueName: 'name',
     identifierPropertyName: 'name',
   }),
+  Object.freeze({
+    resourceName: 'function',
+    apiPathSegment: 'functions',
+    responsePayloadKey: 'function',
+    humanReadableLabel: 'Function',
+    identifierOptionName: '--function-id',
+    identifierValueName: 'id',
+    identifierPropertyName: 'functionId',
+  }),
 ]);
 
 class CrudResourceDefinitionCollection {
