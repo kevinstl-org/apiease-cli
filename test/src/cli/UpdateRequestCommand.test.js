@@ -252,6 +252,84 @@ describe('UpdateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should load the function file, call the shared resource update client, and return zero for human-readable success output', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const functionDefinition = {
+        functionId: 'function-1',
+        name: 'Apply discount',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const loadRequestDefinitionCalls = [];
+      const updateResourceCalls = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition(filePath) {
+            loadRequestDefinitionCalls.push(filePath);
+            return {
+              ok: true,
+              requestDefinition: functionDefinition,
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            throw new Error('request update client should not be used for function resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource(options) {
+            updateResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              function: {
+                ...functionDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'function',
+        '--function-id',
+        'function-1',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/function.json']);
+      assert.deepEqual(updateResourceCalls, [
+        {
+          resourceName: 'function',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'function-1',
+          resource: functionDefinition,
+          failureErrorCode: 'FUNCTION_UPDATE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Function updated successfully\./);
+      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
@@ -578,6 +656,68 @@ describe('UpdateRequestCommand', () => {
       assert.equal(updateResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
       assert.match(stderrChunks.join(''), /Usage: apiease-cli update widget --widget-id <id> --file <path>/);
+    });
+
+    it('should fail fast with usage output when the function identifier flag is missing', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      let loadRequestDefinitionCallCount = 0;
+      let updateRequestCallCount = 0;
+      let updateResourceCallCount = 0;
+      const stderrChunks = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            loadRequestDefinitionCallCount += 1;
+            return {
+              ok: true,
+              requestDefinition: {},
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest() {
+            updateRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource() {
+            updateResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'function',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(loadRequestDefinitionCallCount, 0);
+      assert.equal(updateRequestCallCount, 0);
+      assert.equal(updateResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli update function --function-id <id> --file <path>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

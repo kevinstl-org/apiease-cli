@@ -246,6 +246,81 @@ describe('CreateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should load the function file, call the shared resource create client, and return zero for human-readable success output', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const functionDefinition = {
+        functionId: 'function-1',
+        name: 'Apply discount',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const loadRequestDefinitionCalls = [];
+      const createResourceCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition(filePath) {
+            loadRequestDefinitionCalls.push(filePath);
+            return {
+              ok: true,
+              requestDefinition: functionDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            throw new Error('request create client should not be used for function resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            createResourceCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              function: {
+                ...functionDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'function',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/function.json']);
+      assert.deepEqual(createResourceCalls, [
+        {
+          resourceName: 'function',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resource: functionDefinition,
+          failureErrorCode: 'FUNCTION_CREATE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Function created successfully\./);
+      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
