@@ -1,0 +1,46 @@
+{
+  "id": "task-0-extend-the-shared-crud-resource-definition-layer-so-function-is-a-suppo-0e22da3c",
+  "text": "Extend the shared CRUD resource definition layer so `function` is a supported first-class resource with the canonical API metadata and identifier semantics.",
+  "goalId": "goal-add-function-capabilities-to-apiease-cli-just-as-the-cli-already-suppor-d169e4aa",
+  "goal": "Add function capabilities to apiease-cli just as the CLI already supports request, widget, and variable resources.\n\nGoal\n\nExtend the CLI, shared resource model, reusable client transport, help text, README examples, and automated coverage so function becomes a first-class CRUD resource.\n\nScope\n\nAdd function to the supported CRUD resource list alongside request, widget, and variable.\nUse the canonical APIEase resource collection path /api/v1/resources/functions.\nUse the canonical item identifier shape functionId at the API layer and --function-id at the CLI layer.\nSupport these command shapes:\napiease create function --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\napiease read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\napiease update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\napiease delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\nRequirements\n\nMirror the same resource-aware patterns already used for request, widget, and variable support.\nExtend the shared CRUD resource definition layer so it knows the function CLI token, API path segment, response payload key, human-readable label, and canonical identifier flag.\nRoute function CRUD operations through the reusable client-side CRUD transport in src/client rather than introducing function-specific business logic in bin entrypoints.\nPreserve existing request-specific validation behavior for request create and update flows without forcing request-only validation onto function payloads.\nUpdate create, read, update, and delete command parsing so function is accepted anywhere the other supported resources are accepted.\nRequire --function-id for read, update, and delete function flows before any API call is attempted.\nKeep the CLI verb-first. Do not switch to a resource-first command structure.\nUpdate top-level usage output, per-command help text, success messages, failure messages, and README examples so function appears consistently with request, widget, and variable.\nPreserve current request, widget, and variable behavior with no compatibility regressions.\nAcceptance criteria\n\nThe CLI accepts create, read, update, and delete for function using the same public command structure as the existing supported resources.\nFunction CRUD traffic goes to the versioned function resource endpoints under /api/v1/resources/functions.\nMissing or unsupported resources fail fast with usage-level output.\nFunction read, update, and delete fail fast with usage-level output when --function-id is missing.\nAutomated coverage includes positive function command cases and negative cases for missing resource, unsupported resource, and missing --function-id.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "crud",
+    "resource-model",
+    "client"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-03-31T23:46:17Z",
+  "updatedAt": "2026-03-31T23:52:59Z",
+  "context": [
+    "`src/crud/CrudResourceDefinitionCollection.js` is the single source of truth for supported CRUD resource names, API path segments, response payload keys, labels, and identifier flags.",
+    "The reusable CRUD transport and the CLI help/output surfaces already derive their resource behavior from this shared definition layer."
+  ],
+  "steps": [
+    "Add a `function` resource definition alongside `request`, `widget`, and `variable`.",
+    "Store the canonical metadata for function support: API path segment `functions`, response payload key `function`, human-readable label `Function`, CLI identifier flag `--function-id`, and API identifier property `functionId`.",
+    "Ensure shared collection and item path helpers expose the versioned function endpoints through the same resource-aware lookup used by the generic client and CLI."
+  ],
+  "constraints": [
+    "Use the canonical collection path `/api/v1/resources/functions`.",
+    "Keep `functionId` as the API-layer identifier shape and `--function-id` as the CLI-layer identifier flag."
+  ],
+  "acceptanceCriteria": [
+    "`function` appears in the supported CRUD resource list anywhere the shared resource collection is queried.",
+    "The shared resource layer can build both the function collection path and an encoded function item path under `/api/v1/resources/functions`.",
+    "Unsupported-resource failures continue to come from the shared resource definition layer and now enumerate `function` alongside the existing resources."
+  ],
+  "sequenceIndex": 0,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
