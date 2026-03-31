@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:11Z",
-  "updatedAt": "2026-03-27T17:34:56Z",
+  "updatedAt": "2026-03-31T23:41:16Z",
   "context": [
     "The current CRUD command classes and top-level help are hardcoded around request-only behavior.",
     "The repository already exercises `request`, `widget`, and `variable` against `/api/v1/resources/...` in `ApiEasePublicCrudExercise`, so those resource names and endpoint shapes should become the canonical CLI mapping."
@@ -40,6 +40,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-31T23:41:16Z"
   }
 }

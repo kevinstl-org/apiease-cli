@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:13Z",
-  "updatedAt": "2026-03-27T18:05:01Z",
+  "updatedAt": "2026-03-31T23:41:16Z",
   "context": [
     "Existing bin-level and per-command tests assume bare request verbs and request-only help text.",
     "The goal explicitly requires updated coverage for both valid and invalid command shapes."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-31T23:41:16Z"
   }
 }

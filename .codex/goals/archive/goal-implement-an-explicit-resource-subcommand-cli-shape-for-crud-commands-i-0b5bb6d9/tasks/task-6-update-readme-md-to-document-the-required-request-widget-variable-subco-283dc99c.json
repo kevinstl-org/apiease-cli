@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:13Z",
-  "updatedAt": "2026-03-27T18:08:06Z",
+  "updatedAt": "2026-03-31T23:41:16Z",
   "context": [
     "The current README documents only request creation and still implies bare CRUD verbs.",
     "The goal explicitly requires README examples and documentation to reflect the new required resource argument."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-31T23:41:16Z"
   }
 }

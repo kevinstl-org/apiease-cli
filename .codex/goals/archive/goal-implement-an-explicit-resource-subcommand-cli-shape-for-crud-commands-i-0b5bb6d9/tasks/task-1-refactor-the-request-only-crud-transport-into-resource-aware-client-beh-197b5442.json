@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:12Z",
-  "updatedAt": "2026-03-27T17:40:32Z",
+  "updatedAt": "2026-03-31T23:41:16Z",
   "context": [
     "The four existing request client classes share nearly identical auth-header, JSON parsing, and non-JSON failure handling.",
     "Widget and variable CRUD currently exist only inside the integration exercise and are not exposed through reusable CLI-facing clients."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-31T23:41:16Z"
   }
 }

@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:12Z",
-  "updatedAt": "2026-03-27T17:49:15Z",
+  "updatedAt": "2026-03-31T23:41:16Z",
   "context": [
     "The current create and update commands assume request-only verbs and hardcode request-specific usage text and success messages.",
     "Body-based CRUD operations for all three supported resources will still need a JSON file input."
@@ -42,6 +42,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-31T23:41:16Z"
   }
 }

@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-27T17:23:13Z",
-  "updatedAt": "2026-03-27T17:59:26Z",
+  "updatedAt": "2026-03-31T23:41:16Z",
   "context": [
     "`bin/apiease-cli.js` currently resolves CRUD commands from only the first token and advertises request-only command descriptions.",
     "The new contract requires the second token to be mandatory for CRUD verbs, but not for `init` or `upgrade`."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-03-31T23:41:16Z"
   }
 }
