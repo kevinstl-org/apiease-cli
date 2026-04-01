@@ -1,6 +1,6 @@
 # apiease-cli
 
-`apiease-cli` is a Node-based CLI for bootstrapping APIEase projects and managing APIEase `request`, `widget`, and `variable` resources.
+`apiease-cli` is a Node-based CLI for bootstrapping APIEase projects and managing APIEase `request`, `widget`, `variable`, and `function` resources.
 
 ## Requirements
 
@@ -33,16 +33,19 @@ apiease init [project-name]
 apiease upgrade
 apiease upgrade [--check]
 apiease upgrade --dry-run
-apiease create <request|widget|variable> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease create <request|widget|variable|function> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease read request --request-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease read widget --widget-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease read variable --variable-name <name> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease update request --request-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease update widget --widget-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease update variable --variable-name <name> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease delete request --request-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease delete widget --widget-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease delete variable --variable-name <name> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 ```
 
 ## Initialize a Project
@@ -212,11 +215,11 @@ If the home configuration is missing, invalid, or unreadable, the CLI fails fast
 
 ## Manage Resources
 
-CRUD commands require a resource name immediately after the verb. Supported resource names are `request`, `widget`, and `variable`.
+CRUD commands require a resource name immediately after the verb. Supported resource names are `request`, `widget`, `variable`, and `function`.
 
 Bare command shapes such as `apiease create` or `apiease read --request-id ...` are not supported.
 
-Use `--request-id` for `request`, `--widget-id` for `widget`, and `--variable-name` for `variable`.
+Use `--request-id` for `request`, `--widget-id` for `widget`, `--variable-name` for `variable`, and `--function-id` for `function`.
 
 If you are running from this repository without `npm link`, replace `apiease` with `./bin/apiease-cli` in the examples below.
 
@@ -246,6 +249,10 @@ apiease create variable \
   --file ./variable-definition.json \
   --base-url https://your-apiease-host.example.com \
   --shop-domain your-shop.myshopify.com
+apiease create function \
+  --file ./function-definition.json \
+  --base-url https://your-apiease-host.example.com \
+  --shop-domain your-shop.myshopify.com
 ```
 
 If your active `~/.apiease/.env.<environment>` file already defines `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN`, you can omit those flags:
@@ -271,6 +278,7 @@ Read resources:
 apiease read request --request-id request-123
 apiease read widget --widget-id widget-123
 apiease read variable --variable-name sale_banner
+apiease read function --function-id function-123
 ```
 
 Update resources:
@@ -279,6 +287,7 @@ Update resources:
 apiease update request --request-id request-123 --file ./request-definition.json
 apiease update widget --widget-id widget-123 --file ./widget-definition.json
 apiease update variable --variable-name sale_banner --file ./variable-definition.json
+apiease update function --function-id function-123 --file ./function-definition.json
 ```
 
 Delete resources:
@@ -287,6 +296,7 @@ Delete resources:
 apiease delete request --request-id request-123
 apiease delete widget --widget-id widget-123
 apiease delete variable --variable-name sale_banner
+apiease delete function --function-id function-123
 ```
 
 ## JSON Output
