@@ -202,6 +202,67 @@ describe('ReadRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should call the shared resource read client for function resources and return zero for human-readable success output', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const readResourceCalls = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            throw new Error('request read client should not be used for function resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource(options) {
+            readResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              function: {
+                functionId: 'function-1',
+                name: 'Calculate discounts',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'function',
+        '--function-id',
+        'function-1',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(readResourceCalls, [
+        {
+          resourceName: 'function',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'function-1',
+          failureErrorCode: 'FUNCTION_READ_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Function read successfully\./);
+      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
@@ -457,6 +518,68 @@ describe('ReadRequestCommand', () => {
       assert.equal(readResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
       assert.match(stderrChunks.join(''), /Usage: apiease-cli read widget --widget-id <id>/);
+    });
+
+    it('should fail fast with usage output when the function identifier flag is missing', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      let readRequestCallCount = 0;
+      let readResourceCallCount = 0;
+      let resolveConfigurationCallCount = 0;
+      const stderrChunks = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest() {
+            readRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async readResource() {
+            readResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCommandConfigurationResolver: {
+          async resolveConfiguration() {
+            resolveConfigurationCallCount += 1;
+            return {
+              ok: true,
+              apiBaseUrl: 'https://apiease.example.com',
+              apiKey: 'api-key-1',
+              shopDomain: 'cool-shop.myshopify.com',
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'function',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(readRequestCallCount, 0);
+      assert.equal(readResourceCallCount, 0);
+      assert.equal(resolveConfigurationCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli read function --function-id <id>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

@@ -195,6 +195,66 @@ describe('DeleteRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should call the shared resource delete client for function resources and return zero for human-readable success output', async () => {
+      // Arrange
+      const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const deleteResourceCalls = [];
+      const deleteRequestCommand = new DeleteRequestCommand({
+        apiEaseDeleteRequestClient: {
+          async deleteRequest() {
+            throw new Error('request delete client should not be used for function resources');
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async deleteResource(options) {
+            deleteResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              shopDomain: 'cool-shop.myshopify.com',
+              function: {
+                functionId: 'function-1',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await deleteRequestCommand.run([
+        'delete',
+        'function',
+        '--function-id',
+        'function-1',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(deleteResourceCalls, [
+        {
+          resourceName: 'function',
+          apiBaseUrl: 'https://apiease.example.com',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceIdentifier: 'function-1',
+          failureErrorCode: 'FUNCTION_DELETE_FAILED',
+        },
+      ]);
+      assert.match(stdoutChunks.join(''), /Function deleted successfully\./);
+      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
       // Arrange
       const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
@@ -450,6 +510,68 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --variable-name/);
       assert.match(stderrChunks.join(''), /Usage: apiease-cli delete variable --variable-name <name>/);
+    });
+
+    it('should fail fast with usage output when the function identifier flag is missing', async () => {
+      // Arrange
+      const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
+      let deleteRequestCallCount = 0;
+      let deleteResourceCallCount = 0;
+      let resolveConfigurationCallCount = 0;
+      const stderrChunks = [];
+      const deleteRequestCommand = new DeleteRequestCommand({
+        apiEaseDeleteRequestClient: {
+          async deleteRequest() {
+            deleteRequestCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async deleteResource() {
+            deleteResourceCallCount += 1;
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+        },
+        apiEaseCommandConfigurationResolver: {
+          async resolveConfiguration() {
+            resolveConfigurationCallCount += 1;
+            return {
+              ok: true,
+              apiBaseUrl: 'https://apiease.example.com',
+              apiKey: 'api-key-1',
+              shopDomain: 'cool-shop.myshopify.com',
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await deleteRequestCommand.run([
+        'delete',
+        'function',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(deleteRequestCallCount, 0);
+      assert.equal(deleteResourceCallCount, 0);
+      assert.equal(resolveConfigurationCallCount, 0);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
+      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete function --function-id <id>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
