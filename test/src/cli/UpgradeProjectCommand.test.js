@@ -591,6 +591,80 @@ describe('UpgradeProjectCommand', () => {
         ].join('\n'),
       );
     });
+
+    it('should return a structured failure when the upgrade plan includes a managed path traversal attempt', async () => {
+      // Arrange
+      const { UpgradeProjectCommand } = await import(upgradeProjectCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const upgradeProjectCommand = new UpgradeProjectCommand({
+        projectMetadataFileService: {
+          async readProjectMetadata() {
+            return {
+              ok: true,
+              projectMetadata: {
+                template: {
+                  manifest: {
+                    '../../.zshrc': 'malicious-hash',
+                  },
+                  version: {
+                    type: 'gitCommit',
+                    value: 'template-sha-1',
+                  },
+                },
+              },
+            };
+          },
+        },
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              templateDirectoryPath: '/tmp/apiease-template',
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-2',
+            };
+          },
+        },
+        templateProjectManifestBuilder: {
+          async buildTemplateManifest() {
+            return {};
+          },
+        },
+        projectUpgradePlanService: {
+          async buildUpgradePlan() {
+            const error = new Error(
+              'Managed template path must stay within the project root: ../../.zshrc',
+            );
+            error.code = 'APIEASE_INVALID_MANAGED_PATH';
+            throw error;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await upgradeProjectCommand.run(['upgrade', '--dry-run']);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stdoutChunks.join(''), '');
+      assert.equal(
+        stderrChunks.join(''),
+        [
+          'APIEASE project upgrade check failed.',
+          'Error Code: APIEASE_INVALID_MANAGED_PATH',
+          'Message: Managed template path must stay within the project root: ../../.zshrc',
+          '',
+        ].join('\n'),
+      );
+    });
   });
 });
 

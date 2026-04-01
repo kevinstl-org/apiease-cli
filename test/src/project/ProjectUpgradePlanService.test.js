@@ -53,5 +53,26 @@ describe('ProjectUpgradePlanService', () => {
         updatePaths: ['updated.txt'],
       });
     });
+
+    it('should reject a stored manifest path that escapes the project root', async () => {
+      // Arrange
+      const { ProjectUpgradePlanService } = await import(projectUpgradePlanServiceModuleUrl);
+      const projectUpgradePlanService = new ProjectUpgradePlanService();
+
+      // Act / Assert
+      await assert.rejects(
+        projectUpgradePlanService.buildUpgradePlan({
+          currentProjectDirectoryPath: '/tmp/apiease-project',
+          currentTemplateManifest: {},
+          storedTemplateManifest: {
+            '../../.zshrc': projectUpgradePlanService.buildContentHash('malicious\n'),
+          },
+        }),
+        {
+          code: 'APIEASE_INVALID_MANAGED_PATH',
+          message: 'Managed template path must stay within the project root: ../../.zshrc',
+        },
+      );
+    });
   });
 });

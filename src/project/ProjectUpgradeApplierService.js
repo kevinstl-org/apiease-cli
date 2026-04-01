@@ -1,7 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { ProjectManagedPathResolver } from './ProjectManagedPathResolver.js';
 
 class ProjectUpgradeApplierService {
+  constructor({
+    projectManagedPathResolver = new ProjectManagedPathResolver(),
+  } = {}) {
+    this.projectManagedPathResolver = projectManagedPathResolver;
+  }
+
   async applyUpgradePlan({ currentProjectDirectoryPath, templateDirectoryPath, upgradePlan }) {
     await this.copyManagedPaths({
       currentProjectDirectoryPath,
@@ -16,15 +23,27 @@ class ProjectUpgradeApplierService {
 
   async copyManagedPaths({ currentProjectDirectoryPath, managedPaths, templateDirectoryPath }) {
     for (const managedPath of managedPaths) {
-      const projectPath = path.join(currentProjectDirectoryPath, managedPath);
+      const projectPath = this.projectManagedPathResolver.resolveManagedPath({
+        managedPath,
+        rootDirectoryPath: currentProjectDirectoryPath,
+      });
       await fs.mkdir(path.dirname(projectPath), { recursive: true });
-      await fs.copyFile(path.join(templateDirectoryPath, managedPath), projectPath);
+      await fs.copyFile(
+        this.projectManagedPathResolver.resolveManagedPath({
+          managedPath,
+          rootDirectoryPath: templateDirectoryPath,
+        }),
+        projectPath,
+      );
     }
   }
 
   async removeManagedPaths({ currentProjectDirectoryPath, managedPaths }) {
     for (const managedPath of managedPaths) {
-      await fs.rm(path.join(currentProjectDirectoryPath, managedPath), { force: true });
+      await fs.rm(this.projectManagedPathResolver.resolveManagedPath({
+        managedPath,
+        rootDirectoryPath: currentProjectDirectoryPath,
+      }), { force: true });
     }
   }
 }

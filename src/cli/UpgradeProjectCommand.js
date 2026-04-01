@@ -54,7 +54,7 @@ class UpgradeProjectCommand {
     const currentProjectTemplateVersion = projectMetadataResult.projectMetadata.template?.version?.value;
 
     if (parseResult.mode === 'dryRun') {
-      const upgradePlanResult = await this.buildUpgradePlan({
+      const upgradePlanResult = await this.tryBuildUpgradePlan({
         currentWorkingDirectoryPath,
         projectMetadata: projectMetadataResult.projectMetadata,
         templateSource,
@@ -80,7 +80,7 @@ class UpgradeProjectCommand {
     }
 
     if (parseResult.mode === 'apply') {
-      const upgradePlanResult = await this.buildUpgradePlan({
+      const upgradePlanResult = await this.tryBuildUpgradePlan({
         currentWorkingDirectoryPath,
         projectMetadata: projectMetadataResult.projectMetadata,
         templateSource,
@@ -90,11 +90,16 @@ class UpgradeProjectCommand {
         return 1;
       }
 
-      await this.projectUpgradeApplierService.applyUpgradePlan({
+      const applyResult = await this.tryApplyUpgradePlan({
         currentProjectDirectoryPath: currentWorkingDirectoryPath,
         templateDirectoryPath: templateSource.templateDirectoryPath,
         upgradePlan: upgradePlanResult.upgradePlan,
       });
+      if (!applyResult.ok) {
+        this.stderr.write(this.buildFailureOutput(applyResult));
+        return 1;
+      }
+
       await this.projectMetadataFileService.writeProjectMetadata({
         projectDirectoryPath: currentWorkingDirectoryPath,
         projectMetadata: this.buildUpdatedProjectMetadata({
@@ -126,6 +131,31 @@ class UpgradeProjectCommand {
       ].join('\n'),
     );
     return 1;
+  }
+
+  async tryBuildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateSource }) {
+    try {
+      return await this.buildUpgradePlan({
+        currentWorkingDirectoryPath,
+        projectMetadata,
+        templateSource,
+      });
+    } catch (error) {
+      return this.buildManagedPathFailureResult(error);
+    }
+  }
+
+  async tryApplyUpgradePlan({ currentProjectDirectoryPath, templateDirectoryPath, upgradePlan }) {
+    try {
+      await this.projectUpgradeApplierService.applyUpgradePlan({
+        currentProjectDirectoryPath,
+        templateDirectoryPath,
+        upgradePlan,
+      });
+      return { ok: true };
+    } catch (error) {
+      return this.buildManagedPathFailureResult(error);
+    }
   }
 
   async buildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateSource }) {
@@ -197,6 +227,18 @@ class UpgradeProjectCommand {
     return {
       errorCode: TEMPLATE_MANIFEST_NOT_FOUND_ERROR_CODE,
       message: 'APIEASE project metadata does not include a template manifest. Run "apiease init" again to adopt the current project state.',
+    };
+  }
+
+  buildManagedPathFailureResult(error) {
+    if (error?.code !== 'APIEASE_INVALID_MANAGED_PATH') {
+      throw error;
+    }
+
+    return {
+      ok: false,
+      errorCode: error.code,
+      message: error.message,
     };
   }
 

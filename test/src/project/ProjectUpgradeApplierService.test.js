@@ -53,5 +53,38 @@ describe('ProjectUpgradeApplierService', () => {
       );
       await assert.rejects(fs.access(path.join(projectRootPath, 'removed.txt')));
     });
+
+    it('should reject an upgrade plan path that escapes the project root', async () => {
+      // Arrange
+      const { ProjectUpgradeApplierService } = await import(projectUpgradeApplierServiceModuleUrl);
+      const projectUpgradeApplierService = new ProjectUpgradeApplierService();
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-upgrade-apply-'));
+      const projectRootPath = path.join(temporaryDirectoryPath, 'project');
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'template');
+      const outsideFilePath = path.join(temporaryDirectoryPath, 'outside.txt');
+
+      await fs.mkdir(projectRootPath, { recursive: true });
+      await fs.mkdir(templateDirectoryPath, { recursive: true });
+      await fs.writeFile(outsideFilePath, 'outside content\n');
+
+      // Act / Assert
+      await assert.rejects(
+        projectUpgradeApplierService.applyUpgradePlan({
+          currentProjectDirectoryPath: projectRootPath,
+          templateDirectoryPath,
+          upgradePlan: {
+            addPaths: [],
+            removePaths: ['../../outside.txt'],
+            skipPaths: [],
+            updatePaths: [],
+          },
+        }),
+        {
+          code: 'APIEASE_INVALID_MANAGED_PATH',
+          message: 'Managed template path must stay within the project root: ../../outside.txt',
+        },
+      );
+      assert.equal(await fs.readFile(outsideFilePath, 'utf8'), 'outside content\n');
+    });
   });
 });

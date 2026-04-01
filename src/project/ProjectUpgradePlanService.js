@@ -1,8 +1,14 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import path from 'node:path';
+import { ProjectManagedPathResolver } from './ProjectManagedPathResolver.js';
 
 class ProjectUpgradePlanService {
+  constructor({
+    projectManagedPathResolver = new ProjectManagedPathResolver(),
+  } = {}) {
+    this.projectManagedPathResolver = projectManagedPathResolver;
+  }
+
   async buildUpgradePlan({
     currentProjectDirectoryPath,
     currentTemplateManifest,
@@ -79,7 +85,10 @@ class ProjectUpgradePlanService {
 
   async readProjectFileHash(currentProjectDirectoryPath, managedPath) {
     try {
-      const fileBuffer = await fs.readFile(path.join(currentProjectDirectoryPath, managedPath));
+      const fileBuffer = await fs.readFile(this.projectManagedPathResolver.resolveManagedPath({
+        managedPath,
+        rootDirectoryPath: currentProjectDirectoryPath,
+      }));
       return this.buildContentHash(fileBuffer);
     } catch (error) {
       if (error?.code === 'ENOENT') {
