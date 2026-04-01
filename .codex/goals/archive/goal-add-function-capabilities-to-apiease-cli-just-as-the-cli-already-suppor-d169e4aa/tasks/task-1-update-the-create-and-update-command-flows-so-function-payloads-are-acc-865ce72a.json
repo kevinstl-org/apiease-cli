@@ -1,39 +1,38 @@
 {
-  "id": "task-4-expand-automated-coverage-so-function-crud-support-is-exercised-across--3de1a7c8",
-  "text": "Expand automated coverage so function CRUD support is exercised across the shared resource model, reusable client transport, command parsing/output, and top-level CLI entrypoint.",
+  "id": "task-1-update-the-create-and-update-command-flows-so-function-payloads-are-acc-865ce72a",
+  "text": "Update the create and update command flows so `function` payloads are accepted and routed through the reusable CRUD client without applying request-only validation to function JSON.",
   "goalId": "goal-add-function-capabilities-to-apiease-cli-just-as-the-cli-already-suppor-d169e4aa",
   "goal": "Add function capabilities to apiease-cli just as the CLI already supports request, widget, and variable resources.\n\nGoal\n\nExtend the CLI, shared resource model, reusable client transport, help text, README examples, and automated coverage so function becomes a first-class CRUD resource.\n\nScope\n\nAdd function to the supported CRUD resource list alongside request, widget, and variable.\nUse the canonical APIEase resource collection path /api/v1/resources/functions.\nUse the canonical item identifier shape functionId at the API layer and --function-id at the CLI layer.\nSupport these command shapes:\napiease create function --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\napiease read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\napiease update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\napiease delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]\nRequirements\n\nMirror the same resource-aware patterns already used for request, widget, and variable support.\nExtend the shared CRUD resource definition layer so it knows the function CLI token, API path segment, response payload key, human-readable label, and canonical identifier flag.\nRoute function CRUD operations through the reusable client-side CRUD transport in src/client rather than introducing function-specific business logic in bin entrypoints.\nPreserve existing request-specific validation behavior for request create and update flows without forcing request-only validation onto function payloads.\nUpdate create, read, update, and delete command parsing so function is accepted anywhere the other supported resources are accepted.\nRequire --function-id for read, update, and delete function flows before any API call is attempted.\nKeep the CLI verb-first. Do not switch to a resource-first command structure.\nUpdate top-level usage output, per-command help text, success messages, failure messages, and README examples so function appears consistently with request, widget, and variable.\nPreserve current request, widget, and variable behavior with no compatibility regressions.\nAcceptance criteria\n\nThe CLI accepts create, read, update, and delete for function using the same public command structure as the existing supported resources.\nFunction CRUD traffic goes to the versioned function resource endpoints under /api/v1/resources/functions.\nMissing or unsupported resources fail fast with usage-level output.\nFunction read, update, and delete fail fast with usage-level output when --function-id is missing.\nAutomated coverage includes positive function command cases and negative cases for missing resource, unsupported resource, and missing --function-id.",
   "project": "apiease-cli",
   "status": "complete",
   "priority": "high",
   "tags": [
-    "tests",
-    "coverage",
     "cli",
-    "client"
+    "create",
+    "update"
   ],
   "createdBy": "kevin",
-  "createdAt": "2026-03-31T23:46:18Z",
-  "updatedAt": "2026-04-01T00:08:03Z",
+  "createdAt": "2026-03-31T23:46:17Z",
+  "updatedAt": "2026-04-01T19:43:27Z",
   "context": [
-    "The goal explicitly requires automated coverage for positive function command cases and negative cases covering missing resource, unsupported resource, and missing `--function-id`.",
-    "Current coverage already exists for the shared resource collection, generic CRUD client, command classes, router, and bin entrypoint and should be extended rather than replaced."
+    "`src/cli/CreateRequestCommand.js` and `src/cli/UpdateRequestCommand.js` already special-case request operations and delegate non-request resources to `ApiEaseCrudResourceClient`.",
+    "The goal requires `apiease create function --file <path>` and `apiease update function --function-id <id> --file <path>` to work with the existing verb-first CLI shape."
   ],
   "steps": [
-    "Add or update coverage for the shared resource definition and generic CRUD client so function endpoint metadata and function item routing are exercised.",
-    "Add or update CLI command coverage for create, read, update, and delete function flows, including function-aware help and human-readable output expectations.",
-    "Add or update router and entrypoint coverage for the required negative cases: missing resource, unsupported resource, and missing `--function-id` on read/update/delete function flows."
+    "Accept `function` anywhere the create and update commands currently validate supported resources.",
+    "Require `--function-id` for `update function` before any API call is attempted, while keeping `--file` required for both create and update.",
+    "Route function create and update requests through `ApiEaseCrudResourceClient` with function-specific error codes and human-readable output derived from the shared resource metadata."
   ],
   "constraints": [
-    "Preserve existing request, widget, and variable coverage without loosening their assertions.",
-    "Keep the new coverage focused on the public CLI contract and shared resource behavior required by this goal."
+    "Preserve the current request-specific create/update validation flow for `request` resources.",
+    "Do not force request contract validation onto function payloads."
   ],
   "acceptanceCriteria": [
-    "Automated coverage includes positive function command cases for create, read, update, and delete.",
-    "Automated coverage includes negative cases for missing resource, unsupported resource, and missing `--function-id`.",
-    "Coverage verifies that function traffic is routed to the versioned function endpoints under `/api/v1/resources/functions`."
+    "`apiease create function --file <path> ...` uses the shared CRUD client path for function resources and emits function-aware success or failure output.",
+    "`apiease update function --function-id <id> --file <path> ...` fails fast with usage-level output when `--function-id` is missing.",
+    "Existing `request`, `widget`, and `variable` create/update behavior remains compatible."
   ],
-  "sequenceIndex": 4,
+  "sequenceIndex": 1,
   "codexSettings": {
     "workingDirectory": ".",
     "branchStrategy": "current",
@@ -42,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-04-01T19:43:27Z"
   }
 }

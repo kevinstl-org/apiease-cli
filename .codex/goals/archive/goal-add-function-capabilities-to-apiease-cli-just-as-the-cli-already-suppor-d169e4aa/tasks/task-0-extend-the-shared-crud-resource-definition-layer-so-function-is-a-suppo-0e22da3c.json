@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-31T23:46:17Z",
-  "updatedAt": "2026-03-31T23:55:50Z",
+  "updatedAt": "2026-04-01T19:43:27Z",
   "context": [
     "`src/crud/CrudResourceDefinitionCollection.js` is the single source of truth for supported CRUD resource names, API path segments, response payload keys, labels, and identifier flags.",
     "The reusable CRUD transport and the CLI help/output surfaces already derive their resource behavior from this shared definition layer."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-04-01T19:43:27Z"
   }
 }

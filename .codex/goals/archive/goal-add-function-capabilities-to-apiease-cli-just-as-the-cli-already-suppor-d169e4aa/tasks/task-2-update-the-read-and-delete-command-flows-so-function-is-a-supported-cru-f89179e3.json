@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-03-31T23:46:18Z",
-  "updatedAt": "2026-04-01T00:01:49Z",
+  "updatedAt": "2026-04-01T19:43:27Z",
   "context": [
     "`src/cli/ReadRequestCommand.js` and `src/cli/DeleteRequestCommand.js` already drive identifier parsing, usage text, and human-readable output from the shared resource metadata.",
     "The goal requires `apiease read function --function-id <id>` and `apiease delete function --function-id <id>` to behave like the existing widget and variable flows."
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-04-01T19:43:27Z"
   }
 }
