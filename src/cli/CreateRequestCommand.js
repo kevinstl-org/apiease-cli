@@ -173,7 +173,7 @@ class CreateRequestCommand {
       ? `Path to the ${crudResourceDefinition.resourceName} definition JSON file.`
       : 'Path to the resource definition JSON file.';
     const usageLines = [
-      `Usage: apiease-cli create ${resourceToken} --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
+      `Usage: apiease create ${resourceToken} --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
       '',
       'Options:',
     ];

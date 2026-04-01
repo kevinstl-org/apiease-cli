@@ -58,7 +58,7 @@ class TopLevelCliCommandRouter {
   buildUsageText() {
     const supportedResourceToken = this.buildSupportedResourceToken();
     return [
-      'Usage: apiease-cli <command> [options]',
+      'Usage: apiease <command> [options]',
       '',
       'Commands:',
       `  create ${supportedResourceToken}   Create a resource from a definition file.`,

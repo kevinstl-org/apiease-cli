@@ -180,7 +180,7 @@ class UpdateRequestCommand {
       ? `Path to the ${crudResourceDefinition.resourceName} definition JSON file.`
       : 'Path to the resource definition JSON file.';
     const usageLines = [
-      `Usage: apiease-cli update ${resourceToken} ${identifierOptionName} <${identifierValueName}> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
+      `Usage: apiease update ${resourceToken} ${identifierOptionName} <${identifierValueName}> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
       '',
       'Options:',
     ];

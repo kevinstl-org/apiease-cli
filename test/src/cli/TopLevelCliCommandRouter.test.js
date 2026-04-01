@@ -242,7 +242,7 @@ describe('TopLevelCliCommandRouter', () => {
 
       // Assert
       assert.equal(usageText, [
-        'Usage: apiease-cli <command> [options]',
+        'Usage: apiease <command> [options]',
         '',
         'Commands:',
         '  create <request|widget|variable|function>   Create a resource from a definition file.',
@@ -252,6 +252,7 @@ describe('TopLevelCliCommandRouter', () => {
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
       ].join('\n'));
+      assert.doesNotMatch(usageText, /apiease-cli/);
     });
   });
 });

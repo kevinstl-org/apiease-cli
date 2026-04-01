@@ -160,7 +160,7 @@ class DeleteRequestCommand {
     const identifierOptionName = crudResourceDefinition?.identifierOptionName || '<resource-identifier>';
     const identifierValueName = crudResourceDefinition?.identifierValueName || 'value';
     const usageLines = [
-      `Usage: apiease-cli delete ${resourceToken} ${identifierOptionName} <${identifierValueName}> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
+      `Usage: apiease delete ${resourceToken} ${identifierOptionName} <${identifierValueName}> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
       '',
       'Options:',
     ];

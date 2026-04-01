@@ -535,7 +535,7 @@ describe('UpdateRequestCommand', () => {
       assert.equal(updateRequestCallCount, 0);
       assert.equal(updateResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required resource argument\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli update <request\|widget\|variable\|function>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease update <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
@@ -591,7 +591,7 @@ describe('UpdateRequestCommand', () => {
       assert.equal(updateRequestCallCount, 0);
       assert.equal(updateResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli update <request\|widget\|variable\|function>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease update <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the selected resource identifier flag is missing', async () => {
@@ -655,7 +655,7 @@ describe('UpdateRequestCommand', () => {
       assert.equal(updateRequestCallCount, 0);
       assert.equal(updateResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli update widget --widget-id <id> --file <path>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease update widget --widget-id <id> --file <path>/);
     });
 
     it('should fail fast with usage output when the function identifier flag is missing', async () => {
@@ -717,7 +717,7 @@ describe('UpdateRequestCommand', () => {
       assert.equal(updateRequestCallCount, 0);
       assert.equal(updateResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli update function --function-id <id> --file <path>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease update function --function-id <id> --file <path>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

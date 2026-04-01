@@ -196,7 +196,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing required arguments: --function-id',
-        'Usage: apiease-cli read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        'Usage: apiease read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
         '',
         'Options:',
         '  --function-id <id>           APIEase function id.',
@@ -233,7 +233,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing required arguments: --function-id',
-        'Usage: apiease-cli update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        'Usage: apiease update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
         '',
         'Options:',
         '  --function-id <id>           APIEase function id.',
@@ -271,7 +271,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing required arguments: --function-id',
-        'Usage: apiease-cli delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        'Usage: apiease delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
         '',
         'Options:',
         '  --function-id <id>           APIEase function id.',
@@ -336,7 +336,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing command.',
-        'Usage: apiease-cli <command> [options]',
+        'Usage: apiease <command> [options]',
         '',
         'Commands:',
         '  create <request|widget|variable|function>   Create a resource from a definition file.',
@@ -366,7 +366,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing required resource argument for create.',
-        'Usage: apiease-cli <command> [options]',
+        'Usage: apiease <command> [options]',
         '',
         'Commands:',
         '  create <request|widget|variable|function>   Create a resource from a definition file.',
@@ -396,7 +396,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Missing required resource argument for read.',
-        'Usage: apiease-cli <command> [options]',
+        'Usage: apiease <command> [options]',
         '',
         'Commands:',
         '  create <request|widget|variable|function>   Create a resource from a definition file.',
@@ -426,7 +426,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Unsupported resource for read: thing.',
-        'Usage: apiease-cli <command> [options]',
+        'Usage: apiease <command> [options]',
         '',
         'Commands:',
         '  create <request|widget|variable|function>   Create a resource from a definition file.',
@@ -456,7 +456,7 @@ describe('apiease-cli', () => {
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
         'Unknown command: publish',
-        'Usage: apiease-cli <command> [options]',
+        'Usage: apiease <command> [options]',
         '',
         'Commands:',
         '  create <request|widget|variable|function>   Create a resource from a definition file.',

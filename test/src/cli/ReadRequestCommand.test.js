@@ -421,7 +421,7 @@ describe('ReadRequestCommand', () => {
       assert.equal(readRequestCallCount, 0);
       assert.equal(readResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required resource argument\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli read <request\|widget\|variable\|function>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease read <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
@@ -466,7 +466,7 @@ describe('ReadRequestCommand', () => {
       assert.equal(readRequestCallCount, 0);
       assert.equal(readResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli read <request\|widget\|variable\|function>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease read <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the selected resource identifier flag is missing', async () => {
@@ -517,7 +517,7 @@ describe('ReadRequestCommand', () => {
       assert.equal(readRequestCallCount, 0);
       assert.equal(readResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli read widget --widget-id <id>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease read widget --widget-id <id>/);
     });
 
     it('should fail fast with usage output when the function identifier flag is missing', async () => {
@@ -579,7 +579,7 @@ describe('ReadRequestCommand', () => {
       assert.equal(readResourceCallCount, 0);
       assert.equal(resolveConfigurationCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli read function --function-id <id>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease read function --function-id <id>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

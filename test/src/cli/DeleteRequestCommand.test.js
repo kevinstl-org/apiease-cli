@@ -413,7 +413,7 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required resource argument\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete <request\|widget\|variable\|function>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease delete <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
@@ -458,7 +458,7 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Unsupported resource: product\./);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete <request\|widget\|variable\|function>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease delete <request\|widget\|variable\|function>/);
     });
 
     it('should fail fast with usage output when the selected resource identifier flag is missing', async () => {
@@ -509,7 +509,7 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --variable-name/);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete variable --variable-name <name>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease delete variable --variable-name <name>/);
     });
 
     it('should fail fast with usage output when the function identifier flag is missing', async () => {
@@ -571,7 +571,7 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteResourceCallCount, 0);
       assert.equal(resolveConfigurationCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease-cli delete function --function-id <id>/);
+      assert.match(stderrChunks.join(''), /Usage: apiease delete function --function-id <id>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
