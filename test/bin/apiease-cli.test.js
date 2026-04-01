@@ -37,6 +37,31 @@ describe('apiease-cli', () => {
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
     });
 
+    it('should delegate function create command arguments to CreateRequestCommand and return its exit code', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const commandArguments = ['create', 'function', '--file', '/tmp/function.json'];
+      const receivedCommandArguments = [];
+      const createRequestCommand = {
+        async run(incomingCommandArguments) {
+          receivedCommandArguments.push(incomingCommandArguments);
+          return 0;
+        },
+      };
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments,
+        createRequestCommand,
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
     it('should delegate init command arguments to InitProjectCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
@@ -144,6 +169,118 @@ describe('apiease-cli', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
+    });
+
+    it('should return one and write read usage output when function id is missing', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const { ReadRequestCommand } = await import(createCliCommandModuleUrl('ReadRequestCommand.js'));
+      const stderrChunks = [];
+      const stderr = createWritableStream(stderrChunks);
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['read', 'function'],
+        createRequestCommand: createUnexpectedCommand('create'),
+        readRequestCommand: new ReadRequestCommand({
+          stdout: createWritableStream([]),
+          stderr,
+        }),
+        updateRequestCommand: createUnexpectedCommand('update'),
+        deleteRequestCommand: createUnexpectedCommand('delete'),
+        stdout: createWritableStream([]),
+        stderr,
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Missing required arguments: --function-id',
+        'Usage: apiease-cli read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        '',
+        'Options:',
+        '  --function-id <id>           APIEase function id.',
+        '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
+        '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
+        '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
+        '  --json                      Emit raw JSON output.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write update usage output when function id is missing', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const { UpdateRequestCommand } = await import(createCliCommandModuleUrl('UpdateRequestCommand.js'));
+      const stderrChunks = [];
+      const stderr = createWritableStream(stderrChunks);
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['update', 'function', '--file', '/tmp/function.json'],
+        createRequestCommand: createUnexpectedCommand('create'),
+        readRequestCommand: createUnexpectedCommand('read'),
+        updateRequestCommand: new UpdateRequestCommand({
+          stdout: createWritableStream([]),
+          stderr,
+        }),
+        deleteRequestCommand: createUnexpectedCommand('delete'),
+        stdout: createWritableStream([]),
+        stderr,
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Missing required arguments: --function-id',
+        'Usage: apiease-cli update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        '',
+        'Options:',
+        '  --function-id <id>           APIEase function id.',
+        '  --file <path>               Path to the function definition JSON file.',
+        '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
+        '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
+        '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
+        '  --json                      Emit raw JSON output.',
+        '',
+      ].join('\n'));
+    });
+
+    it('should return one and write delete usage output when function id is missing', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const { DeleteRequestCommand } = await import(createCliCommandModuleUrl('DeleteRequestCommand.js'));
+      const stderrChunks = [];
+      const stderr = createWritableStream(stderrChunks);
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['delete', 'function'],
+        createRequestCommand: createUnexpectedCommand('create'),
+        readRequestCommand: createUnexpectedCommand('read'),
+        updateRequestCommand: createUnexpectedCommand('update'),
+        deleteRequestCommand: new DeleteRequestCommand({
+          stdout: createWritableStream([]),
+          stderr,
+        }),
+        stdout: createWritableStream([]),
+        stderr,
+      });
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(stderrChunks.join(''), [
+        'Missing required arguments: --function-id',
+        'Usage: apiease-cli delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        '',
+        'Options:',
+        '  --function-id <id>           APIEase function id.',
+        '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
+        '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
+        '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
+        '  --json                      Emit raw JSON output.',
+        '',
+      ].join('\n'));
     });
 
     it('should delegate upgrade command arguments to UpgradeProjectCommand and return its exit code', async () => {
@@ -504,6 +641,10 @@ function createWritableStream(chunks) {
       chunks.push(chunk);
     },
   };
+}
+
+function createCliCommandModuleUrl(fileName) {
+  return pathToFileURL(path.join(projectDirectoryPath, 'src', 'cli', fileName)).href;
 }
 
 function createUnexpectedCommand(commandName) {

@@ -160,6 +160,18 @@ describe('CrudResourceDefinitionCollection', () => {
       // Assert
       assert.equal(result, 'api/v1/resources/widgets');
     });
+
+    it('should build the versioned function collection path', async () => {
+      // Arrange
+      const { CrudResourceDefinitionCollection } = await import(crudResourceDefinitionCollectionModuleUrl);
+      const crudResourceDefinitionCollection = new CrudResourceDefinitionCollection();
+
+      // Act
+      const result = crudResourceDefinitionCollection.buildCollectionPath('function');
+
+      // Assert
+      assert.equal(result, 'api/v1/resources/functions');
+    });
   });
 
   describe('buildItemPath', () => {
@@ -176,6 +188,21 @@ describe('CrudResourceDefinitionCollection', () => {
 
       // Assert
       assert.equal(result, 'api/v1/resources/requests/request%2F1%20%26%202');
+    });
+
+    it('should build the versioned function item path with an encoded function identifier', async () => {
+      // Arrange
+      const { CrudResourceDefinitionCollection } = await import(crudResourceDefinitionCollectionModuleUrl);
+      const crudResourceDefinitionCollection = new CrudResourceDefinitionCollection();
+
+      // Act
+      const result = crudResourceDefinitionCollection.buildItemPath({
+        resourceName: 'function',
+        resourceIdentifier: 'function/1 & 2',
+      });
+
+      // Assert
+      assert.equal(result, 'api/v1/resources/functions/function%2F1%20%26%202');
     });
   });
 });

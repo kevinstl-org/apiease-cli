@@ -73,6 +73,75 @@ describe('TopLevelCliCommandRouter', () => {
       ]);
     });
 
+    it('should resolve create read update and delete for function resources', () => {
+      // Arrange
+      const topLevelCliCommandRouter = new TopLevelCliCommandRouter();
+      const createRequestCommand = { name: 'create' };
+      const readRequestCommand = { name: 'read' };
+      const updateRequestCommand = { name: 'update' };
+      const deleteRequestCommand = { name: 'delete' };
+
+      // Act
+      const results = [
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['create', 'function', '--file', '/tmp/function.json'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['read', 'function', '--function-id', 'function-1'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['update', 'function', '--function-id', 'function-1', '--file', '/tmp/function.json'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+        topLevelCliCommandRouter.resolveCommand({
+          commandArguments: ['delete', 'function', '--function-id', 'function-1'],
+          createRequestCommand,
+          readRequestCommand,
+          updateRequestCommand,
+          deleteRequestCommand,
+          initProjectCommand: { name: 'init' },
+          upgradeProjectCommand: { name: 'upgrade' },
+        }),
+      ];
+
+      // Assert
+      assert.deepEqual(results, [
+        {
+          ok: true,
+          command: createRequestCommand,
+        },
+        {
+          ok: true,
+          command: readRequestCommand,
+        },
+        {
+          ok: true,
+          command: updateRequestCommand,
+        },
+        {
+          ok: true,
+          command: deleteRequestCommand,
+        },
+      ]);
+    });
+
     it('should return a usage failure when a crud command is missing the resource argument', () => {
       // Arrange
       const topLevelCliCommandRouter = new TopLevelCliCommandRouter();

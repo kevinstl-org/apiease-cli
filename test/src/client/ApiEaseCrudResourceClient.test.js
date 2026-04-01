@@ -78,6 +78,52 @@ describe('ApiEaseCrudResourceClient', () => {
         },
       });
     });
+
+    it('should post the payload to the versioned function collection endpoint', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const functionDefinition = {
+        functionId: 'function-1',
+        functionName: 'Order total',
+        sourceCode: 'export default function run() {}',
+      };
+      const fetchCalls = [];
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 201,
+            async json() {
+              return {
+                ok: true,
+                function: functionDefinition,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.createResource({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root/',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resource: functionDefinition,
+        failureErrorCode: 'FUNCTION_CREATE_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/functions');
+      assert.equal(fetchCalls[0].options.method, 'POST');
+      assert.equal(fetchCalls[0].options.body, JSON.stringify(functionDefinition));
+      assert.deepEqual(result, {
+        status: 201,
+        ok: true,
+        function: functionDefinition,
+      });
+    });
   });
 
   describe('readResource', () => {
@@ -124,6 +170,50 @@ describe('ApiEaseCrudResourceClient', () => {
         status: 200,
         ok: true,
         variable,
+      });
+    });
+
+    it('should get the resource from the versioned function item endpoint', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const functionDefinition = {
+        functionId: 'function/1 & 2',
+        functionName: 'Order total',
+      };
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                function: functionDefinition,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.readResource({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceIdentifier: 'function/1 & 2',
+        failureErrorCode: 'FUNCTION_READ_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/functions/function%2F1%20%26%202');
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        function: functionDefinition,
       });
     });
   });
@@ -183,6 +273,52 @@ describe('ApiEaseCrudResourceClient', () => {
         },
       });
     });
+
+    it('should put the payload to the versioned function item endpoint', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const functionDefinition = {
+        functionId: 'function/1 & 2',
+        functionName: 'Order total updated',
+      };
+      const fetchCalls = [];
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                function: functionDefinition,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.updateResource({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root/',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceIdentifier: 'function/1 & 2',
+        resource: functionDefinition,
+        failureErrorCode: 'FUNCTION_UPDATE_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/functions/function%2F1%20%26%202');
+      assert.equal(fetchCalls[0].options.method, 'PUT');
+      assert.equal(fetchCalls[0].options.body, JSON.stringify(functionDefinition));
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        function: functionDefinition,
+      });
+    });
   });
 
   describe('deleteResource', () => {
@@ -230,6 +366,51 @@ describe('ApiEaseCrudResourceClient', () => {
         status: 200,
         ok: true,
         variable,
+      });
+    });
+
+    it('should delete the resource from the versioned function item endpoint without a request body', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const functionDefinition = {
+        functionId: 'function/1 & 2',
+        functionName: 'Order total',
+      };
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                function: functionDefinition,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.deleteResource({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceIdentifier: 'function/1 & 2',
+        failureErrorCode: 'FUNCTION_DELETE_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/functions/function%2F1%20%26%202');
+      assert.equal(fetchCalls[0].options.method, 'DELETE');
+      assert.equal(fetchCalls[0].options.body, undefined);
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        function: functionDefinition,
       });
     });
 
