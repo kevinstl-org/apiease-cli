@@ -105,6 +105,8 @@ describe('MyClass', () => {
 - For local development, the template source resolves to `../apiease-template`; production-oriented changes must preserve the public template repository metadata used by the CLI.
 
 ## APIEase - Parent project reference
+- `docs/knowledgebase/apiEaseDocsConsolidated.md` is the primary local reference for overall APIEase product and platform knowledge in this repository.
+- AI agents should consult `docs/knowledgebase/apiEaseDocsConsolidated.md` first when they need broad APIEase context, feature background, terminology, or high-level product behavior.
 - The APIEase main app project is located at ../apiease.
 - - `../apiease` can be used as a product/API reference when verifying request payload expectations or broader APIEase concepts, but do not import its app-specific structure rules into this CLI repository.
 - Use that project for reference on how APIEase works.
@@ -113,6 +115,7 @@ describe('MyClass', () => {
 ## Feature Documentation
 - The APIEase Documentation is in a separate project at ../apiease-docs.
 - The ../apiease-docs project uses Docusaurus.
+- Use `docs/knowledgebase/apiEaseDocsConsolidated.md` in this repository for consolidated AI-agent context about APIEase before consulting the external docs project for page-level documentation edits.
 - When asked to document a new feature find the appropriate location in ../apiease-docs and create a new markdown file using existing markdown files for reference.
 - Update the sidebar.js file in ../apiease-docs to include the new documentation page in the appropriate location.
 - When asked to update existing documentation find the appropriate markdown file in ../apiease-docs and make the necessary changes.

@@ -71,6 +71,19 @@ describe('package manifest', () => {
       assert.equal('apiease-cli' in packageJson.bin, false);
     });
   });
+
+  describe('scripts', () => {
+    it('should expose the local knowledge base pull command', async () => {
+      // Arrange
+      const packageJson = await readPackageJson();
+
+      // Assert
+      assert.equal(
+        packageJson.scripts['knowledge:pull-local'],
+        'node scripts/knowledgebase/pullApiEaseDocsKnowledgeBase.js',
+      );
+    });
+  });
 });
 
 async function readPackageJson() {

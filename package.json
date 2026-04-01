@@ -15,7 +15,8 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "knowledge:pull-local": "node scripts/knowledgebase/pullApiEaseDocsKnowledgeBase.js"
   },
   "engines": {
     "node": ">=20"
