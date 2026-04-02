@@ -1,6 +1,6 @@
-# apiease-cli
+# apiease
 
-`apiease-cli` is a Node-based CLI for bootstrapping APIEase projects and managing APIEase `request`, `widget`, `variable`, and `function` resources.
+`apiease` is a Node-based CLI for bootstrapping APIEase projects and managing APIEase `request`, `widget`, `variable`, and `function` resources.
 
 ## Requirements
 
@@ -8,7 +8,13 @@
 
 ## Install
 
-From this repository:
+Install from npm:
+
+```bash
+npm install -g apiease
+```
+
+For local development from this repository:
 
 ```bash
 npm install
@@ -20,7 +26,7 @@ To expose the command globally while working locally:
 npm link
 ```
 
-After linking, the installed command is:
+In both cases, the installed command is:
 
 ```bash
 apiease

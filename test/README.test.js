@@ -9,6 +9,18 @@ const projectDirectoryPath = path.resolve(currentDirectoryPath, '..');
 const readmeFilePath = path.join(projectDirectoryPath, 'README.md');
 
 describe('README', () => {
+  describe('installation documentation', () => {
+    it('should describe the public package as apiease', async () => {
+      // Arrange
+      const readme = await fs.readFile(readmeFilePath, 'utf8');
+
+      // Assert
+      assert.match(readme, /# apiease\b/);
+      assert.match(readme, /npm install -g apiease/);
+      assert.doesNotMatch(readme, /npm install -g apiease-cli/);
+    });
+  });
+
   describe('CRUD resource documentation', () => {
     it('should list function in the top-level command reference', async () => {
       // Arrange

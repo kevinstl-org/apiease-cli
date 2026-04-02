@@ -1,5 +1,5 @@
 {
-  "name": "apiease-cli",
+  "name": "apiease",
   "version": "0.1.0",
   "description": "Node client and thin CLI wrapper for creating APIEase requests.",
   "type": "module",

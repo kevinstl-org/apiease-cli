@@ -9,12 +9,13 @@ const projectDirectoryPath = path.resolve(currentDirectoryPath, '..');
 
 describe('package manifest', () => {
   describe('metadata', () => {
-    it('should configure the apiease-cli package as an ES module', async () => {
+    it('should configure the apiease package as an ES module', async () => {
       // Arrange
       const packageJson = await readPackageJson();
 
       // Assert
-      assert.equal(packageJson.name, 'apiease-cli');
+      assert.equal(packageJson.name, 'apiease');
+      assert.notEqual(packageJson.name, 'apiease-cli');
       assert.equal(packageJson.type, 'module');
     });
   });
@@ -69,6 +70,16 @@ describe('package manifest', () => {
 
       // Assert
       assert.equal('apiease-cli' in packageJson.bin, false);
+    });
+  });
+
+  describe('package layout', () => {
+    it('should not keep a separate reserved apiease placeholder package', async () => {
+      // Arrange
+      const reservePackageJsonPath = path.join(projectDirectoryPath, 'reserve', 'apiease', 'package.json');
+
+      // Assert
+      await assert.rejects(fs.access(reservePackageJsonPath));
     });
   });
 
