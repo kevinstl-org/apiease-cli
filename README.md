@@ -72,9 +72,10 @@ apiease init .
 
 If you are already in the target directory, `apiease init` defaults to the same behavior as `apiease init .`.
 
-Current development behavior:
+Current behavior:
 
-- The CLI resolves the template from `../apiease-template`.
+- During local CLI development, the CLI resolves the template from `../apiease-template`.
+- In installed usage, the CLI downloads the template from [kevinstl-org/apiease-template](https://github.com/kevinstl-org/apiease-template).
 - The template is copied directly into `./my-project`.
 - The CLI writes project metadata to `.apiease/project.json`.
 - The metadata includes the template git version and a manifest of template-managed file hashes.
@@ -115,10 +116,9 @@ Check whether the current project template metadata matches the latest local tem
 apiease upgrade --check
 ```
 
-Current behavior:
-
 - The command reads `.apiease/project.json` from the current project directory.
-- It compares the stored template git commit to the current `../apiease-template` git commit.
+- During local CLI development, it compares the stored template git commit to the current `../apiease-template` git commit.
+- In installed usage, it compares the stored template git commit to the latest commit fetched from [kevinstl-org/apiease-template](https://github.com/kevinstl-org/apiease-template).
 - It exits `0` when the project is already up to date.
 - It exits `1` when an upgrade is available or when the project metadata is missing.
 
@@ -320,7 +320,7 @@ apiease create request \
 ## Notes
 
 - The public installed command name is `apiease`.
-- `init` currently copies the local development template from `../apiease-template`.
+- `init` uses `../apiease-template` during local CLI development and otherwise downloads the template from [kevinstl-org/apiease-template](https://github.com/kevinstl-org/apiease-template).
 - Resource definition files must be valid JSON with an object as the root value.
 - `--api-key` is optional. When omitted, the CLI resolves `APIEASE_API_KEY` from `~/.apiease/.env.<environment>`.
 - `--base-url` and `--shop-domain` are optional when `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` are present in `~/.apiease/.env.<environment>`.

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectMetadataFileService } from '../project/ProjectMetadataFileService.js';
 import { TemplateProjectManifestBuilder } from '../template/TemplateProjectManifestBuilder.js';
+import { TemplateProjectSourceMaterializer } from '../template/TemplateProjectSourceMaterializer.js';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
 
@@ -13,6 +14,7 @@ class InitProjectCommand {
     cliVersion,
     projectMetadataFileService = new ProjectMetadataFileService(),
     templateProjectManifestBuilder = new TemplateProjectManifestBuilder(),
+    templateProjectSourceMaterializer = new TemplateProjectSourceMaterializer(),
     templateProjectSourceResolver = new TemplateProjectSourceResolver(),
     templateProjectVersionResolver = new TemplateProjectVersionResolver(),
     stdout = process.stdout,
@@ -21,6 +23,7 @@ class InitProjectCommand {
     this.cliVersion = cliVersion;
     this.projectMetadataFileService = projectMetadataFileService;
     this.templateProjectManifestBuilder = templateProjectManifestBuilder;
+    this.templateProjectSourceMaterializer = templateProjectSourceMaterializer;
     this.templateProjectSourceResolver = templateProjectSourceResolver;
     this.templateProjectVersionResolver = templateProjectVersionResolver;
     this.stdout = stdout;
@@ -35,57 +38,62 @@ class InitProjectCommand {
     }
 
     const templateSource = this.templateProjectSourceResolver.resolveTemplateSource();
+    const materializedTemplate = await this.templateProjectSourceMaterializer.materializeTemplateSource(templateSource);
     const destinationDirectoryPath = path.resolve(currentWorkingDirectoryPath, parseResult.projectName);
     const destinationAlreadyExists = (await this.readPathStats(destinationDirectoryPath)) !== null;
     const destinationValidationResult = await this.validateDestinationDirectoryPath(destinationDirectoryPath);
 
     if (!destinationValidationResult.ok) {
       this.stderr.write(`${destinationValidationResult.message}\n`);
+      await materializedTemplate.cleanup();
       return 1;
     }
 
-    const copyPlan = await this.buildTemplateCopyPlan(
-      templateSource.templateDirectoryPath,
-      destinationDirectoryPath,
-    );
-
-    await fs.mkdir(destinationDirectoryPath, { recursive: true });
-
-    this.stdout.write(this.buildStartOutput({
-      destinationAlreadyExists,
-      displayTemplateSource: templateSource.displayTemplateSource,
-      projectName: parseResult.projectName,
-    }));
-
-    await this.copyTemplateEntries(templateSource.templateDirectoryPath, destinationDirectoryPath);
-
-    const templateVersion = await this.templateProjectVersionResolver.resolveTemplateVersion(
-      templateSource.templateDirectoryPath,
-    );
-    const templateManifest = await this.templateProjectManifestBuilder.buildTemplateManifest(
-      templateSource.templateDirectoryPath,
-    );
-    await this.projectMetadataFileService.writeProjectMetadata({
-      projectDirectoryPath: destinationDirectoryPath,
-      projectMetadata: this.buildProjectMetadata({
+    try {
+      const copyPlan = await this.buildTemplateCopyPlan(
+        materializedTemplate.templateDirectoryPath,
         destinationDirectoryPath,
-        skippedPaths: copyPlan.skippedPaths,
-        templateManifest,
-        templateSource,
-        templateVersion,
-      }),
-    });
+      );
 
-    const hasExistingGitDirectory = await this.hasGitDirectory(destinationDirectoryPath);
-    this.stdout.write(
-      this.buildSuccessOutput({
+      await fs.mkdir(destinationDirectoryPath, { recursive: true });
+
+      this.stdout.write(this.buildStartOutput({
         destinationAlreadyExists,
-        hasExistingGitDirectory,
+        displayTemplateSource: templateSource.displayTemplateSource,
         projectName: parseResult.projectName,
-        skippedPaths: copyPlan.skippedPaths,
-      }),
-    );
-    return 0;
+      }));
+
+      await this.copyTemplateEntries(materializedTemplate.templateDirectoryPath, destinationDirectoryPath);
+
+      const templateVersion = materializedTemplate.templateVersion
+        ?? await this.templateProjectVersionResolver.resolveTemplateVersion(materializedTemplate.templateDirectoryPath);
+      const templateManifest = await this.templateProjectManifestBuilder.buildTemplateManifest(
+        materializedTemplate.templateDirectoryPath,
+      );
+      await this.projectMetadataFileService.writeProjectMetadata({
+        projectDirectoryPath: destinationDirectoryPath,
+        projectMetadata: this.buildProjectMetadata({
+          destinationDirectoryPath,
+          skippedPaths: copyPlan.skippedPaths,
+          templateManifest,
+          templateSource,
+          templateVersion,
+        }),
+      });
+
+      const hasExistingGitDirectory = await this.hasGitDirectory(destinationDirectoryPath);
+      this.stdout.write(
+        this.buildSuccessOutput({
+          destinationAlreadyExists,
+          hasExistingGitDirectory,
+          projectName: parseResult.projectName,
+          skippedPaths: copyPlan.skippedPaths,
+        }),
+      );
+      return 0;
+    } finally {
+      await materializedTemplate.cleanup();
+    }
   }
 
   parseCommandArguments(commandArguments) {

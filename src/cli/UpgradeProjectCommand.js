@@ -3,6 +3,7 @@ import { ProjectUpgradeApplierService } from '../project/ProjectUpgradeApplierSe
 import { ProjectUpgradePlanService } from '../project/ProjectUpgradePlanService.js';
 import { TemplateProjectManifestBuilder } from '../template/TemplateProjectManifestBuilder.js';
 import { TemplateProjectOwnershipPolicy } from '../template/TemplateProjectOwnershipPolicy.js';
+import { TemplateProjectSourceMaterializer } from '../template/TemplateProjectSourceMaterializer.js';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
 
@@ -18,6 +19,7 @@ class UpgradeProjectCommand {
     projectMetadataFileService = new ProjectMetadataFileService(),
     templateProjectManifestBuilder = new TemplateProjectManifestBuilder(),
     templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy(),
+    templateProjectSourceMaterializer = new TemplateProjectSourceMaterializer(),
     templateProjectSourceResolver = new TemplateProjectSourceResolver(),
     templateProjectVersionResolver = new TemplateProjectVersionResolver(),
     stdout = process.stdout,
@@ -28,6 +30,7 @@ class UpgradeProjectCommand {
     this.projectMetadataFileService = projectMetadataFileService;
     this.templateProjectManifestBuilder = templateProjectManifestBuilder;
     this.templateProjectOwnershipPolicy = templateProjectOwnershipPolicy;
+    this.templateProjectSourceMaterializer = templateProjectSourceMaterializer;
     this.templateProjectSourceResolver = templateProjectSourceResolver;
     this.templateProjectVersionResolver = templateProjectVersionResolver;
     this.stdout = stdout;
@@ -48,97 +51,102 @@ class UpgradeProjectCommand {
     }
 
     const templateSource = this.templateProjectSourceResolver.resolveTemplateSource();
-    const templateVersion = await this.templateProjectVersionResolver.resolveTemplateVersion(
-      templateSource.templateDirectoryPath,
-    );
-    const currentProjectTemplateVersion = projectMetadataResult.projectMetadata.template?.version?.value;
+    const materializedTemplate = await this.templateProjectSourceMaterializer.materializeTemplateSource(templateSource);
 
-    if (parseResult.mode === 'dryRun') {
-      const upgradePlanResult = await this.tryBuildUpgradePlan({
-        currentWorkingDirectoryPath,
-        projectMetadata: projectMetadataResult.projectMetadata,
-        templateSource,
-      });
-      if (!upgradePlanResult.ok) {
-        this.stderr.write(this.buildFailureOutput(upgradePlanResult));
-        return 1;
-      }
+    try {
+      const templateVersion = materializedTemplate.templateVersion
+        ?? await this.templateProjectVersionResolver.resolveTemplateVersion(materializedTemplate.templateDirectoryPath);
+      const currentProjectTemplateVersion = projectMetadataResult.projectMetadata.template?.version?.value;
 
-      this.stdout.write(
-        this.buildDryRunOutput({
-          currentProjectTemplateVersion,
-          templateVersion,
-          upgradePlan: upgradePlanResult.upgradePlan,
-        }),
-      );
-      return this.hasPlannedChanges(upgradePlanResult.upgradePlan) ? 1 : 0;
-    }
-
-    if (parseResult.mode === 'check' && currentProjectTemplateVersion === templateVersion.value) {
-      this.stdout.write('APIEASE project template is up to date.\n');
-      return 0;
-    }
-
-    if (parseResult.mode === 'apply') {
-      const upgradePlanResult = await this.tryBuildUpgradePlan({
-        currentWorkingDirectoryPath,
-        projectMetadata: projectMetadataResult.projectMetadata,
-        templateSource,
-      });
-      if (!upgradePlanResult.ok) {
-        this.stderr.write(this.buildFailureOutput(upgradePlanResult));
-        return 1;
-      }
-
-      const applyResult = await this.tryApplyUpgradePlan({
-        currentProjectDirectoryPath: currentWorkingDirectoryPath,
-        templateDirectoryPath: templateSource.templateDirectoryPath,
-        upgradePlan: upgradePlanResult.upgradePlan,
-      });
-      if (!applyResult.ok) {
-        this.stderr.write(this.buildFailureOutput(applyResult));
-        return 1;
-      }
-
-      await this.projectMetadataFileService.writeProjectMetadata({
-        projectDirectoryPath: currentWorkingDirectoryPath,
-        projectMetadata: this.buildUpdatedProjectMetadata({
-          currentTemplateManifest: upgradePlanResult.currentTemplateManifest,
+      if (parseResult.mode === 'dryRun') {
+        const upgradePlanResult = await this.tryBuildUpgradePlan({
+          currentWorkingDirectoryPath,
           projectMetadata: projectMetadataResult.projectMetadata,
-          templateSource,
-          templateVersion: upgradePlanResult.upgradePlan.skipPaths.length === 0
-            ? templateVersion
-            : projectMetadataResult.projectMetadata.template.version,
-          upgradePlan: upgradePlanResult.upgradePlan,
-        }),
-      });
-      this.stdout.write(
-        this.buildApplyOutput({
-          currentProjectTemplateVersion,
-          templateVersion,
-          upgradePlan: upgradePlanResult.upgradePlan,
-        }),
-      );
-      return upgradePlanResult.upgradePlan.skipPaths.length === 0 ? 0 : 1;
-    }
+          templateDirectoryPath: materializedTemplate.templateDirectoryPath,
+        });
+        if (!upgradePlanResult.ok) {
+          this.stderr.write(this.buildFailureOutput(upgradePlanResult));
+          return 1;
+        }
 
-    this.stdout.write(
-      [
-        'APIEASE project template upgrade is available.',
-        `Current project template version: ${currentProjectTemplateVersion}`,
-        `Latest template version: ${templateVersion.value}`,
-        '',
-      ].join('\n'),
-    );
-    return 1;
+        this.stdout.write(
+          this.buildDryRunOutput({
+            currentProjectTemplateVersion,
+            templateVersion,
+            upgradePlan: upgradePlanResult.upgradePlan,
+          }),
+        );
+        return this.hasPlannedChanges(upgradePlanResult.upgradePlan) ? 1 : 0;
+      }
+
+      if (parseResult.mode === 'check' && currentProjectTemplateVersion === templateVersion.value) {
+        this.stdout.write('APIEASE project template is up to date.\n');
+        return 0;
+      }
+
+      if (parseResult.mode === 'apply') {
+        const upgradePlanResult = await this.tryBuildUpgradePlan({
+          currentWorkingDirectoryPath,
+          projectMetadata: projectMetadataResult.projectMetadata,
+          templateDirectoryPath: materializedTemplate.templateDirectoryPath,
+        });
+        if (!upgradePlanResult.ok) {
+          this.stderr.write(this.buildFailureOutput(upgradePlanResult));
+          return 1;
+        }
+
+        const applyResult = await this.tryApplyUpgradePlan({
+          currentProjectDirectoryPath: currentWorkingDirectoryPath,
+          templateDirectoryPath: materializedTemplate.templateDirectoryPath,
+          upgradePlan: upgradePlanResult.upgradePlan,
+        });
+        if (!applyResult.ok) {
+          this.stderr.write(this.buildFailureOutput(applyResult));
+          return 1;
+        }
+
+        await this.projectMetadataFileService.writeProjectMetadata({
+          projectDirectoryPath: currentWorkingDirectoryPath,
+          projectMetadata: this.buildUpdatedProjectMetadata({
+            currentTemplateManifest: upgradePlanResult.currentTemplateManifest,
+            projectMetadata: projectMetadataResult.projectMetadata,
+            templateSource,
+            templateVersion: upgradePlanResult.upgradePlan.skipPaths.length === 0
+              ? templateVersion
+              : projectMetadataResult.projectMetadata.template.version,
+            upgradePlan: upgradePlanResult.upgradePlan,
+          }),
+        });
+        this.stdout.write(
+          this.buildApplyOutput({
+            currentProjectTemplateVersion,
+            templateVersion,
+            upgradePlan: upgradePlanResult.upgradePlan,
+          }),
+        );
+        return upgradePlanResult.upgradePlan.skipPaths.length === 0 ? 0 : 1;
+      }
+
+      this.stdout.write(
+        [
+          'APIEASE project template upgrade is available.',
+          `Current project template version: ${currentProjectTemplateVersion}`,
+          `Latest template version: ${templateVersion.value}`,
+          '',
+        ].join('\n'),
+      );
+      return 1;
+    } finally {
+      await materializedTemplate.cleanup();
+    }
   }
 
-  async tryBuildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateSource }) {
+  async tryBuildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateDirectoryPath }) {
     try {
       return await this.buildUpgradePlan({
         currentWorkingDirectoryPath,
         projectMetadata,
-        templateSource,
+        templateDirectoryPath,
       });
     } catch (error) {
       return this.buildManagedPathFailureResult(error);
@@ -158,7 +166,7 @@ class UpgradeProjectCommand {
     }
   }
 
-  async buildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateSource }) {
+  async buildUpgradePlan({ currentWorkingDirectoryPath, projectMetadata, templateDirectoryPath }) {
     const storedTemplateManifest = projectMetadata.template?.manifest;
     if (!storedTemplateManifest) {
       return {
@@ -168,7 +176,7 @@ class UpgradeProjectCommand {
     }
 
     const currentTemplateManifest = await this.templateProjectManifestBuilder.buildTemplateManifest(
-      templateSource.templateDirectoryPath,
+      templateDirectoryPath,
     );
     const managedStoredTemplateManifest = this.templateProjectOwnershipPolicy.filterTemplateManifest(
       storedTemplateManifest,
