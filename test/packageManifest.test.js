@@ -18,6 +18,21 @@ describe('package manifest', () => {
       assert.notEqual(packageJson.name, 'apiease-cli');
       assert.equal(packageJson.type, 'module');
     });
+
+    it('should link the published npm package back to the GitHub repository', async () => {
+      // Arrange
+      const packageJson = await readPackageJson();
+
+      // Assert
+      assert.deepEqual(packageJson.repository, {
+        type: 'git',
+        url: 'git+https://github.com/kevinstl-org/apiease-cli.git',
+      });
+      assert.equal(packageJson.homepage, 'https://github.com/kevinstl-org/apiease-cli');
+      assert.deepEqual(packageJson.bugs, {
+        url: 'https://github.com/kevinstl-org/apiease-cli/issues',
+      });
+    });
   });
 
   describe('exports', () => {

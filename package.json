@@ -2,6 +2,14 @@
   "name": "apiease",
   "version": "0.1.1",
   "description": "Node client and thin CLI wrapper for creating APIEase requests.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevinstl-org/apiease-cli.git"
+  },
+  "homepage": "https://github.com/kevinstl-org/apiease-cli",
+  "bugs": {
+    "url": "https://github.com/kevinstl-org/apiease-cli/issues"
+  },
   "type": "module",
   "main": "./src/index.js",
   "exports": {
