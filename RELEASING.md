@@ -14,33 +14,65 @@ This repository publishes one npm package from the repository root: `apiease`.
 npm whoami
 ```
 
-2. Update the root package version in `package.json`.
+2. If `npm whoami` fails or shows the wrong account, log in before publishing:
 
-3. Run the full test suite from the repository root:
+```bash
+npm login
+```
+
+3. Update the root package version.
+
+Use `npm version` to bump the package version automatically:
+
+```bash
+npm version patch
+```
+
+If you do not want `npm version` to create a git commit and tag as part of the version bump, use:
+
+```bash
+npm version patch --no-git-tag-version
+```
+
+`npm version` does not choose a bump type automatically. Replace `patch` with `minor`, `major`, or an exact version such as `0.1.2`. By default, `npm version` updates the package version, writes the lockfile changes, and creates a git commit plus tag. `--no-git-tag-version` keeps the file updates but skips the automatic git commit and tag creation.
+
+4. Run the full test suite from the repository root:
 
 ```bash
 ./.codex/run_test_suite.sh
 ```
 
-4. Optionally inspect the package contents before publishing:
+5. Test the unpublished CLI directly from this repository before publishing:
+
+```bash
+./bin/apiease-cli --help
+```
+
+If you are testing from a sibling project such as `apiease-examples`, invoke this repository's local command by path:
+
+```bash
+../apiease-cli/bin/apiease-cli --help
+```
+
+6. Optionally inspect the package contents before publishing:
 
 ```bash
 npm pack --dry-run
 ```
 
-5. Publish the CLI package from the repository root:
+7. Publish the CLI package from the repository root:
 
 ```bash
 npm publish
 ```
 
-6. Verify the published version:
+8. Verify the published version:
 
 ```bash
 npm view apiease version
 ```
 
-7. Optionally verify the installed command:
+9. Optionally verify the installed command:
 
 ```bash
 npm install -g apiease

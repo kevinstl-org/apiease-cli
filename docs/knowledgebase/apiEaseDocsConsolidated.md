@@ -39,7 +39,7 @@ CONTENT
 
 APIEase defines and runs four types of requests: [HTTP Requests](../requests/request-types/http-requests.md), [Flow Requests](../requests/request-types/flow-requests.md), [Liquid Requests](../requests/request-types/liquid-requests.md), and [System Requests](../requests/request-types/system-requests.md). Each request type is executed inside APIEase's managed environment, keeping credentials secure and ensuring logic is processed server-side.
 
-APIEase also includes [Functions](../functions/functions-page.md) and [Widgets](../widgets/widgets-page.md). Functions are reusable Liquid helpers for Liquid Requests, while Widgets are designed for storefront UI instead of API execution.
+APIEase also includes [Functions](../functions/functions-overview.md) and [Widgets](../widgets/widgets-page.md). Functions are reusable Liquid helpers for Liquid Requests, while Widgets are designed for storefront UI instead of API execution.
 
 ## [HTTP Requests](../requests/request-types/http-requests.md)
 
@@ -61,7 +61,7 @@ System Requests run internal APIEase functions (they do not call an external URL
 
 Widgets are reusable storefront components that render Liquid templates with optional JavaScript. They are added to your theme through the APIEase app block and can be updated centrally in the APIEase admin.
 
-## [Functions](../functions/functions-page.md)
+## [Functions](../functions/functions-overview.md)
 
 Functions are reusable Liquid helpers that run inside a parent Liquid Request. Use them to keep shared formatting, transformation, and response-shaping logic in one place instead of repeating the same Liquid across multiple requests.
 
@@ -82,7 +82,7 @@ APIEase runs the requests and logic you define. Each request ([HTTP](../requests
 
 This page describes how requests are configured, how they are triggered, and how these elements combine to create custom functionality.
 
-APIEase also includes reusable [Functions](../functions/functions-page.md), persisted [Variables](../variables/variables-page.md), and storefront widgets. Widgets render Liquid and JavaScript through a theme app block and are managed in the same admin.
+APIEase also includes reusable [Functions](../functions/functions-overview.md), persisted [Variables](../variables/variables-overview.md), and storefront widgets. Widgets render Liquid and JavaScript through a theme app block and are managed in the same admin.
 
 ---
 
@@ -96,11 +96,11 @@ When you create a request, you choose the type ([HTTP Request](../requests/reque
 
 Each request is saved as a reusable and callable unit of logic.
 
-If you need reusable helper logic inside a Liquid Request, create a [Function](../functions/functions-page.md) and call it from Liquid instead of repeating the same template code.
+If you need reusable helper logic inside a Liquid Request, create a [Function](../functions/functions-overview.md) and call it from Liquid instead of repeating the same template code.
 
 For setup steps, see [How to Add Requests](../requests/how-to-add-requests.md).
 
-If you need to manage persisted values outside of a request, use the [Variables page](../variables/variables-page.md).
+If you need to manage persisted values outside of a request, use [Variables Overview](../variables/variables-overview.md).
 
 ---
 
@@ -185,6 +185,1174 @@ If confidential parameters are exposed in the storefront, they can be used to ac
 APIEase prevents this exposure by storing all confidential parameters securely on the server. When a request runs, APIEase injects sensitive values at execution time so they are never sent to the storefront or to any external caller. Even when a request is triggered from the storefront, the sensitive parts of the request remain inside the APIEase environment.
 
 By keeping credentials server side at all times, APIEase ensures that API keys, tokens, and other sensitive values remain protected while still allowing the request to be triggered from any allowed source.
+
+SOURCE
+https://docs.apiease.com/docs/developers/developer-overview
+
+TITLE
+Developer overview
+
+CONTENT
+# Developer overview
+
+This section is the developer entry point for building with APIEase as code.
+
+For most teams, the recommended path starts with `apiease-template`, uses `apiease-cli` for day-to-day operations, and reaches for the [APIEase Public API](./apiease-public-api.md) only when direct HTTP automation is the better fit.
+
+If you are new to this workflow, start with [Quickstart with apiease-template](./quickstart-with-apiease-template.md).
+
+## Recommended path
+
+Use this reading order when you are getting started:
+
+1. [Why use the template](./why-use-the-template.md) to understand why `apiease-template` is the recommended starting point
+2. [Quickstart with apiease-template](./quickstart-with-apiease-template.md) to initialize the project, configure auth, and sync resources
+3. [apiease-template](./apiease-template.md) to understand the repository layout and what belongs in source control
+4. [apiease-cli](./apiease-cli.md) for the command-line workflow that manages saved resources
+5. [APIEase Public API](./apiease-public-api.md) when you need lower-level HTTP integration
+6. [Using APIEase with AI agents](./using-apiease-with-ai-agents.md) when Codex-style agents will work inside the repository
+
+## Choose the right page
+
+Use these pages based on the job you need to do:
+
+- [Quickstart with apiease-template](./quickstart-with-apiease-template.md): the canonical start-here path for repository-based APIEase development
+- [Why use the template](./why-use-the-template.md): why the template comes before the CLI or public API in most projects
+- [apiease-template](./apiease-template.md): expected repository layout, template-managed files, and version-controlled artifacts
+- [apiease-cli](./apiease-cli.md): installation, configuration, CRUD commands, and template upgrade workflow
+- [APIEase Public API](./apiease-public-api.md): authentication, resource routes, remote request execution, and direct HTTP usage
+- [Using APIEase with AI agents](./using-apiease-with-ai-agents.md): repository-first guidance for Codex-style agents
+
+## How this fits the rest of the docs
+
+The Developers section focuses on the developer workflow around repositories, the CLI, and the public API.
+
+For request behavior, request contracts, and other platform concepts, use the existing docs instead of treating this section as a duplicate reference:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [Request Types Overview](../requests/request-types/request-types-overview.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+- [Widgets Overview](../widgets/widgets-overview.md)
+- [Functions](../functions/functions-overview.md)
+- [Variables](../variables/variables-overview.md)
+
+## Practical workflow summary
+
+In the intended workflow, you initialize a repository from the template, keep resource definitions in git, use `apiease-cli` to sync them with APIEase, and use the public API directly only when you need lower-level automation outside the normal CLI path.
+
+SOURCE
+https://docs.apiease.com/docs/developers/why-use-the-template
+
+TITLE
+Why use the template
+
+CONTENT
+# Why use the template
+
+If you plan to build with APIEase as code, start from `apiease-template`.
+
+It is the recommended starting point because it gives you a real project structure, a supported CLI workflow, and a safer way to keep APIEase resources under source control. The template is how APIEase turns requests, widgets, variables, and functions into repository-managed assets instead of one-off platform state.
+
+If you want the full setup steps, start with [Quickstart with apiease-template](./quickstart-with-apiease-template.md).
+
+## Start here when
+
+Use the template if you want to:
+
+- keep APIEase resources in git instead of only in the APIEase UI
+- initialize a project with `apiease init` and manage it with [apiease-cli](./apiease-cli.md)
+- give humans and AI agents the same repository layout and operating guidance
+- adopt future template improvements through `apiease upgrade`
+
+For most developer workflows, the template should come first, the CLI should be the normal operating tool, and the [APIEase Public API](./apiease-public-api.md) should stay available for lower-level integrations.
+
+## What the template gives you
+
+### A real repository shape
+
+The template creates a defined project layout instead of asking each team to invent one.
+
+Today that means:
+
+- `apiease.config.js` as the source of truth for resource directories
+- `resources/requests`
+- `resources/widgets`
+- `resources/variables`
+- `resources/functions`
+- `.apiease/project.json` for project metadata
+
+That structure matters because the resource model in the repository matches the resource model in APIEase and the public API. Teams are not left guessing where files should live or how to organize saved definitions.
+
+### Valid starting examples
+
+The template includes example JSON files under `docs/examples/resources` that already follow the current public API shapes.
+
+That means you can copy and adapt real starting points instead of reverse-engineering request or widget contracts from scratch. When you need the detailed request semantics behind those files, use the existing Requests docs:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [Request Types Overview](../requests/request-types/request-types-overview.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+
+### A safer upgrade path
+
+The template is not just a folder snapshot. When you initialize a project through the CLI, APIEase stores template metadata in `.apiease/project.json`, including the template version and a manifest of template-managed files.
+
+That gives `apiease upgrade` enough information to:
+
+- add safe new template files later
+- refresh template-managed files when they still match the previous template baseline
+- skip conflicts instead of overwriting local work
+- keep `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md` as customer-owned files
+
+Without the template, you can still call the API or use the CLI, but you lose the supported upgrade model that keeps repository structure and guidance current over time.
+
+### Better human and agent handoff
+
+The template bundles more than empty directories. It also includes:
+
+- `AGENTS.md` for default operating guidance
+- `docs/shared-ongoing-ai-guidance.md` for shared implementation lessons
+- `docs/knowledgebase/apiEaseDocsConsolidated.md` for local product reference material
+- `CUSTOM_README.md` for project-specific human documentation
+- `CUSTOM_AGENT_GUIDANCE.md` for project-specific agent instructions
+
+This is one of the biggest reasons to start from the template. Humans, Codex-style agents, and the CLI all work from the same repository instead of relying on hidden conventions or repeated prompt context.
+
+For more on that workflow, see [Using APIEase with AI agents](./using-apiease-with-ai-agents.md).
+
+## Why not start with the CLI or public API alone
+
+You can use the CLI or the public API without fully adopting the template, but that usually pushes important project decisions back onto the team.
+
+If you skip the template, you need to decide for yourself:
+
+- where resource files belong
+- which files should be committed
+- how project-specific guidance should be separated from shared guidance
+- how to keep future template changes aligned with the repository
+
+The CLI is best understood as the tool that operates on a template-based repository. The public API is the lower-level interface behind that workflow. The template is what makes those interfaces practical for long-term team use.
+
+## Recommended path
+
+For most teams, the practical path is:
+
+1. start with [Quickstart with apiease-template](./quickstart-with-apiease-template.md)
+2. learn the project structure in [apiease-template](./apiease-template.md)
+3. use [apiease-cli](./apiease-cli.md) for day-to-day sync operations
+4. use the [APIEase Public API](./apiease-public-api.md) directly only when you need lower-level automation
+
+That path keeps the template as the entry point while still making the CLI and public API available for the jobs they are best at.
+
+SOURCE
+https://docs.apiease.com/docs/developers/quickstart-with-apiease-template
+
+TITLE
+Quickstart with apiease-template
+
+CONTENT
+# Quickstart with apiease-template
+
+This is the recommended way to start building with APIEase.
+
+Use this quickstart when you want to:
+
+- start from the APIEase template instead of inventing a repository layout
+- configure APIEase authentication once and reuse it from the CLI
+- keep requests, widgets, variables, and functions under source control
+- sync those saved resources to APIEase through `apiease-cli`, which calls the [APIEase Public API](./apiease-public-api.md)
+
+If you are new to the developer workflow, start here before the deeper pages for [apiease-template](./apiease-template.md), [apiease-cli](./apiease-cli.md), and the [APIEase Public API](./apiease-public-api.md).
+
+## Install the APIEase CLI
+
+Install the `apiease` command globally before you start the template workflow:
+
+```bash
+npm install -g apiease
+```
+
+After installation, confirm the command is available:
+
+```bash
+apiease
+```
+
+## Before you start
+
+You need:
+
+- Node.js 20 or newer
+- a working `apiease` command from [apiease-cli](./apiease-cli.md)
+- the APIEase base URL `https://app-admin.apiease.com`
+- an APIEase API key
+- a Shopify shop domain such as `yourstore.myshopify.com`
+
+## Initialize the project from the template
+
+Start in a new repository directory or in an existing directory that you want to turn into an APIEase project.
+
+For a new project:
+
+```bash
+mkdir my-apiease-project
+cd my-apiease-project
+apiease init .
+```
+
+For an existing repository:
+
+```bash
+cd your-existing-repo
+apiease init .
+```
+
+`apiease init` creates the template-based project structure and writes `.apiease/project.json`, which stores the template version and the template-managed file manifest used later by `apiease upgrade`.
+
+After initialization, the important files and directories are:
+
+- `apiease.config.js`
+- `.apiease/project.json`
+- `resources/requests`
+- `resources/widgets`
+- `resources/variables`
+- `resources/functions`
+- `docs/examples/resources`
+- `CUSTOM_README.md`
+- `CUSTOM_AGENT_GUIDANCE.md`
+
+Use `resources/*` as the long-term home for the resource definitions you want to keep and version. The files under `docs/examples/resources` are starter examples you can copy and adapt.
+
+## Configure APIEase authentication
+
+The CLI can read authentication and environment settings from `~/.apiease`, so you do not need to repeat them on every command.
+
+Create the home directory:
+
+```bash
+mkdir -p ~/.apiease
+```
+
+Select the active environment:
+
+```bash
+printf 'local\n' > ~/.apiease/environment
+```
+
+Create the matching env file:
+
+```bash
+printf 'APIEASE_API_KEY=your-local-api-key\nAPIEASE_BASE_URL=https://app-admin.apiease.com\nAPIEASE_SHOP_DOMAIN=yourstore.myshopify.com\n' > ~/.apiease/.env.local
+```
+
+Supported environment names are:
+
+- `local`
+- `staging`
+- `production`
+
+You can still override any value per command with `--api-key`, `--base-url`, or `--shop-domain`, but most teams should keep the shared defaults in `~/.apiease`.
+
+## Copy the starter resources into your project
+
+The template ships with example JSON files under `docs/examples/resources`. Copy the examples you want into the configured `resources/*` directories and then edit them for your project.
+
+For example:
+
+```bash
+cp docs/examples/resources/requests/example-request.json resources/requests/product-details-proxy.json
+cp docs/examples/resources/variables/example-variable.json resources/variables/support_api_key.json
+```
+
+Then update the copied files with your real identifiers, endpoints, parameter values, and secrets.
+
+The request example already uses the real public API request shape, including:
+
+- `id`
+- `name`
+- `type`
+- `method`
+- `address`
+- `parameters`
+- `triggers`
+
+Keep the detailed request behavior in the existing Requests docs instead of re-documenting it in your repository:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [Request Types Overview](../requests/request-types/request-types-overview.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+
+## Sync resources with APIEase through the CLI
+
+Once your JSON files are ready, use `apiease-cli` to create the saved resources in APIEase.
+
+Create a variable first if your request depends on one:
+
+```bash
+apiease create variable --file ./resources/variables/support_api_key.json
+```
+
+Create a request from your project file:
+
+```bash
+apiease create request --file ./resources/requests/product-details-proxy.json
+```
+
+Read it back from APIEase:
+
+```bash
+apiease read request --request-id product-details-proxy
+```
+
+Update it after you change the JSON file:
+
+```bash
+apiease update request --request-id product-details-proxy --file ./resources/requests/product-details-proxy.json
+```
+
+The same CRUD pattern applies to widgets, variables, and functions. The CLI is the normal path here: it reads your local JSON file, resolves auth, and calls the underlying [APIEase Public API](./apiease-public-api.md) for you.
+
+Use direct HTTP calls only when you need lower-level automation outside the CLI workflow.
+
+## Commit the project artifacts to git
+
+The template workflow is repository-first. Commit the files that define your saved APIEase setup so changes can be reviewed and versioned like code.
+
+In most projects, commit:
+
+- `apiease.config.js`
+- `.apiease/project.json`
+- your JSON resource files under `resources/*`
+- any examples you intentionally keep
+- `CUSTOM_README.md`
+- `CUSTOM_AGENT_GUIDANCE.md`
+
+Typical initial commit flow:
+
+```bash
+git init
+git add .
+git commit -m "Initialize APIEase project"
+```
+
+Keep project-specific human guidance in `CUSTOM_README.md` and project-specific agent guidance in `CUSTOM_AGENT_GUIDANCE.md`. That keeps your custom instructions separate from the template-owned files that may later be refreshed by `apiease upgrade`.
+
+## Keep the template current
+
+Later, when the template changes, check whether your project can adopt the newer template version:
+
+```bash
+apiease upgrade --check
+apiease upgrade --dry-run
+```
+
+If the plan looks correct, apply the safe template-managed updates:
+
+```bash
+apiease upgrade
+```
+
+This lets you pull in template improvements while preserving project-owned customization files and skipping managed conflicts instead of overwriting them.
+
+## What this quickstart gives you
+
+After these steps, you have:
+
+- a template-based APIEase project repository
+- reusable CLI authentication configuration
+- versioned resource definitions under source control
+- a repeatable path for syncing those definitions into APIEase through the CLI and public API
+
+From here, use the deeper docs as needed:
+
+- [apiease-template](./apiease-template.md)
+- [apiease-cli](./apiease-cli.md)
+- [APIEase Public API](./apiease-public-api.md)
+
+SOURCE
+https://docs.apiease.com/docs/developers/using-apiease-with-ai-agents
+
+TITLE
+Using APIEase with AI agents
+
+CONTENT
+# Using APIEase with AI agents
+
+This page is for coding agents such as Codex working in an `apiease-template` project repository.
+
+Most agent-driven APIEase work should follow this path:
+
+- start from [Quickstart with apiease-template](./quickstart-with-apiease-template.md)
+- use [apiease-template](./apiease-template.md) as the repository structure
+- sync saved resources through [apiease-cli](./apiease-cli.md)
+- use the [APIEase Public API](./apiease-public-api.md) directly only when the CLI is not the right interface
+
+## Start from the template
+
+Agents should work inside a repository initialized with `apiease init`, not from a loose folder of one-off JSON files or ad hoc curl commands.
+
+The template gives the agent:
+
+- a stable repository layout under `resources/`
+- starter examples under `docs/examples/resources/`
+- default instructions in `AGENTS.md`
+- a bundled APIEase knowledge base in `docs/knowledgebase/apiEaseDocsConsolidated.md`
+- a shared guidance file in `docs/shared-ongoing-ai-guidance.md`
+- project-owned customization files in `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md`
+
+That structure is what makes Codex-style work repeatable instead of prompt-only.
+
+## Read the local guidance first
+
+In the current template, the intended reading order for an agent is:
+
+1. `AGENTS.md`
+2. `docs/shared-ongoing-ai-guidance.md`
+3. `docs/knowledgebase/apiEaseDocsConsolidated.md`
+4. `CUSTOM_AGENT_GUIDANCE.md`
+5. `CUSTOM_README.md`
+6. `README.md`
+
+This order matters:
+
+- the template-owned files explain the default APIEase workflow
+- the custom files are where the project should override that default with team-specific goals, naming, and constraints
+
+If `CUSTOM_AGENT_GUIDANCE.md` and `CUSTOM_README.md` are empty placeholders, the agent should leave them available for project-specific instructions instead of inventing hidden conventions elsewhere.
+
+## Treat the repository as the source of truth
+
+Inside a template-based project, the agent should treat local files as the canonical representation of saved APIEase resources.
+
+Use `apiease.config.js` as the source of truth for resource directory names. In the current template, that means working primarily in:
+
+- `resources/requests`
+- `resources/widgets`
+- `resources/variables`
+- `resources/functions`
+
+Use `docs/examples/resources/*` as copyable examples, not as the long-term home for project resources.
+
+When the task involves request behavior, do not re-invent request concepts from memory. Reuse the existing Requests documentation for detailed semantics:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [Request Types Overview](../requests/request-types/request-types-overview.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+
+## Keep authentication outside the repository
+
+The normal agent workflow is to read APIEase authentication from `~/.apiease`, not from tracked project files.
+
+Typical local setup:
+
+```bash
+mkdir -p ~/.apiease
+printf 'local\n' > ~/.apiease/environment
+printf 'APIEASE_API_KEY=your-local-api-key\nAPIEASE_BASE_URL=https://app-admin.apiease.com\nAPIEASE_SHOP_DOMAIN=yourstore.myshopify.com\n' > ~/.apiease/.env.local
+```
+
+This matters for agent work because:
+
+- the repository can stay versioned without embedding environment-specific credentials
+- the same local project can be synced against different APIEase environments
+- the agent can use the CLI without repeating flags on every command
+
+Do not commit real secrets, API keys, or environment files into the repository.
+
+## Use a repository-first agent loop
+
+For most Codex-style tasks, the working loop should be:
+
+1. read the local guidance files
+2. inspect the current resource files and examples
+3. add or edit JSON definitions under `resources/*`
+4. sync those definitions with `apiease-cli`
+5. read the saved resource back when needed to confirm the change
+6. review and commit the repository changes
+
+Example flow for a request:
+
+```bash
+cp docs/examples/resources/requests/example-request.json resources/requests/product-details-proxy.json
+apiease create request --file ./resources/requests/product-details-proxy.json
+apiease read request --request-id product-details-proxy
+```
+
+After editing the same file again:
+
+```bash
+apiease update request --request-id product-details-proxy --file ./resources/requests/product-details-proxy.json
+```
+
+Use the same CRUD pattern for widgets, variables, and functions with the resource-specific identifier flags documented in [apiease-cli](./apiease-cli.md).
+
+## Prefer the CLI over direct HTTP
+
+For agent work inside a template repository, `apiease-cli` should be the default interface.
+
+That keeps the workflow aligned with:
+
+- the repository layout created by the template
+- the current auth resolution model from `~/.apiease`
+- the saved-resource contract exposed by the public API
+
+Use direct HTTP calls only when you need lower-level automation that the CLI does not already cover. When you do, use the headers and routes documented in [APIEase Public API](./apiease-public-api.md).
+
+For direct remote execution of an existing saved request, the current route is:
+
+```bash
+curl -X POST 'https://app-admin.apiease.com/api/remote/caller/call?requestId=product-details-proxy' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+## Keep source control in the loop
+
+The intended AI-agent workflow is not "make API calls and hope the platform state is remembered later." The repository should capture the durable definition of what the project wants APIEase to contain.
+
+In a template-based repository, agents should usually version:
+
+- `apiease.config.js`
+- `.apiease/project.json`
+- resource definitions under `resources/*`
+- project-specific notes in `CUSTOM_README.md`
+- project-specific agent instructions in `CUSTOM_AGENT_GUIDANCE.md`
+
+Use git review as part of the workflow:
+
+- inspect diffs before syncing or committing
+- keep commits focused on one resource or one related change set
+- use `apiease upgrade --check` and `apiease upgrade --dry-run` when updating the template baseline
+
+Keep project-specific decisions in the `CUSTOM_*` files so later template upgrades can refresh template-owned files without overwriting local operating guidance.
+
+## What good agent tasks look like
+
+AI agents work best when the task says:
+
+- which resource type should change
+- which file under `resources/*` should be created or updated
+- which existing docs or examples should be used as the contract reference
+- whether the agent should sync through the CLI or stop at a reviewed git diff
+
+That gives the agent a repository-first workflow with clear boundaries:
+
+- local files define the desired state
+- `apiease-cli` applies that state to APIEase
+- the public API stays available for lower-level integrations
+- git preserves the change history
+
+SOURCE
+https://docs.apiease.com/docs/developers/apiease-public-api
+
+TITLE
+APIEase Public API
+
+CONTENT
+# APIEase Public API
+
+The APIEase public API is the HTTP interface behind `apiease-cli` and other external automation.
+
+Use it when you want to:
+
+- manage saved APIEase resources from code or scripts
+- keep request, widget, variable, and function definitions under source control
+- execute an existing APIEase request from outside Shopify
+
+Most developer workflows should use the public API through `apiease-cli` from an `apiease-template` repository, but the underlying HTTP interface is available when you need direct integration.
+
+## What the public API covers
+
+Today, the public API has two main jobs:
+
+1. CRUD operations for saved resources under `/api/v1/resources`
+2. Remote execution of an existing saved request through `/api/remote/caller/call`
+
+This is important because the public API is not a generic one-off proxy for arbitrary outbound calls. You first create and store APIEase resources, then APIEase manages execution using those saved definitions.
+
+## Authentication
+
+Public API requests are authenticated with two headers:
+
+- `x-apiease-api-key`: your APIEase API key
+- `x-shop-myshopify-domain`: the target shop domain, for example `yourstore.myshopify.com`
+
+When you send JSON bodies, also include:
+
+- `content-type: application/json`
+
+Example:
+
+```bash
+curl -X GET 'https://app-admin.apiease.com/api/v1/resources/requests' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+APIEase resolves the shop from the `x-shop-myshopify-domain` header. Do not rely on shop-identifying fields in the JSON body.
+
+## Resource routes
+
+The current resource base path is `/api/v1/resources`.
+
+| Resource | Collection route | Item route |
+| --- | --- | --- |
+| Requests | `/api/v1/resources/requests` | `/api/v1/resources/requests/{requestId}` |
+| Functions | `/api/v1/resources/functions` | `/api/v1/resources/functions/{functionId}` |
+| Variables | `/api/v1/resources/variables` | `/api/v1/resources/variables/{variableName}` |
+| Widgets | `/api/v1/resources/widgets` | `/api/v1/resources/widgets/{widgetId}` |
+
+Collection routes support:
+
+- `GET` to list resources
+- `POST` to create a resource
+
+Item routes support:
+
+- `GET` to read one resource
+- `PUT` to update one resource
+- `DELETE` to delete one resource
+
+In practice, `apiease-cli` is a thin wrapper around these routes.
+
+## Request conventions
+
+If you are working with request resources, keep these conventions in mind:
+
+- `type` is required and currently supports `http`, `flow`, `liquid`, and `system`
+- `method` and `address` are required for `http` requests
+- `liquid` is required for `liquid` requests
+- `parameters` are optional for many requests but required for `system` requests
+- `triggers` are optional and describe how a saved request can run later
+
+The public API accepts the same request concepts already documented in the Requests section. Use those pages as the source of truth for detailed behavior instead of duplicating that material here:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [HTTP Requests](../requests/request-types/http-requests.md)
+- [Flow Requests](../requests/request-types/flow-requests.md)
+- [Liquid Requests](../requests/request-types/liquid-requests.md)
+- [System Requests](../requests/request-types/system-requests.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+
+## Create a request
+
+This example matches the request shape used by the template examples and the current public request contract:
+
+```bash
+curl -X POST 'https://app-admin.apiease.com/api/v1/resources/requests' \
+  -H 'content-type: application/json' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com' \
+  -d '{
+    "id": "product-details-proxy",
+    "name": "Product Details Proxy",
+    "type": "http",
+    "method": "POST",
+    "address": "https://api.example.com/products/{productHandle}/details",
+    "parameters": [
+      {
+        "type": "header",
+        "name": "Accept",
+        "value": "application/json"
+      },
+      {
+        "type": "header",
+        "name": "Authorization",
+        "value": "Bearer {external_api_token}",
+        "sensitive": true
+      },
+      {
+        "type": "path",
+        "name": "productHandle",
+        "value": "sample-product"
+      }
+    ],
+    "triggers": [
+      {
+        "type": "proxyEndpoint",
+        "proxyEndpoint": {
+          "path": "product-details",
+          "method": "GET",
+          "authenticated": true
+        }
+      }
+    ]
+  }'
+```
+
+When creating or updating a request:
+
+- send only the fields that belong to the resource itself
+- do not send `shop`, `shopId`, `shopDomain`, or `myshopifyDomain`
+- mark confidential parameter values as `sensitive: true`
+
+## Read, update, and delete
+
+Use the collection route to list resources:
+
+```bash
+curl -X GET 'https://app-admin.apiease.com/api/v1/resources/requests' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+Use the item route to read, update, or delete one resource:
+
+```bash
+curl -X GET 'https://app-admin.apiease.com/api/v1/resources/requests/product-details-proxy' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+```bash
+curl -X PUT 'https://app-admin.apiease.com/api/v1/resources/requests/product-details-proxy' \
+  -H 'content-type: application/json' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com' \
+  -d '{
+    "name": "Product Details Proxy Updated",
+    "type": "http",
+    "method": "GET",
+    "address": "https://api.example.com/products/{productHandle}/details"
+  }'
+```
+
+```bash
+curl -X DELETE 'https://app-admin.apiease.com/api/v1/resources/requests/product-details-proxy' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+The same CRUD pattern also applies to functions, variables, and widgets with their respective routes.
+
+## Execute a saved request remotely
+
+The public API also exposes a remote execution route for saved requests:
+
+```bash
+curl -X POST 'https://app-admin.apiease.com/api/remote/caller/call?requestId=product-details-proxy' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+Use that route when the request definition already exists in APIEase and you want to trigger it from another system. For more detail, see [Calling APIEase Requests Remotely](../requests/triggers/calling-requests-remotely.md).
+
+## Response shape
+
+Successful responses follow a simple pattern:
+
+- collection reads return `{ ok: true, shopDomain, <resourcePlural> }`
+- single-resource reads and writes return `{ ok: true, shopDomain, <resourceSingular> }`
+
+Structured failures use this pattern:
+
+```json
+{
+  "ok": false,
+  "errorCode": "INVALID_REQUEST_CREATE_CONTRACT",
+  "message": "Unable to create request",
+  "fieldErrors": []
+}
+```
+
+Common status codes across the public API include:
+
+- `400` for invalid JSON, invalid shop context, or resource-specific bad input
+- `401` for failed authentication
+- `404` for missing resources on item routes
+- `405` for unsupported methods
+- `415` for non-JSON create or update bodies
+- `422` for contract validation failures
+- `500` for unexpected server failures
+
+## Recommended workflow
+
+For most teams, the practical workflow is:
+
+1. keep resource definitions in a repository
+2. manage them through `apiease-cli`
+3. let the CLI call the public API using your configured base URL, API key, and shop domain
+   In most cases, that base URL should be `https://app-admin.apiease.com`.
+4. use direct HTTP calls only when you need custom automation outside the CLI
+
+That keeps your APIEase resources versioned in git while still using the same public API contract that powers the CLI.
+
+SOURCE
+https://docs.apiease.com/docs/developers/apiease-cli
+
+TITLE
+apiease-cli
+
+CONTENT
+# apiease-cli
+
+`apiease-cli` is the Node-based command-line tool for working with APIEase from a repository.
+
+GitHub repository: [kevinstl-org/apiease-cli](https://github.com/kevinstl-org/apiease-cli)
+
+Use it when you want to:
+
+- initialize a project from the APIEase template
+- keep requests, widgets, variables, and functions under source control
+- create, read, update, and delete saved APIEase resources from local JSON files
+- apply template updates without overwriting local conflicts
+
+In practice, `apiease-cli` is the thin layer between your repository and the [APIEase Public API](./apiease-public-api.md).
+
+## How the CLI fits the workflow
+
+The intended developer workflow is:
+
+1. start from an APIEase project repository
+2. use `apiease init` to copy in the current template structure
+3. configure APIEase authentication for the target environment
+4. store resource definitions in git as JSON files
+5. use `apiease create`, `read`, `update`, and `delete` to sync those files with APIEase
+6. use `apiease upgrade` to pull safe template updates later
+
+This keeps your APIEase configuration versioned in git while still using the same public API contract that powers the CLI.
+
+## Install
+
+`apiease-cli` requires Node.js 20 or newer.
+
+From the CLI repository:
+
+```bash
+npm install
+npm link
+```
+
+After linking, run the installed command as:
+
+```bash
+apiease
+```
+
+If you are working directly inside the CLI repository without linking it globally, use `./bin/apiease-cli` instead.
+
+## Configure authentication
+
+Every CRUD command needs three values:
+
+- an APIEase base URL, which normally should be `https://app-admin.apiease.com`
+- an APIEase API key
+- a Shopify shop domain
+
+You can pass all three values explicitly on each command:
+
+```bash
+apiease create request \
+  --file ./request-definition.json \
+  --base-url https://app-admin.apiease.com \
+  --shop-domain yourstore.myshopify.com \
+  --api-key your-apiease-api-key
+```
+
+If any of those values are omitted, the CLI reads your active APIEase environment from `~/.apiease`.
+
+Create the home directory:
+
+```bash
+mkdir -p ~/.apiease
+```
+
+Declare the active environment in `~/.apiease/environment`. The supported values are:
+
+- `local`
+- `staging`
+- `production`
+
+Example local setup:
+
+```bash
+printf 'local\n' > ~/.apiease/environment
+printf 'APIEASE_API_KEY=your-local-api-key\nAPIEASE_BASE_URL=https://app-admin.apiease.com\nAPIEASE_SHOP_DOMAIN=yourstore.myshopify.com\n' > ~/.apiease/.env.local
+```
+
+Configuration precedence is:
+
+1. explicit command flags
+2. the selected `~/.apiease/.env.<environment>` file
+
+Important details:
+
+- if you provide all three explicit values, the CLI skips home configuration resolution
+- if you provide only some values, the CLI merges them with the active home environment
+- `APIEASE_API_KEY` is always required
+- `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` must resolve either from flags or from the active env file
+
+## Command shape
+
+The installed command is `apiease`, but the CLI help text still uses `apiease-cli` in usage output.
+
+Supported top-level commands are:
+
+- `init`
+- `upgrade`
+- `create`
+- `read`
+- `update`
+- `delete`
+
+CRUD commands always require a resource name immediately after the verb. Supported resources are:
+
+- `request`
+- `widget`
+- `variable`
+- `function`
+
+Legacy bare command shapes such as `apiease read --request-id request-1` are not supported. Use the resource name explicitly:
+
+```bash
+apiease read request --request-id request-1
+```
+
+## Initialize a project
+
+Use `init` to create or initialize a repository from the current template:
+
+```bash
+apiease init my-project
+```
+
+```bash
+apiease init .
+```
+
+Current CLI behavior:
+
+- the template source resolves from the local sibling repository `../apiease-template`
+- the command writes project metadata to `.apiease/project.json`
+- metadata includes the template version and a manifest of template-managed files
+- `.git`, `.idea`, and `node_modules` are excluded from the copied template
+- existing conflicting files are preserved and reported instead of overwritten
+
+That makes `init` safe to use when you are starting a new repository or layering the template into an existing directory.
+
+## Upgrade a project
+
+Use `upgrade` to compare your project against the current template version:
+
+```bash
+apiease upgrade --check
+apiease upgrade --dry-run
+apiease upgrade
+```
+
+Current behavior:
+
+- `--check` compares the stored template version in `.apiease/project.json` to the current template version
+- `--dry-run` shows planned `Add`, `Update`, `Remove`, and `Skip conflict` paths without writing files
+- `upgrade` applies safe template-managed changes and leaves conflicts in place
+- `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md` are treated as customer-owned files instead of template-managed content
+- the project metadata is updated after safe changes are applied
+
+This is the CLI command that keeps a template-based repository current without blindly replacing local work.
+
+## Manage resources
+
+The CLI manages four saved APIEase resource types:
+
+| Resource | Create or update file | Identifier flag |
+| --- | --- | --- |
+| Request | JSON object | `--request-id` |
+| Widget | JSON object | `--widget-id` |
+| Variable | JSON object | `--variable-name` |
+| Function | JSON object | `--function-id` |
+
+All definition files must contain valid JSON with an object at the root.
+
+Typical commands:
+
+```bash
+apiease create request --file ./request-definition.json
+apiease read request --request-id request-123
+apiease update request --request-id request-123 --file ./request-definition.json
+apiease delete request --request-id request-123
+```
+
+The same CRUD pattern applies to widgets, variables, and functions:
+
+```bash
+apiease create widget --file ./widget-definition.json
+apiease read variable --variable-name sale_banner
+apiease update function --function-id function-123 --file ./function-definition.json
+apiease delete widget --widget-id widget-123
+```
+
+Inside a template-based repository, the example resource files currently live under:
+
+- `docs/examples/resources/requests`
+- `docs/examples/resources/widgets`
+- `docs/examples/resources/variables`
+- `docs/examples/resources/functions`
+
+Those files are a starting point. Replace them with project-specific resources and commit the definitions to git.
+
+## Request definitions and related docs
+
+When you manage request resources through the CLI, the JSON file uses the same request concepts as the rest of APIEase. Use the existing docs for those details:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [Request Types Overview](../requests/request-types/request-types-overview.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+- [Widgets Overview](../widgets/widgets-overview.md)
+- [Functions](../functions/functions-overview.md)
+- [Variables](../variables/variables-overview.md)
+
+For the underlying HTTP routes and authentication headers, see [APIEase Public API](./apiease-public-api.md).
+
+## JSON output and failures
+
+Add `--json` when you want the raw structured response:
+
+```bash
+apiease create request --file ./request-definition.json --json
+```
+
+Without `--json`, the CLI prints human-readable success and failure output.
+
+Structured failures include the APIEase error code, message, optional HTTP status, and any field errors returned by the public API.
+
+SOURCE
+https://docs.apiease.com/docs/developers/apiease-template
+
+TITLE
+apiease-template
+
+CONTENT
+# apiease-template
+
+`apiease-template` is the starter repository that `apiease-cli` uses when you run `apiease init`.
+
+GitHub repository: [kevinstl-org/apiease-template](https://github.com/kevinstl-org/apiease-template)
+
+It is the recommended foundation for APIEase development because it gives you:
+
+- a predictable repository layout for requests, widgets, variables, and functions
+- starter JSON definitions you can adapt instead of inventing resource shapes from scratch
+- template-owned guidance files for humans and coding agents
+- a structure that works with `apiease-cli` upgrades and the [APIEase Public API](./apiease-public-api.md)
+
+Most teams should start from the template through [apiease-cli](./apiease-cli.md) instead of cloning the template repository directly.
+
+## What ships in the template
+
+The current template includes:
+
+- `apiease.config.js` as the source of truth for resource directory names
+- `resources/requests`, `resources/widgets`, `resources/variables`, and `resources/functions` as the canonical resource folders
+- `.gitkeep` files in each resource directory so the structure is committed even before you add project-specific definitions
+- starter example JSON files under `docs/examples/resources`
+- template guidance in `README.md`, `AGENTS.md`, `docs/shared-ongoing-ai-guidance.md`, and `docs/knowledgebase/apiEaseDocsConsolidated.md`
+- user-owned customization files in `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md`
+
+The example resources are intentionally lightweight. Use them as reference material or copy them into your working resource directories as you start defining your project.
+
+## Expected repository layout
+
+This is the shape the template establishes today:
+
+```text
+your-project/
+  .apiease/
+    project.json
+  apiease.config.js
+  resources/
+    requests/
+    widgets/
+    variables/
+    functions/
+  docs/
+    examples/
+      resources/
+        requests/
+        widgets/
+        variables/
+        functions/
+    knowledgebase/
+      apiEaseDocsConsolidated.md
+    shared-ongoing-ai-guidance.md
+  README.md
+  AGENTS.md
+  CUSTOM_README.md
+  CUSTOM_AGENT_GUIDANCE.md
+```
+
+Important details:
+
+- `apiease.config.js` currently sets `resources` as the root resource directory and defines the four resource subdirectories explicitly
+- `.apiease/project.json` is written by `apiease init` and stores the template version plus the template-managed file manifest used by `apiease upgrade`
+- the bundled examples live under `docs/examples/resources`, but the configured long-term project layout is the `resources/*` tree
+
+## What belongs in source control
+
+In a real project repository created from the template, commit:
+
+- `apiease.config.js`
+- `.apiease/project.json`
+- your JSON resource definitions under `resources/*`
+- any starter examples you choose to keep or adapt
+- project documentation in `CUSTOM_README.md`
+- project-specific agent instructions in `CUSTOM_AGENT_GUIDANCE.md`
+
+Keeping these files in git gives you a versioned record of your saved APIEase configuration and preserves the metadata that `apiease upgrade` uses to apply safe template updates later.
+
+## Template-managed and customer-owned files
+
+`apiease-cli` treats most copied template files as template-managed. That means they are tracked in `.apiease/project.json` and may be refreshed by `apiease upgrade` when the template changes.
+
+Two files are explicitly customer-owned:
+
+- `CUSTOM_README.md`
+- `CUSTOM_AGENT_GUIDANCE.md`
+
+Those files are copied into the project, but they are excluded from the stored template manifest so upgrade operations do not treat them as template-managed content.
+
+This split is the intended customization model:
+
+- keep template defaults and shared guidance in the template-owned files
+- keep project-specific decisions in the two custom files
+
+## Intended developer workflow
+
+The template is designed for a repository-first workflow:
+
+1. initialize a repository with `apiease init`
+2. configure APIEase authentication for the environment you want to target
+3. create or adapt JSON resource definitions in your project
+4. version those definitions and the project metadata in git
+5. use [apiease-cli](./apiease-cli.md) to create, read, update, or delete the saved resources in APIEase
+6. use the [APIEase Public API](./apiease-public-api.md) directly only when you need a lower-level integration than the CLI
+7. run `apiease upgrade` later to adopt safe template updates without overwriting project-owned work
+
+The template does not replace the core APIEase documentation. It gives you a repository structure that makes those concepts easier to manage as code. For request behavior and request contracts, use the existing docs:
+
+- [Requests Overview](../requests/requests-overview.md)
+- [Request Types Overview](../requests/request-types/request-types-overview.md)
+- [Request Parameters Overview](../requests/request-parameters/request-parameters-overview.md)
+- [Triggers Overview](../requests/triggers/triggers-overview.md)
+- [Widgets Overview](../widgets/widgets-overview.md)
+- [Functions](../functions/functions-overview.md)
+- [Variables](../variables/variables-overview.md)
+
+## Why the template is the recommended start
+
+Starting from the template keeps the human workflow and the AI-agent workflow aligned:
+
+- the repository structure is explicit instead of ad hoc
+- the CLI and upgrade flow understand where the project came from
+- resource definitions can be reviewed and versioned like code
+- agents can rely on bundled guidance and the local APIEase knowledge base instead of reconstructing platform behavior from scratch
+
+That is why the template is the preferred starting point even if your end goal is to automate APIEase through the CLI or the public API.
 
 SOURCE
 https://docs.apiease.com/docs/requests/requests-overview
@@ -487,7 +1655,7 @@ Response fields:
 
 **The function tag**
 
-Use the function tag to call a saved [Function](../../functions/functions-page.md) from inside a Liquid Request. Functions are reusable Liquid helpers that run inside the current Liquid Request and do not create a separate request execution.
+Use the function tag to call a saved [Function](../../functions/functions-overview.md) from inside a Liquid Request. Functions are reusable Liquid helpers that run inside the current Liquid Request and do not create a separate request execution.
 
 Inline syntax:
 
@@ -641,7 +1809,7 @@ CONTENT
 
 System requests run internal APIEase functions. Unlike HTTP requests, System requests do not call an external URL.
 
-If you want to manage the same persisted values manually in the admin, see the [Variables page](../../variables/variables-page.md).
+If you want to manage the same persisted values manually in the admin, see [Variables Overview](../../variables/variables-overview.md).
 
 ## When to use System requests
 
@@ -1428,7 +2596,11 @@ Webhooks overview
 CONTENT
 # Webhooks overview
 
-Use Shopify webhooks to start APIEase requests automatically when store events occur. This is ideal for reacting in real time to orders, carts, customers, and other updates without polling. You can add a webhook trigger to any request. See the [Shopify webhook topics](https://shopify.dev/docs/api/admin-graphql/2023-10/enums/WebhookSubscriptionTopic) for available events.
+Use Shopify webhooks to start APIEase requests automatically when store events occur. This is ideal for reacting in real time to orders, carts, customers, and other updates without polling.
+
+In APIEase, use uppercase webhook event constants such as `ORDERS_CREATE`, `CARTS_UPDATE`, and `CUSTOMERS_UPDATE`. These correspond to Shopify topic names such as `orders/create`, `carts/update`, and `customers/update`.
+
+You can add a webhook trigger to any request. See the [Shopify webhook topics](https://shopify.dev/docs/api/admin-graphql/2023-10/enums/WebhookSubscriptionTopic) for the underlying Shopify event list.
 
 ## [Trigger requests from a webhook](./trigger-requests-from-a-webhook.md)
 - Configure how to start requests from webhook events.
@@ -1445,7 +2617,7 @@ Trigger requests from a webhook
 CONTENT
 # Trigger requests from a webhook
 
-This guide shows how to configure a webhook trigger in APIEase. Shopify maintains the full list of [webhook topics](https://shopify.dev/docs/api/admin-graphql/2023-10/enums/WebhookSubscriptionTopic).
+This guide shows how to configure a webhook trigger in APIEase. In APIEase, use uppercase webhook event constants such as `ORDERS_CREATE` and `CARTS_UPDATE`. These correspond to Shopify webhook topics such as `orders/create` and `carts/update`. Shopify maintains the full list of [webhook topics](https://shopify.dev/docs/api/admin-graphql/2023-10/enums/WebhookSubscriptionTopic).
 
 ![Webhook trigger selection](https://cdn.shopify.com/s/files/1/0733/1820/3680/files/trigger-webhook-http.png?v=1744409941)
 
@@ -1453,7 +2625,7 @@ This guide shows how to configure a webhook trigger in APIEase. Shopify maintain
 1. In the APIEase admin, open the request (click the edit icon if needed).
 2. In the **Trigger** column, click the plus icon.
 3. Select **Webhook**.
-4. Choose the Shopify webhook event (for example `orders/create`, `customers/update`, or `carts/update`).
+4. Choose the APIEase webhook event constant (for example `ORDERS_CREATE`, `CUSTOMERS_UPDATE`, or `CARTS_UPDATE`).
 
 After saving, APIEase will execute the request every time that event is received from Shopify.
 
@@ -1463,14 +2635,14 @@ After saving, APIEase will execute the request every time that event is received
 If you want to start a Shopify Flow automation whenever a cart updates:
 1. Create a new request and select **Flow** as the request type.
 2. Choose your Flow template and fill required parameters.
-3. Add a webhook trigger and select `carts/update`.
+3. Add a webhook trigger and select `CARTS_UPDATE`.
 
 Each cart update triggers the request and starts the Flow. Any webhook fields you need can also be mapped into Flow input parameters.
 
 ## Webhook payload as body
 When the request is triggered, the webhook payload is passed as the body.
 
-- Base body (example from `discounts/create`):
+- Base body (example for the Shopify topic `discounts/create`, which APIEase represents as `DISCOUNTS_CREATE`):
 ```json
 {
   "admin_graphql_api_id": "gid://shopify/DiscountAutomaticNode/1",
@@ -1516,6 +2688,8 @@ CONTENT
 
 When a Shopify webhook triggers a request in APIEase, the full webhook payload is forwarded as the request body. You can map any field from that payload into query parameters, headers, or body fields that your endpoint expects.
 
+When you choose the webhook trigger in APIEase, use the uppercase webhook event constant, such as `PRODUCTS_DELETE`. Shopify documentation refers to the same event by its topic name, such as `products/delete`.
+
 **How mapping works**
 
 Add a parameter to your request with:
@@ -1524,7 +2698,7 @@ Add a parameter to your request with:
 - **Value**: A reference to the webhook payload field, wrapped in curly braces
 
 ## Example: simple payload value
-For the `products/delete` webhook, the payload includes:
+For the APIEase event constant `PRODUCTS_DELETE` (Shopify topic `products/delete`), the payload includes:
 
 ```json
 {
@@ -1542,7 +2716,7 @@ This pulls the `id` field from the webhook and renders an address like `https://
 ![Mapping a webhook payload field to a query parameter](https://cdn.shopify.com/s/files/1/0733/1820/3680/files/mapping-webhook-parameter-query.png?v=1744666126)
 
 ## Example: nested payload value
-If the value you need is nested, use dot notation. For the `product_listings/remove` webhook, the payload includes:
+If the value you need is nested, use dot notation. For the APIEase event constant `PRODUCT_LISTINGS_REMOVE` (Shopify topic `product_listings/remove`), the payload includes:
 
 ```json
 {
@@ -2549,13 +3723,13 @@ If request parameters are owned by individual customer you will need to add a se
 If you add customer id to a request that customer must be logged into the store in order for the api call to pass validation and return a response to your storefront.
 
 SOURCE
-https://docs.apiease.com/docs/functions/functions-page
+https://docs.apiease.com/docs/functions/functions-overview
 
 TITLE
-Functions page
+Functions Overview
 
 CONTENT
-# Functions page
+# Functions Overview
 
 The Functions page lets you create reusable Liquid helpers that can be called from [Liquid Requests](../requests/request-types/liquid-requests.md).
 
@@ -2855,13 +4029,13 @@ Use a [Liquid Request](../requests/request-types/liquid-requests.md) when you ne
 Use an [HTTP Request](../requests/request-types/http-requests.md), [Flow Request](../requests/request-types/flow-requests.md), or [System Request](../requests/request-types/system-requests.md) when you need to call an external or app-managed operation.
 
 SOURCE
-https://docs.apiease.com/docs/variables/variables-page
+https://docs.apiease.com/docs/variables/variables-overview
 
 TITLE
-Variables page
+Variables Overview
 
 CONTENT
-# Variables page
+# Variables Overview
 
 The Variables page lets you manage persisted shop variables for the current store directly from the APIEase admin.
 
