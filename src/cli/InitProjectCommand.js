@@ -7,7 +7,7 @@ import { TemplateProjectSourceMaterializer } from '../template/TemplateProjectSo
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
 
-const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', 'node_modules']);
+const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', '.codex', 'node_modules']);
 const USAGE_TEXT = 'Usage: apiease init [project-name]';
 
 class InitProjectCommand {

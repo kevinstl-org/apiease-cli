@@ -413,6 +413,160 @@ describe('UpgradeProjectCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should ignore previously tracked .codex files during upgrade planning and metadata writes', async () => {
+      // Arrange
+      const { UpgradeProjectCommand } = await import(upgradeProjectCommandModuleUrl);
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const writeCalls = [];
+      const applyCalls = [];
+      const upgradeProjectCommand = new UpgradeProjectCommand({
+        projectMetadataFileService: {
+          async readProjectMetadata() {
+            return {
+              ok: true,
+              projectMetadata: {
+                cliVersion: '0.1.0-test',
+                template: {
+                  displayTemplateSource: '../apiease-template',
+                  manifest: {
+                    '.codex/goal.json': 'goal-old-hash',
+                    'README.md': 'readme-old-hash',
+                  },
+                  publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+                  sourceType: 'localDevelopment',
+                  version: {
+                    type: 'gitCommit',
+                    value: 'template-sha-1',
+                  },
+                },
+              },
+            };
+          },
+          async writeProjectMetadata(writePayload) {
+            writeCalls.push(writePayload);
+          },
+        },
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath: '/tmp/apiease-template',
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-2',
+            };
+          },
+        },
+        templateProjectManifestBuilder: {
+          async buildTemplateManifest() {
+            return {
+              'README.md': 'readme-new-hash',
+            };
+          },
+        },
+        projectUpgradePlanService: {
+          async buildUpgradePlan(upgradePlanInput) {
+            applyCalls.push({
+              kind: 'plan',
+              upgradePlanInput,
+            });
+            return {
+              addPaths: [],
+              removePaths: [],
+              skipPaths: [],
+              updatePaths: ['README.md'],
+            };
+          },
+        },
+        projectUpgradeApplierService: {
+          async applyUpgradePlan(applyPayload) {
+            applyCalls.push({
+              applyPayload,
+              kind: 'apply',
+            });
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await upgradeProjectCommand.run(['upgrade'], {
+        currentWorkingDirectoryPath: '/tmp/project',
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(applyCalls, [
+        {
+          kind: 'plan',
+          upgradePlanInput: {
+            currentProjectDirectoryPath: '/tmp/project',
+            currentTemplateManifest: {
+              'README.md': 'readme-new-hash',
+            },
+            storedTemplateManifest: {
+              'README.md': 'readme-old-hash',
+            },
+          },
+        },
+        {
+          applyPayload: {
+            currentProjectDirectoryPath: '/tmp/project',
+            templateDirectoryPath: '/tmp/apiease-template',
+            upgradePlan: {
+              addPaths: [],
+              removePaths: [],
+              skipPaths: [],
+              updatePaths: ['README.md'],
+            },
+          },
+          kind: 'apply',
+        },
+      ]);
+      assert.deepEqual(writeCalls, [
+        {
+          projectDirectoryPath: '/tmp/project',
+          projectMetadata: {
+            cliVersion: '0.1.0-test',
+            template: {
+              displayTemplateSource: '../apiease-template',
+              manifest: {
+                'README.md': 'readme-new-hash',
+              },
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              version: {
+                type: 'gitCommit',
+                value: 'template-sha-2',
+              },
+            },
+          },
+        },
+      ]);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'APIEASE project template upgraded successfully.',
+          'Current project template version: template-sha-1',
+          'Latest template version: template-sha-2',
+          '',
+          'Updated:',
+          'README.md',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should apply safe upgrades while preserving the previous template version when managed conflicts remain', async () => {
       // Arrange
       const { UpgradeProjectCommand } = await import(upgradeProjectCommandModuleUrl);

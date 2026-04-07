@@ -22,11 +22,13 @@ describe('TemplateProjectManifestBuilder', () => {
 
       await fs.mkdir(path.join(templateDirectoryPath, '.git'), { recursive: true });
       await fs.mkdir(path.join(templateDirectoryPath, '.idea'), { recursive: true });
+      await fs.mkdir(path.join(templateDirectoryPath, '.codex'), { recursive: true });
       await fs.mkdir(path.join(templateDirectoryPath, 'node_modules', 'left-pad'), { recursive: true });
       await fs.mkdir(path.join(templateDirectoryPath, 'resources', 'requests'), { recursive: true });
       await fs.writeFile(path.join(templateDirectoryPath, '.gitignore'), 'node_modules/\n');
       await fs.writeFile(path.join(templateDirectoryPath, '.git', 'HEAD'), 'ref: refs/heads/main\n');
       await fs.writeFile(path.join(templateDirectoryPath, '.idea', 'workspace.xml'), '<xml />\n');
+      await fs.writeFile(path.join(templateDirectoryPath, '.codex', 'goal.json'), '{\n  "goal": "ignore me"\n}\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'node_modules', 'left-pad', 'index.js'), 'module.exports = 1;\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
       await fs.writeFile(path.join(templateDirectoryPath, 'CUSTOM_AGENT_GUIDANCE.md'), 'custom guidance\n');

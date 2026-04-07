@@ -2,13 +2,19 @@ const CUSTOMER_OWNED_TEMPLATE_PATHS = new Set([
   'CUSTOM_AGENT_GUIDANCE.md',
   'CUSTOM_README.md',
 ]);
+const EXCLUDED_TEMPLATE_DIRECTORY_NAMES = new Set([
+  '.git',
+  '.idea',
+  '.codex',
+  'node_modules',
+]);
 const ALWAYS_REFRESH_TEMPLATE_PATHS = new Set([
   'docs/knowledgebase/apiEaseDocsConsolidated.md',
 ]);
 
 class TemplateProjectOwnershipPolicy {
   isTemplateManagedPath(templatePath) {
-    return !CUSTOMER_OWNED_TEMPLATE_PATHS.has(templatePath);
+    return !CUSTOMER_OWNED_TEMPLATE_PATHS.has(templatePath) && !this.hasExcludedDirectorySegment(templatePath);
   }
 
   shouldAlwaysRefreshPath(templatePath) {
@@ -27,6 +33,12 @@ class TemplateProjectOwnershipPolicy {
     }
 
     return managedTemplateManifest;
+  }
+
+  hasExcludedDirectorySegment(templatePath) {
+    return templatePath
+      .split(/[\\/]/)
+      .some((pathSegment) => EXCLUDED_TEMPLATE_DIRECTORY_NAMES.has(pathSegment));
   }
 }
 

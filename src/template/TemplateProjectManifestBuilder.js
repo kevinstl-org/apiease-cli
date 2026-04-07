@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { TemplateProjectOwnershipPolicy } from './TemplateProjectOwnershipPolicy.js';
 
-const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', 'node_modules']);
+const EXCLUDED_DIRECTORY_NAMES = new Set(['.git', '.idea', '.codex', 'node_modules']);
 
 class TemplateProjectManifestBuilder {
   constructor({
