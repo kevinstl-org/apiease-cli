@@ -17,6 +17,7 @@ describe('README', () => {
       // Assert
       assert.match(readme, /# apiease\b/);
       assert.match(readme, /npm install -g apiease/);
+      assert.match(readme, /apiease --version/);
       assert.doesNotMatch(readme, /npm install -g apiease-cli/);
     });
   });

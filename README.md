@@ -32,9 +32,16 @@ In both cases, the installed command is:
 apiease
 ```
 
+To confirm the installed CLI version:
+
+```bash
+apiease --version
+```
+
 ## Commands
 
 ```bash
+apiease --version
 apiease init [project-name]
 apiease upgrade
 apiease upgrade [--check]

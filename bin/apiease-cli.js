@@ -9,6 +9,7 @@ import { InitProjectCommand } from '../src/cli/InitProjectCommand.js';
 import { ReadRequestCommand } from '../src/cli/ReadRequestCommand.js';
 import { UpgradeProjectCommand } from '../src/cli/UpgradeProjectCommand.js';
 import { UpdateRequestCommand } from '../src/cli/UpdateRequestCommand.js';
+import { VersionCommand } from '../src/cli/VersionCommand.js';
 import { RequestDefinitionFileLoader } from '../src/cli/RequestDefinitionFileLoader.js';
 import { TopLevelCliCommandRouter } from '../src/cli/TopLevelCliCommandRouter.js';
 import { ApiEaseCreateRequestClient } from '../src/client/ApiEaseCreateRequestClient.js';
@@ -87,22 +88,38 @@ function buildUpgradeProjectCommand({ stdout = process.stdout, stderr = process.
   });
 }
 
+function buildVersionCommand({ stdout = process.stdout } = {}) {
+  return new VersionCommand({
+    cliVersion: CLI_VERSION,
+    stdout,
+  });
+}
+
 function buildTopLevelCliCommandRouter() {
   return new TopLevelCliCommandRouter();
 }
 
 async function runCli({
   commandArguments = process.argv.slice(2),
-  createRequestCommand = buildCreateRequestCommand(),
-  readRequestCommand = buildReadRequestCommand(),
-  updateRequestCommand = buildUpdateRequestCommand(),
-  deleteRequestCommand = buildDeleteRequestCommand(),
-  initProjectCommand = buildInitProjectCommand(),
-  upgradeProjectCommand = buildUpgradeProjectCommand(),
+  createRequestCommand,
+  readRequestCommand,
+  updateRequestCommand,
+  deleteRequestCommand,
+  initProjectCommand,
+  upgradeProjectCommand,
+  versionCommand,
   topLevelCliCommandRouter = buildTopLevelCliCommandRouter(),
   stdout = process.stdout,
   stderr = process.stderr,
 } = {}) {
+  createRequestCommand ??= buildCreateRequestCommand({ stdout, stderr });
+  readRequestCommand ??= buildReadRequestCommand({ stdout, stderr });
+  updateRequestCommand ??= buildUpdateRequestCommand({ stdout, stderr });
+  deleteRequestCommand ??= buildDeleteRequestCommand({ stdout, stderr });
+  initProjectCommand ??= buildInitProjectCommand({ stdout, stderr });
+  upgradeProjectCommand ??= buildUpgradeProjectCommand({ stdout, stderr });
+  versionCommand ??= buildVersionCommand({ stdout });
+
   const commandResult = topLevelCliCommandRouter.resolveCommand({
     commandArguments,
     createRequestCommand,
@@ -111,6 +128,7 @@ async function runCli({
     deleteRequestCommand,
     initProjectCommand,
     upgradeProjectCommand,
+    versionCommand,
   });
   if (!commandResult.ok) {
     stderr.write(`${commandResult.message}\n${topLevelCliCommandRouter.buildUsageText()}\n`);

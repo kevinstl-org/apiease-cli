@@ -230,6 +230,30 @@ describe('TopLevelCliCommandRouter', () => {
         command: initProjectCommand,
       });
     });
+
+    it('should resolve the version flag without requiring a resource argument', () => {
+      // Arrange
+      const topLevelCliCommandRouter = new TopLevelCliCommandRouter();
+      const versionCommand = { name: 'version' };
+
+      // Act
+      const result = topLevelCliCommandRouter.resolveCommand({
+        commandArguments: ['--version'],
+        createRequestCommand: { name: 'create' },
+        readRequestCommand: { name: 'read' },
+        updateRequestCommand: { name: 'update' },
+        deleteRequestCommand: { name: 'delete' },
+        initProjectCommand: { name: 'init' },
+        upgradeProjectCommand: { name: 'upgrade' },
+        versionCommand,
+      });
+
+      // Assert
+      assert.deepEqual(result, {
+        ok: true,
+        command: versionCommand,
+      });
+    });
   });
 
   describe('buildUsageText', () => {
@@ -251,6 +275,9 @@ describe('TopLevelCliCommandRouter', () => {
         '  delete <request|widget|variable|function>   Delete a resource by identifier.',
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+        'Options:',
+        '  --version                         Print the installed apiease CLI version.',
       ].join('\n'));
       assert.doesNotMatch(usageText, /apiease-cli/);
     });

@@ -319,6 +319,29 @@ describe('apiease-cli', () => {
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
     });
 
+    it('should return zero and write the cli version when the version flag is provided', async () => {
+      // Arrange
+      const { runCli } = await import(entrypointModuleUrl);
+      const stdoutChunks = [];
+
+      // Act
+      const exitCode = await runCli({
+        commandArguments: ['--version'],
+        createRequestCommand: createUnexpectedCommand('create'),
+        readRequestCommand: createUnexpectedCommand('read'),
+        updateRequestCommand: createUnexpectedCommand('update'),
+        deleteRequestCommand: createUnexpectedCommand('delete'),
+        initProjectCommand: createUnexpectedCommand('init'),
+        upgradeProjectCommand: createUnexpectedCommand('upgrade'),
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream([]),
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(stdoutChunks.join(''), '0.1.3\n');
+    });
+
     it('should return one and write top-level usage output when the command is missing', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
@@ -345,6 +368,9 @@ describe('apiease-cli', () => {
         '  delete <request|widget|variable|function>   Delete a resource by identifier.',
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+        'Options:',
+        '  --version                         Print the installed apiease CLI version.',
         '',
       ].join('\n'));
     });
@@ -376,6 +402,9 @@ describe('apiease-cli', () => {
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
         '',
+        'Options:',
+        '  --version                         Print the installed apiease CLI version.',
+        '',
       ].join('\n'));
     });
 
@@ -405,6 +434,9 @@ describe('apiease-cli', () => {
         '  delete <request|widget|variable|function>   Delete a resource by identifier.',
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+        'Options:',
+        '  --version                         Print the installed apiease CLI version.',
         '',
       ].join('\n'));
     });
@@ -436,17 +468,20 @@ describe('apiease-cli', () => {
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
         '',
+        'Options:',
+        '  --version                         Print the installed apiease CLI version.',
+        '',
       ].join('\n'));
     });
 
-    it('should return one and write top-level usage output when the command is unknown', async () => {
+    it('should return one and write top-level usage output when an unsupported top-level flag is provided', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
       const stderrChunks = [];
 
       // Act
       const exitCode = await runCli({
-        commandArguments: ['publish'],
+        commandArguments: ['-v'],
         createRequestCommand: createUnexpectedCommand('create'),
         stdout: createWritableStream([]),
         stderr: createWritableStream(stderrChunks),
@@ -455,7 +490,7 @@ describe('apiease-cli', () => {
       // Assert
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
-        'Unknown command: publish',
+        'Unknown command: -v',
         'Usage: apiease <command> [options]',
         '',
         'Commands:',
@@ -465,6 +500,9 @@ describe('apiease-cli', () => {
         '  delete <request|widget|variable|function>   Delete a resource by identifier.',
         '  init                              Initialize a new APIEase project.',
         '  upgrade                           Upgrade an existing APIEase project.',
+        '',
+        'Options:',
+        '  --version                         Print the installed apiease CLI version.',
         '',
       ].join('\n'));
     });

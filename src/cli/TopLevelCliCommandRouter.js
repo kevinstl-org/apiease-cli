@@ -6,6 +6,7 @@ const INIT_COMMAND_NAME = 'init';
 const READ_COMMAND_NAME = 'read';
 const UPGRADE_COMMAND_NAME = 'upgrade';
 const UPDATE_COMMAND_NAME = 'update';
+const VERSION_FLAG = '--version';
 
 class TopLevelCliCommandRouter {
   constructor({
@@ -22,10 +23,15 @@ class TopLevelCliCommandRouter {
     deleteRequestCommand,
     initProjectCommand,
     upgradeProjectCommand,
+    versionCommand,
   }) {
     const commandName = commandArguments[0];
     if (!commandName) {
       return this.buildFailureResult('Missing command.');
+    }
+
+    if (commandName === VERSION_FLAG) {
+      return this.buildSuccessResult(versionCommand);
     }
 
     if (commandName === INIT_COMMAND_NAME) {
@@ -67,6 +73,9 @@ class TopLevelCliCommandRouter {
       `  delete ${supportedResourceToken}   Delete a resource by identifier.`,
       '  init                              Initialize a new APIEase project.',
       '  upgrade                           Upgrade an existing APIEase project.',
+      '',
+      'Options:',
+      '  --version                         Print the installed apiease CLI version.',
     ].join('\n');
   }
 
