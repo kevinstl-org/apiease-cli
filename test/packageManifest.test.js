@@ -28,7 +28,7 @@ describe('package manifest', () => {
         type: 'git',
         url: 'git+https://github.com/kevinstl-org/apiease-cli.git',
       });
-      assert.equal(packageJson.homepage, 'https://github.com/kevinstl-org/apiease-cli');
+      assert.equal(packageJson.homepage, 'https://apiease.com');
       assert.deepEqual(packageJson.bugs, {
         url: 'https://github.com/kevinstl-org/apiease-cli/issues',
       });
