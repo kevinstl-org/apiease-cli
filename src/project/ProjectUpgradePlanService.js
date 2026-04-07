@@ -1,12 +1,15 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { TemplateProjectOwnershipPolicy } from '../template/TemplateProjectOwnershipPolicy.js';
 import { ProjectManagedPathResolver } from './ProjectManagedPathResolver.js';
 
 class ProjectUpgradePlanService {
   constructor({
     projectManagedPathResolver = new ProjectManagedPathResolver(),
+    templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy(),
   } = {}) {
     this.projectManagedPathResolver = projectManagedPathResolver;
+    this.templateProjectOwnershipPolicy = templateProjectOwnershipPolicy;
   }
 
   async buildUpgradePlan({
@@ -27,6 +30,16 @@ class ProjectUpgradePlanService {
       const currentTemplateHash = currentTemplateManifest[managedPath];
       const storedTemplateHash = storedTemplateManifest[managedPath];
       const currentProjectFileHash = await this.readProjectFileHash(currentProjectDirectoryPath, managedPath);
+
+      if (this.shouldAlwaysRefreshManagedPath({ currentProjectFileHash, currentTemplateHash, managedPath })) {
+        if (!currentProjectFileHash) {
+          addPaths.push(managedPath);
+          continue;
+        }
+
+        updatePaths.push(managedPath);
+        continue;
+      }
 
       if (!storedTemplateHash && currentTemplateHash) {
         if (!currentProjectFileHash) {
@@ -101,6 +114,18 @@ class ProjectUpgradePlanService {
 
   buildContentHash(content) {
     return crypto.createHash('sha256').update(content).digest('hex');
+  }
+
+  shouldAlwaysRefreshManagedPath({ currentProjectFileHash, currentTemplateHash, managedPath }) {
+    if (!currentTemplateHash) {
+      return false;
+    }
+
+    if (!this.templateProjectOwnershipPolicy.shouldAlwaysRefreshPath(managedPath)) {
+      return false;
+    }
+
+    return currentProjectFileHash !== currentTemplateHash;
   }
 }
 

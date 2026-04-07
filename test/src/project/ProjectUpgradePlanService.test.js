@@ -74,5 +74,67 @@ describe('ProjectUpgradePlanService', () => {
         },
       );
     });
+
+    it('should force-update the bundled knowledge base path even when older metadata did not track it', async () => {
+      // Arrange
+      const { ProjectUpgradePlanService } = await import(projectUpgradePlanServiceModuleUrl);
+      const projectUpgradePlanService = new ProjectUpgradePlanService();
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-upgrade-plan-knowledge-base-'));
+      const projectRootPath = path.join(temporaryDirectoryPath, 'project');
+      const knowledgeBaseRelativePath = path.join('docs', 'knowledgebase', 'apiEaseDocsConsolidated.md');
+
+      await fs.mkdir(path.join(projectRootPath, 'docs', 'knowledgebase'), { recursive: true });
+      await fs.writeFile(
+        path.join(projectRootPath, knowledgeBaseRelativePath),
+        'older bundled knowledge base\n',
+      );
+
+      // Act
+      const plan = await projectUpgradePlanService.buildUpgradePlan({
+        currentProjectDirectoryPath: projectRootPath,
+        currentTemplateManifest: {
+          'docs/knowledgebase/apiEaseDocsConsolidated.md': projectUpgradePlanService.buildContentHash(
+            'latest bundled knowledge base\n',
+          ),
+        },
+        storedTemplateManifest: {},
+      });
+
+      // Assert
+      assert.deepEqual(plan, {
+        addPaths: [],
+        removePaths: [],
+        skipPaths: [],
+        updatePaths: ['docs/knowledgebase/apiEaseDocsConsolidated.md'],
+      });
+    });
+
+    it('should still skip other conflicting paths when older metadata did not track them', async () => {
+      // Arrange
+      const { ProjectUpgradePlanService } = await import(projectUpgradePlanServiceModuleUrl);
+      const projectUpgradePlanService = new ProjectUpgradePlanService();
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-upgrade-plan-untracked-'));
+      const projectRootPath = path.join(temporaryDirectoryPath, 'project');
+
+      await fs.mkdir(projectRootPath, { recursive: true });
+      await fs.writeFile(path.join(projectRootPath, 'README.md'), 'project specific readme\n');
+
+      // Act
+      const plan = await projectUpgradePlanService.buildUpgradePlan({
+        currentProjectDirectoryPath: projectRootPath,
+        currentTemplateManifest: {
+          'README.md': projectUpgradePlanService.buildContentHash('latest template readme\n'),
+        },
+        storedTemplateManifest: {},
+      });
+
+      // Assert
+      assert.deepEqual(plan, {
+        addPaths: [],
+        removePaths: [],
+        skipPaths: ['README.md'],
+        updatePaths: [],
+      });
+    });
   });
 });

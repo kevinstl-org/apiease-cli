@@ -247,6 +247,166 @@ describe('InitProjectCommand', () => {
       assert.equal(await fs.readFile(path.join(destinationDirectoryPath, 'README.md'), 'utf8'), 'existing readme\n');
     });
 
+    it('should refresh the bundled knowledge base file even when it already exists', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-knowledge-base-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const knowledgeBaseRelativePath = path.join('docs', 'knowledgebase', 'apiEaseDocsConsolidated.md');
+
+      await fs.mkdir(path.join(templateDirectoryPath, 'docs', 'knowledgebase'), { recursive: true });
+      await fs.mkdir(path.join(workingDirectoryPath, 'docs', 'knowledgebase'), { recursive: true });
+      await fs.writeFile(
+        path.join(templateDirectoryPath, knowledgeBaseRelativePath),
+        'template knowledge base\n',
+      );
+      await fs.writeFile(
+        path.join(workingDirectoryPath, knowledgeBaseRelativePath),
+        'existing knowledge base\n',
+      );
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
+        cliVersion: '0.1.0-test',
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(
+        await fs.readFile(path.join(workingDirectoryPath, knowledgeBaseRelativePath), 'utf8'),
+        'template knowledge base\n',
+      );
+      const projectMetadata = JSON.parse(
+        await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8'),
+      );
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest), [
+        'docs/knowledgebase/apiEaseDocsConsolidated.md',
+      ]);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Initializing APIEase project: .',
+          'Using template: ../apiease-template',
+          'Project initialized successfully.',
+          '',
+          'Next steps:',
+          'git init',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should still skip non-knowledge-base conflicts while refreshing the bundled knowledge base file', async () => {
+      // Arrange
+      const { InitProjectCommand } = await import(initProjectCommandModuleUrl);
+      const temporaryDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), 'apiease-init-command-mixed-conflicts-'));
+      const templateDirectoryPath = path.join(temporaryDirectoryPath, 'apiease-template');
+      const workingDirectoryPath = path.join(temporaryDirectoryPath, 'workspace');
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const knowledgeBaseRelativePath = path.join('docs', 'knowledgebase', 'apiEaseDocsConsolidated.md');
+
+      await fs.mkdir(path.join(templateDirectoryPath, 'docs', 'knowledgebase'), { recursive: true });
+      await fs.mkdir(path.join(workingDirectoryPath, 'docs', 'knowledgebase'), { recursive: true });
+      await fs.writeFile(
+        path.join(templateDirectoryPath, knowledgeBaseRelativePath),
+        'template knowledge base\n',
+      );
+      await fs.writeFile(path.join(templateDirectoryPath, 'README.md'), 'template readme\n');
+      await fs.writeFile(
+        path.join(workingDirectoryPath, knowledgeBaseRelativePath),
+        'existing knowledge base\n',
+      );
+      await fs.writeFile(path.join(workingDirectoryPath, 'README.md'), 'custom readme\n');
+
+      const initProjectCommand = new InitProjectCommand({
+        templateProjectSourceResolver: {
+          resolveTemplateSource() {
+            return {
+              displayTemplateSource: '../apiease-template',
+              publicRepositoryUrl: 'https://github.com/kevinstl-org/apiease-template',
+              sourceType: 'localDevelopment',
+              templateDirectoryPath,
+            };
+          },
+        },
+        templateProjectVersionResolver: {
+          async resolveTemplateVersion() {
+            return {
+              type: 'gitCommit',
+              value: 'template-sha-1',
+            };
+          },
+        },
+        cliVersion: '0.1.0-test',
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await initProjectCommand.run(['init'], {
+        currentWorkingDirectoryPath: workingDirectoryPath,
+      });
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(
+        await fs.readFile(path.join(workingDirectoryPath, knowledgeBaseRelativePath), 'utf8'),
+        'template knowledge base\n',
+      );
+      assert.equal(await fs.readFile(path.join(workingDirectoryPath, 'README.md'), 'utf8'), 'custom readme\n');
+      const projectMetadata = JSON.parse(
+        await fs.readFile(path.join(workingDirectoryPath, '.apiease', 'project.json'), 'utf8'),
+      );
+      assert.deepEqual(Object.keys(projectMetadata.template.manifest), [
+        'docs/knowledgebase/apiEaseDocsConsolidated.md',
+      ]);
+      assert.equal(
+        stdoutChunks.join(''),
+        [
+          'Initializing APIEase project: .',
+          'Using template: ../apiease-template',
+          'Project initialized successfully.',
+          '',
+          'Skipped existing conflicting paths:',
+          'README.md',
+          '',
+          'Next steps:',
+          'git init',
+          '',
+        ].join('\n'),
+      );
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should reuse identical existing template files and still write project metadata', async () => {
       // Arrange
       const { InitProjectCommand } = await import(initProjectCommandModuleUrl);

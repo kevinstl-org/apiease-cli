@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectMetadataFileService } from '../project/ProjectMetadataFileService.js';
 import { TemplateProjectManifestBuilder } from '../template/TemplateProjectManifestBuilder.js';
+import { TemplateProjectOwnershipPolicy } from '../template/TemplateProjectOwnershipPolicy.js';
 import { TemplateProjectSourceMaterializer } from '../template/TemplateProjectSourceMaterializer.js';
 import { TemplateProjectSourceResolver } from '../template/TemplateProjectSourceResolver.js';
 import { TemplateProjectVersionResolver } from '../template/TemplateProjectVersionResolver.js';
@@ -14,6 +15,7 @@ class InitProjectCommand {
     cliVersion,
     projectMetadataFileService = new ProjectMetadataFileService(),
     templateProjectManifestBuilder = new TemplateProjectManifestBuilder(),
+    templateProjectOwnershipPolicy = new TemplateProjectOwnershipPolicy(),
     templateProjectSourceMaterializer = new TemplateProjectSourceMaterializer(),
     templateProjectSourceResolver = new TemplateProjectSourceResolver(),
     templateProjectVersionResolver = new TemplateProjectVersionResolver(),
@@ -23,6 +25,7 @@ class InitProjectCommand {
     this.cliVersion = cliVersion;
     this.projectMetadataFileService = projectMetadataFileService;
     this.templateProjectManifestBuilder = templateProjectManifestBuilder;
+    this.templateProjectOwnershipPolicy = templateProjectOwnershipPolicy;
     this.templateProjectSourceMaterializer = templateProjectSourceMaterializer;
     this.templateProjectSourceResolver = templateProjectSourceResolver;
     this.templateProjectVersionResolver = templateProjectVersionResolver;
@@ -137,7 +140,12 @@ class InitProjectCommand {
     };
   }
 
-  async buildTemplateCopyPlan(templateDirectoryPath, destinationDirectoryPath, skippedPaths = []) {
+  async buildTemplateCopyPlan(
+    templateDirectoryPath,
+    destinationDirectoryPath,
+    skippedPaths = [],
+    rootTemplateDirectoryPath = templateDirectoryPath,
+  ) {
     const templateEntries = await fs.readdir(templateDirectoryPath, { withFileTypes: true });
 
     for (const templateEntry of templateEntries) {
@@ -148,13 +156,30 @@ class InitProjectCommand {
       const templateEntryPath = path.join(templateDirectoryPath, templateEntry.name);
       const destinationEntryPath = path.join(destinationDirectoryPath, templateEntry.name);
       const destinationEntryStats = await this.readPathStats(destinationEntryPath);
+      const templateRelativePath = this.buildTemplateRelativePath({
+        rootTemplateDirectoryPath,
+        templateEntryPath,
+      });
 
       if (!destinationEntryStats) {
         continue;
       }
 
       if (templateEntry.isDirectory() && destinationEntryStats.isDirectory()) {
-        await this.buildTemplateCopyPlan(templateEntryPath, destinationEntryPath, skippedPaths);
+        await this.buildTemplateCopyPlan(
+          templateEntryPath,
+          destinationEntryPath,
+          skippedPaths,
+          rootTemplateDirectoryPath,
+        );
+        continue;
+      }
+
+      if (
+        templateEntry.isFile()
+        && destinationEntryStats.isFile()
+        && this.templateProjectOwnershipPolicy.shouldAlwaysRefreshPath(templateRelativePath)
+      ) {
         continue;
       }
 
@@ -175,7 +200,11 @@ class InitProjectCommand {
     };
   }
 
-  async copyTemplateEntries(templateDirectoryPath, destinationDirectoryPath) {
+  async copyTemplateEntries(
+    templateDirectoryPath,
+    destinationDirectoryPath,
+    rootTemplateDirectoryPath = templateDirectoryPath,
+  ) {
     const templateEntries = await fs.readdir(templateDirectoryPath, { withFileTypes: true });
 
     for (const templateEntry of templateEntries) {
@@ -186,14 +215,31 @@ class InitProjectCommand {
       const templateEntryPath = path.join(templateDirectoryPath, templateEntry.name);
       const destinationEntryPath = path.join(destinationDirectoryPath, templateEntry.name);
       const destinationEntryStats = await this.readPathStats(destinationEntryPath);
+      const templateRelativePath = this.buildTemplateRelativePath({
+        rootTemplateDirectoryPath,
+        templateEntryPath,
+      });
 
       if (!destinationEntryStats) {
         await fs.cp(templateEntryPath, destinationEntryPath, { recursive: true });
         continue;
       }
 
+      if (
+        templateEntry.isFile()
+        && destinationEntryStats.isFile()
+        && this.templateProjectOwnershipPolicy.shouldAlwaysRefreshPath(templateRelativePath)
+      ) {
+        await fs.copyFile(templateEntryPath, destinationEntryPath);
+        continue;
+      }
+
       if (templateEntry.isDirectory() && destinationEntryStats.isDirectory()) {
-        await this.copyTemplateEntries(templateEntryPath, destinationEntryPath);
+        await this.copyTemplateEntries(
+          templateEntryPath,
+          destinationEntryPath,
+          rootTemplateDirectoryPath,
+        );
       }
     }
   }
@@ -230,6 +276,10 @@ class InitProjectCommand {
 
   buildPathSegments(sourcePath) {
     return path.normalize(sourcePath).split(path.sep).filter(Boolean);
+  }
+
+  buildTemplateRelativePath({ rootTemplateDirectoryPath, templateEntryPath }) {
+    return path.relative(rootTemplateDirectoryPath, templateEntryPath).split(path.sep).join('/');
   }
 
   buildStartOutput({ destinationAlreadyExists, displayTemplateSource, projectName }) {
