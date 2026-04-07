@@ -1,3 +1,5 @@
+import { ApiEaseWebhookEventService } from './ApiEaseWebhookEventService.js';
+
 const REQUEST_TYPES = ['http', 'flow', 'liquid', 'system'];
 const PARAMETER_TYPES = ['body', 'flow', 'header', 'liquid', 'path', 'query', 'system'];
 const TRIGGER_TYPES = ['webhook', 'cron', 'proxyEndpoint'];
@@ -9,6 +11,12 @@ const CRON_FIELDS = ['value'];
 const PROXY_ENDPOINT_FIELDS = ['path', 'method', 'authenticated'];
 
 class ApiEaseCreateRequestContractValidator {
+  constructor({
+    apiEaseWebhookEventService = new ApiEaseWebhookEventService(),
+  } = {}) {
+    this.apiEaseWebhookEventService = apiEaseWebhookEventService;
+  }
+
   validate(payload) {
     if (!this.isPlainObject(payload)) {
       return this.buildInvalidResult([
@@ -154,6 +162,7 @@ class ApiEaseCreateRequestContractValidator {
     if (trigger.type === 'webhook') {
       this.addNestedObjectFieldErrors(trigger, 'webhook', WEBHOOK_FIELDS, triggerPath, fieldErrors);
       this.addRequiredStringFieldError(trigger.webhook, 'event', fieldErrors, `${triggerPath}.webhook`);
+      this.addSupportedWebhookEventFieldError(trigger.webhook, `${triggerPath}.webhook.event`, fieldErrors);
     }
 
     if (trigger.type === 'cron') {
@@ -171,6 +180,16 @@ class ApiEaseCreateRequestContractValidator {
         fieldErrors,
         `${triggerPath}.proxyEndpoint`,
       );
+    }
+  }
+
+  addSupportedWebhookEventFieldError(webhook, fieldPath, fieldErrors) {
+    if (!this.isPlainObject(webhook) || !this.hasOwnProperty(webhook, 'event') || !this.isNonEmptyString(webhook.event)) {
+      return;
+    }
+
+    if (!this.apiEaseWebhookEventService.isValidWebhookEvent(webhook.event)) {
+      fieldErrors.push(this.buildFieldError(fieldPath, 'INVALID_VALUE', 'Field is invalid'));
     }
   }
 

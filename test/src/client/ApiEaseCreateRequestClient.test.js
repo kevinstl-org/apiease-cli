@@ -148,6 +148,86 @@ describe('ApiEaseCreateRequestClient', () => {
       assert.notEqual(fetchCalls[0], 'https://apiease.example.com/root/api/programmatic/requests');
     });
 
+    it('should normalize supported slash-form webhook events before validation and persistence', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const validationCalls = [];
+      const fetchCalls = [];
+      const request = {
+        name: 'Cart flow',
+        type: 'flow',
+        triggers: [
+          {
+            type: 'webhook',
+            webhook: {
+              event: 'carts/update',
+            },
+          },
+        ],
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: {
+          validate(payload) {
+            validationCalls.push(payload);
+            return {
+              isValid: true,
+              errorCode: null,
+              message: '',
+              fieldErrors: [],
+            };
+          },
+        },
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 201,
+            async json() {
+              return {
+                ok: true,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.deepEqual(validationCalls, [
+        {
+          name: 'Cart flow',
+          type: 'flow',
+          triggers: [
+            {
+              type: 'webhook',
+              webhook: {
+                event: 'CARTS_UPDATE',
+              },
+            },
+          ],
+        },
+      ]);
+      assert.equal(fetchCalls[0].options.body, JSON.stringify(validationCalls[0]));
+      assert.deepEqual(request, {
+        name: 'Cart flow',
+        type: 'flow',
+        triggers: [
+          {
+            type: 'webhook',
+            webhook: {
+              event: 'carts/update',
+            },
+          },
+        ],
+      });
+    });
+
     it('should return backend failure payloads with the response status', async () => {
       // Arrange
       const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);

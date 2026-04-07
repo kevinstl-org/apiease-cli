@@ -203,6 +203,67 @@ test('ApiEaseCreateRequestContractValidator validate should report invalid neste
   ]);
 });
 
+test('ApiEaseCreateRequestContractValidator validate should allow supported webhook events written in slash format', async () => {
+  // Arrange
+  const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
+  const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
+  const payload = {
+    type: 'http',
+    method: 'POST',
+    address: 'https://example.com/orders',
+    triggers: [
+      {
+        type: 'webhook',
+        webhook: {
+          event: 'carts/update',
+        },
+      },
+    ],
+  };
+
+  // Act
+  const result = apiEaseCreateRequestContractValidator.validate(payload);
+
+  // Assert
+  assert.deepEqual(result, {
+    isValid: true,
+    errorCode: null,
+    message: '',
+    fieldErrors: [],
+  });
+});
+
+test('ApiEaseCreateRequestContractValidator validate should reject unsupported webhook events by field path', async () => {
+  // Arrange
+  const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
+  const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
+  const payload = {
+    type: 'http',
+    method: 'POST',
+    address: 'https://example.com/orders',
+    triggers: [
+      {
+        type: 'webhook',
+        webhook: {
+          event: 'carts/not-real',
+        },
+      },
+    ],
+  };
+
+  // Act
+  const result = apiEaseCreateRequestContractValidator.validate(payload);
+
+  // Assert
+  assert.deepEqual(result.fieldErrors, [
+    {
+      path: 'triggers[0].webhook.event',
+      code: 'INVALID_VALUE',
+      message: 'Field is invalid',
+    },
+  ]);
+});
+
 test('ApiEaseCreateRequestContractValidator validate should reject unsupported parameter types even when flow and liquid are allowed', async () => {
   // Arrange
   const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
