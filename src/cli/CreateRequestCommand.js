@@ -1,11 +1,13 @@
 import { ApiEaseCreateRequestClient } from '../client/ApiEaseCreateRequestClient.js';
 import { ApiEaseCrudResourceClient } from '../client/ApiEaseCrudResourceClient.js';
+import { ApiEaseRequestSourceIdentifierMigrationService } from '../client/ApiEaseRequestSourceIdentifierMigrationService.js';
 import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
 import { CrudResourceDefinitionCollection } from '../crud/CrudResourceDefinitionCollection.js';
 import { ApiEaseCommandConfigurationResolver } from './ApiEaseCommandConfigurationResolver.js';
 import { RequestDefinitionFileLoader } from './RequestDefinitionFileLoader.js';
 
 const JSON_FLAG = '--json';
+const AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG = '--auto-update-source-identifier';
 const COMMAND_REQUIRED_OPTION_NAMES = ['--file'];
 const CONFIGURATION_OPTION_NAMES = ['--base-url', '--shop-domain'];
 
@@ -14,6 +16,7 @@ class CreateRequestCommand {
     requestDefinitionFileLoader = new RequestDefinitionFileLoader(),
     apiEaseCreateRequestClient = new ApiEaseCreateRequestClient(),
     apiEaseCrudResourceClient = new ApiEaseCrudResourceClient(),
+    apiEaseRequestSourceIdentifierMigrationService = new ApiEaseRequestSourceIdentifierMigrationService(),
     apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
     crudResourceDefinitionCollection = new CrudResourceDefinitionCollection(),
     apiEaseCommandConfigurationResolver = new ApiEaseCommandConfigurationResolver({
@@ -25,6 +28,7 @@ class CreateRequestCommand {
     this.requestDefinitionFileLoader = requestDefinitionFileLoader;
     this.apiEaseCreateRequestClient = apiEaseCreateRequestClient;
     this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
+    this.apiEaseRequestSourceIdentifierMigrationService = apiEaseRequestSourceIdentifierMigrationService;
     this.crudResourceDefinitionCollection = crudResourceDefinitionCollection;
     this.apiEaseCommandConfigurationResolver = apiEaseCommandConfigurationResolver;
     this.stdout = stdout;
@@ -91,6 +95,7 @@ class CreateRequestCommand {
       shopDomain: optionMap['--shop-domain'],
       apiKey: optionMap['--api-key'],
       json: optionMap[JSON_FLAG] === true,
+      autoUpdateSourceIdentifier: optionMap[AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG] === true,
     };
   }
 
@@ -120,11 +125,19 @@ class CreateRequestCommand {
 
   async createResource({ parseResult, configurationResult, resourceDefinition }) {
     if (parseResult.crudResourceDefinition.resourceName === 'request') {
+      const requestSourceIdentifierResult = this.prepareRequestSourceIdentifier({
+        parseResult,
+        requestDefinition: resourceDefinition,
+      });
+      if (!requestSourceIdentifierResult.ok) {
+        return requestSourceIdentifierResult;
+      }
+
       return await this.apiEaseCreateRequestClient.createRequest({
         apiBaseUrl: configurationResult.apiBaseUrl,
         apiKey: configurationResult.apiKey,
         shopDomain: configurationResult.shopDomain,
-        request: resourceDefinition,
+        request: requestSourceIdentifierResult.requestDefinition,
       });
     }
 
@@ -148,6 +161,11 @@ class CreateRequestCommand {
         continue;
       }
 
+      if (commandArgument === AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG) {
+        optionMap[AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG] = true;
+        continue;
+      }
+
       optionMap[commandArgument] = commandArguments[index + 1];
       index += 1;
     }
@@ -157,6 +175,64 @@ class CreateRequestCommand {
 
   buildMissingRequiredOptionNames(optionMap, requiredOptionNames) {
     return requiredOptionNames.filter((requiredOptionName) => !optionMap[requiredOptionName]);
+  }
+
+  prepareRequestSourceIdentifier({ parseResult, requestDefinition }) {
+    if (parseResult.autoUpdateSourceIdentifier) {
+      return this.apiEaseRequestSourceIdentifierMigrationService.migrateRequestSourceIdentifier(requestDefinition);
+    }
+
+    if (this.hasOwnProperty(requestDefinition, 'id')) {
+      return this.buildSourceIdRejectedResult();
+    }
+
+    if (!this.hasOwnProperty(requestDefinition, 'handle')) {
+      return this.buildMissingHandleResult();
+    }
+
+    const validationResult = this.apiEaseRequestSourceIdentifierMigrationService.validateRequestHandle(requestDefinition.handle);
+    if (!validationResult.ok) {
+      return validationResult;
+    }
+
+    return {
+      ok: true,
+      requestDefinition,
+    };
+  }
+
+  buildSourceIdRejectedResult() {
+    return {
+      ok: false,
+      errorCode: 'APIEASE_REQUEST_SOURCE_ID_REJECTED',
+      message: 'Request ids are server-owned. Rerun with --auto-update-source-identifier to migrate source metadata.',
+      fieldErrors: [
+        {
+          path: 'id',
+          code: 'SERVER_OWNED',
+          message: 'Remove id or rerun with --auto-update-source-identifier.',
+        },
+      ],
+    };
+  }
+
+  buildMissingHandleResult() {
+    return {
+      ok: false,
+      errorCode: 'APIEASE_REQUEST_HANDLE_REQUIRED',
+      message: 'Request handle is required. Rerun with --auto-update-source-identifier to infer one from source metadata.',
+      fieldErrors: [
+        {
+          path: 'handle',
+          code: 'REQUIRED',
+          message: 'Add handle or rerun with --auto-update-source-identifier.',
+        },
+      ],
+    };
+  }
+
+  hasOwnProperty(objectValue, propertyName) {
+    return Object.prototype.hasOwnProperty.call(objectValue, propertyName);
   }
 
   buildParseFailure(message, crudResourceDefinition = null) {
@@ -173,7 +249,7 @@ class CreateRequestCommand {
       ? `Path to the ${crudResourceDefinition.resourceName} definition JSON file.`
       : 'Path to the resource definition JSON file.';
     const usageLines = [
-      `Usage: apiease create ${resourceToken} --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]`,
+      `Usage: apiease create ${resourceToken} --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--auto-update-source-identifier] [--json]`,
       '',
       'Options:',
     ];
@@ -187,6 +263,7 @@ class CreateRequestCommand {
       '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
       '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
       '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
+      '  --auto-update-source-identifier  Infer request handle metadata before creating a request.',
       '  --json                      Emit raw JSON output.',
     );
 

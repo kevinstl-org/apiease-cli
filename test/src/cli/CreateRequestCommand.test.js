@@ -15,6 +15,7 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const requestDefinition = {
+        handle: 'create-product',
         name: 'Create product',
         type: 'http',
         method: 'POST',
@@ -325,6 +326,7 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const requestDefinition = {
+        handle: 'create-product',
         name: 'Create product',
         type: 'http',
         method: 'POST',
@@ -398,6 +400,7 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const requestDefinition = {
+        handle: 'create-product',
         name: 'Create product',
         type: 'http',
         method: 'POST',
@@ -467,6 +470,7 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const requestDefinition = {
+        handle: 'create-product',
         name: 'Create product',
         type: 'http',
         method: 'POST',
@@ -554,6 +558,7 @@ describe('CreateRequestCommand', () => {
             return {
               ok: true,
               requestDefinition: {
+                handle: 'create-product',
                 type: 'http',
               },
             };
@@ -641,6 +646,223 @@ describe('CreateRequestCommand', () => {
       assert.equal(createResourceCallCount, 0);
       assert.match(stderrChunks.join(''), /Missing required resource argument\./);
       assert.match(stderrChunks.join(''), /Usage: apiease create <request\|widget\|variable\|function>/);
+    });
+
+    it('should fail before create when a request id exists without auto source identifier update', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let createRequestCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                id: 'lookup-discount',
+                handle: 'lookup-discount',
+                name: 'Lookup discount',
+                type: 'http',
+              },
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createRequestCallCount, 0);
+      assert.match(stderrChunks.join(''), /Request ids are server-owned/);
+      assert.match(stderrChunks.join(''), /--auto-update-source-identifier/);
+    });
+
+    it('should fail before create when a request handle is missing without auto source identifier update', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let createRequestCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                name: 'Lookup discount',
+                type: 'http',
+              },
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createRequestCallCount, 0);
+      assert.match(stderrChunks.join(''), /Request handle is required/);
+      assert.match(stderrChunks.join(''), /--auto-update-source-identifier/);
+    });
+
+    it('should fail before create when a request handle is invalid', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let createRequestCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                handle: 'Lookup Discount',
+                name: 'Lookup discount',
+                type: 'http',
+              },
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createRequestCallCount, 0);
+      assert.match(stderrChunks.join(''), /Request handle must use lowercase letters/);
+    });
+
+    it('should migrate the request source identifier before create when auto source identifier update is set', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const createRequestCalls = [];
+      const sourceRequestDefinition = {
+        id: 'lookup-discount',
+        name: 'Lookup discount',
+        type: 'http',
+        method: 'GET',
+        address: 'https://api.example.com/discounts',
+      };
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: sourceRequestDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest(options) {
+            createRequestCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              request: {
+                id: 'request-1',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--auto-update-source-identifier',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(createRequestCalls[0].request, {
+        handle: 'lookup-discount',
+        name: 'Lookup discount',
+        type: 'http',
+        method: 'GET',
+        address: 'https://api.example.com/discounts',
+      });
     });
 
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
@@ -839,7 +1061,9 @@ describe('CreateRequestCommand', () => {
           async loadRequestDefinition() {
             return {
               ok: true,
-              requestDefinition: {},
+              requestDefinition: {
+                handle: 'create-product',
+              },
             };
           },
         },
