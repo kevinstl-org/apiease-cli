@@ -1,4 +1,5 @@
 {
+  "handle": "create-product-yahoo",
   "name": "Create Product Yahoo",
   "type": "http",
   "method": "POST",

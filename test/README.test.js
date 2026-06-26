@@ -62,5 +62,38 @@ describe('README', () => {
       assert.match(exampleSection, /apiease update function --function-id function-123 --file \.\/function-definition\.json/);
       assert.match(exampleSection, /apiease delete function --function-id function-123/);
     });
+
+    it('should document request handles as source file identifiers', async () => {
+      // Arrange
+      const readme = await fs.readFile(readmeFilePath, 'utf8');
+
+      // Act
+      const requestSourceExampleSection = readme;
+
+      // Assert
+      assert.match(requestSourceExampleSection, /Request source files use `handle` as the stable repository identifier\./);
+      assert.match(requestSourceExampleSection, /`id` is server-owned and should not be stored in request source files\./);
+      assert.match(requestSourceExampleSection, /"handle": "cli-demo-request"/);
+      assert.match(requestSourceExampleSection, /--auto-update-source-identifier/);
+      assert.doesNotMatch(requestSourceExampleSection, /"id": "cli-demo-request"/);
+    });
+
+    it('should document request id option compatibility with handles', async () => {
+      // Arrange
+      const readme = await fs.readFile(readmeFilePath, 'utf8');
+
+      // Act
+      const requestIdentifierSection = readme;
+
+      // Assert
+      assert.match(requestIdentifierSection, /apiease read request --request-id <id-or-handle>/);
+      assert.match(requestIdentifierSection, /apiease update request --request-id <id-or-handle> --file <path>/);
+      assert.match(requestIdentifierSection, /apiease delete request --request-id <id-or-handle>/);
+      assert.match(requestIdentifierSection, /For `request`, `--request-id` remains the compatibility option name; pass either a server-owned id or a source-owned handle\./);
+      assert.match(requestIdentifierSection, /apiease read request --request-id cli-demo-request/);
+      assert.match(requestIdentifierSection, /apiease update request --request-id cli-demo-request --file \.\/request-definition\.json/);
+      assert.match(requestIdentifierSection, /apiease delete request --request-id cli-demo-request/);
+      assert.doesNotMatch(requestIdentifierSection, /apiease read request --request-id request-123/);
+    });
   });
 });
