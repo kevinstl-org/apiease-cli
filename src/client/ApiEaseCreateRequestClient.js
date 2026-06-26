@@ -8,6 +8,8 @@ const REQUEST_CREATE_FAILED = 'REQUEST_CREATE_FAILED';
 const REQUEST_READ_FAILED = 'REQUEST_READ_FAILED';
 const REQUEST_UPDATE_FAILED = 'REQUEST_UPDATE_FAILED';
 const NOT_FOUND_STATUS = 404;
+const CREATED_OPERATION = 'created';
+const UPDATED_OPERATION = 'updated';
 
 class ApiEaseCreateRequestClient {
   constructor({
@@ -77,7 +79,7 @@ class ApiEaseCreateRequestClient {
   }
 
   async createNewRequest({ apiBaseUrl, apiKey, shopDomain, request }) {
-    return await this.apiEaseCrudResourceClient.createResource({
+    const result = await this.apiEaseCrudResourceClient.createResource({
       resourceName: REQUEST_RESOURCE_NAME,
       apiBaseUrl,
       apiKey,
@@ -85,10 +87,12 @@ class ApiEaseCreateRequestClient {
       resource: request,
       failureErrorCode: REQUEST_CREATE_FAILED,
     });
+
+    return this.addOperationToSuccessfulResult(result, CREATED_OPERATION);
   }
 
   async updateExistingRequest({ apiBaseUrl, apiKey, shopDomain, request }) {
-    return await this.apiEaseCrudResourceClient.updateResource({
+    const result = await this.apiEaseCrudResourceClient.updateResource({
       resourceName: REQUEST_RESOURCE_NAME,
       apiBaseUrl,
       apiKey,
@@ -97,6 +101,19 @@ class ApiEaseCreateRequestClient {
       resource: request,
       failureErrorCode: REQUEST_UPDATE_FAILED,
     });
+
+    return this.addOperationToSuccessfulResult(result, UPDATED_OPERATION);
+  }
+
+  addOperationToSuccessfulResult(result, operation) {
+    if (!result.ok) {
+      return result;
+    }
+
+    return {
+      ...result,
+      operation,
+    };
   }
 
   buildValidationFailureResult(validationResult) {

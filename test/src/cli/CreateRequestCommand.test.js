@@ -41,6 +41,7 @@ describe('CreateRequestCommand', () => {
           return {
             status: 201,
             ok: true,
+            operation: 'created',
             shopDomain: 'cool-shop.myshopify.com',
             request: {
               id: 'request-1',
@@ -94,6 +95,65 @@ describe('CreateRequestCommand', () => {
       assert.equal(resolveConfigurationCallCount, 0);
       assert.match(stdoutChunks.join(''), /Request created successfully\./);
       assert.match(stdoutChunks.join(''), /request-1/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should report an updated request when create request updates an existing remote request', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const requestDefinition = {
+        handle: 'create-product',
+        name: 'Create product',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/products',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            return {
+              status: 200,
+              ok: true,
+              operation: 'updated',
+              request: {
+                id: 'request-1',
+                ...requestDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.match(stdoutChunks.join(''), /Request updated successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Request created successfully\./);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -545,6 +605,7 @@ describe('CreateRequestCommand', () => {
       const result = {
         status: 201,
         ok: true,
+        operation: 'created',
         shopDomain: 'cool-shop.myshopify.com',
         request: {
           id: 'request-1',
@@ -591,6 +652,61 @@ describe('CreateRequestCommand', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+    });
+
+    it('should write raw json output with updated operation when create request updates an existing remote request', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const result = {
+        status: 200,
+        ok: true,
+        operation: 'updated',
+        request: {
+          id: 'request-1',
+          handle: 'create-product',
+          type: 'http',
+        },
+      };
+      const stdoutChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                handle: 'create-product',
+                type: 'http',
+              },
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(JSON.parse(stdoutChunks.join('')).operation, 'updated');
     });
 
     it('should fail fast with usage output when the resource argument is missing', async () => {

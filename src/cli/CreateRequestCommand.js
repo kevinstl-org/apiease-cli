@@ -310,7 +310,8 @@ class CreateRequestCommand {
 
   buildHumanReadableSuccessOutput(result, parseResult) {
     const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
-    const outputLines = [`${crudResourceDefinition.humanReadableLabel} created successfully.`];
+    const operationLabel = this.buildSuccessOperationLabel(result);
+    const outputLines = [`${crudResourceDefinition.humanReadableLabel} ${operationLabel} successfully.`];
     const resourceIdentifier = result?.[crudResourceDefinition.responsePayloadKey]?.[crudResourceDefinition.identifierPropertyName];
 
     if (resourceIdentifier) {
@@ -361,6 +362,14 @@ class CreateRequestCommand {
     }
 
     return `${crudResourceDefinition.identifierValueName.charAt(0).toUpperCase()}${crudResourceDefinition.identifierValueName.slice(1)}`;
+  }
+
+  buildSuccessOperationLabel(result) {
+    if (result.operation === 'updated') {
+      return 'updated';
+    }
+
+    return 'created';
   }
 }
 

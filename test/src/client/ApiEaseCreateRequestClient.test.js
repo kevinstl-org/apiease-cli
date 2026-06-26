@@ -89,6 +89,7 @@ describe('ApiEaseCreateRequestClient', () => {
       assert.deepEqual(result, {
         status: 201,
         ok: true,
+        operation: 'created',
         shopDomain: 'cool-shop.myshopify.com',
         request: {
           id: 'request-1',
@@ -281,6 +282,7 @@ describe('ApiEaseCreateRequestClient', () => {
       assert.deepEqual(result, {
         status: 200,
         ok: true,
+        operation: 'updated',
         request: {
           id: 'server-request-1',
           ...request,
@@ -340,6 +342,7 @@ describe('ApiEaseCreateRequestClient', () => {
       assert.deepEqual(result, {
         status: 201,
         ok: true,
+        operation: 'created',
         request: {
           id: 'server-request-2',
           ...request,
