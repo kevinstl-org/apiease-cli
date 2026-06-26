@@ -80,6 +80,66 @@ describe('ReadRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should accept the existing request id option with a server-owned id value', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const requestId = '123e4567-e89b-12d3-a456-426614174000';
+      const readRequestCalls = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest(options) {
+            readRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                id: requestId,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run(buildReadRequestArguments(requestId));
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(readRequestCalls[0].requestId, requestId);
+    });
+
+    it('should accept the existing request id option with a handle value', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const requestHandle = 'lookup-shopify-discount-code-admin-graphql';
+      const readRequestCalls = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseReadRequestClient: {
+          async readRequest(options) {
+            readRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                handle: requestHandle,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run(buildReadRequestArguments(requestHandle));
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(readRequestCalls[0].requestId, requestHandle);
+    });
+
     it('should call the shared resource read client for variable resources and return zero for human-readable success output', async () => {
       // Arrange
       const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
@@ -680,4 +740,19 @@ function createWritableStream(chunks) {
       return true;
     },
   };
+}
+
+function buildReadRequestArguments(requestIdentifier) {
+  return [
+    'read',
+    'request',
+    '--request-id',
+    requestIdentifier,
+    '--base-url',
+    'https://apiease.example.com',
+    '--shop-domain',
+    'cool-shop.myshopify.com',
+    '--api-key',
+    'api-key-1',
+  ];
 }

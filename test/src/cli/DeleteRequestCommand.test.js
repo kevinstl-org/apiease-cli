@@ -75,6 +75,66 @@ describe('DeleteRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should accept the existing request id option with a server-owned id value', async () => {
+      // Arrange
+      const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
+      const requestId = '123e4567-e89b-12d3-a456-426614174000';
+      const deleteRequestCalls = [];
+      const deleteRequestCommand = new DeleteRequestCommand({
+        apiEaseDeleteRequestClient: {
+          async deleteRequest(options) {
+            deleteRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                id: requestId,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await deleteRequestCommand.run(buildDeleteRequestArguments(requestId));
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(deleteRequestCalls[0].requestId, requestId);
+    });
+
+    it('should accept the existing request id option with a handle value', async () => {
+      // Arrange
+      const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
+      const requestHandle = 'lookup-shopify-discount-code-admin-graphql';
+      const deleteRequestCalls = [];
+      const deleteRequestCommand = new DeleteRequestCommand({
+        apiEaseDeleteRequestClient: {
+          async deleteRequest(options) {
+            deleteRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                handle: requestHandle,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await deleteRequestCommand.run(buildDeleteRequestArguments(requestHandle));
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(deleteRequestCalls[0].requestId, requestHandle);
+    });
+
     it('should call the shared resource delete client for widget resources and return zero for human-readable success output', async () => {
       // Arrange
       const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
@@ -672,4 +732,19 @@ function createWritableStream(chunks) {
       return true;
     },
   };
+}
+
+function buildDeleteRequestArguments(requestIdentifier) {
+  return [
+    'delete',
+    'request',
+    '--request-id',
+    requestIdentifier,
+    '--base-url',
+    'https://apiease.example.com',
+    '--shop-domain',
+    'cool-shop.myshopify.com',
+    '--api-key',
+    'api-key-1',
+  ];
 }

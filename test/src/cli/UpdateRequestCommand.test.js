@@ -96,6 +96,96 @@ describe('UpdateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should accept the existing request id option with a server-owned id value', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const requestId = '123e4567-e89b-12d3-a456-426614174000';
+      const requestDefinition = {
+        name: 'Update product',
+        type: 'http',
+        method: 'PUT',
+        address: 'https://api.example.com/products/1',
+      };
+      const updateRequestCalls = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest(options) {
+            updateRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                id: requestId,
+                ...requestDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run(buildUpdateRequestArguments(requestId));
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(updateRequestCalls[0].requestId, requestId);
+    });
+
+    it('should accept the existing request id option with a handle value', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const requestHandle = 'lookup-shopify-discount-code-admin-graphql';
+      const requestDefinition = {
+        name: 'Update product',
+        type: 'http',
+        method: 'PUT',
+        address: 'https://api.example.com/products/1',
+      };
+      const updateRequestCalls = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseUpdateRequestClient: {
+          async updateRequest(options) {
+            updateRequestCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              request: {
+                handle: requestHandle,
+                ...requestDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run(buildUpdateRequestArguments(requestHandle));
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(updateRequestCalls[0].requestId, requestHandle);
+    });
+
     it('should load the variable file, call the shared resource update client, and return zero for human-readable success output', async () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
@@ -832,4 +922,21 @@ function createWritableStream(chunks) {
       return true;
     },
   };
+}
+
+function buildUpdateRequestArguments(requestIdentifier) {
+  return [
+    'update',
+    'request',
+    '--request-id',
+    requestIdentifier,
+    '--file',
+    '/tmp/request.json',
+    '--base-url',
+    'https://apiease.example.com',
+    '--shop-domain',
+    'cool-shop.myshopify.com',
+    '--api-key',
+    'api-key-1',
+  ];
 }
