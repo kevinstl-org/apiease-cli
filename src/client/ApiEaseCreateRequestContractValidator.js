@@ -3,7 +3,7 @@ import { ApiEaseWebhookEventService } from './ApiEaseWebhookEventService.js';
 const REQUEST_TYPES = ['http', 'flow', 'liquid', 'system'];
 const PARAMETER_TYPES = ['body', 'flow', 'header', 'liquid', 'path', 'query', 'system'];
 const TRIGGER_TYPES = ['webhook', 'cron', 'proxyEndpoint'];
-const TOP_LEVEL_FIELDS = ['id', 'name', 'type', 'method', 'address', 'liquid', 'parameters', 'triggers'];
+const TOP_LEVEL_FIELDS = ['id', 'handle', 'name', 'type', 'method', 'address', 'liquid', 'parameters', 'triggers'];
 const PARAMETER_FIELDS = ['type', 'name', 'value', 'sensitive'];
 const TRIGGER_FIELDS = ['type', 'webhook', 'cron', 'proxyEndpoint'];
 const WEBHOOK_FIELDS = ['event'];
@@ -54,6 +54,7 @@ class ApiEaseCreateRequestContractValidator {
   addTopLevelFieldErrors(payload, fieldErrors) {
     this.addUnsupportedFieldErrors(payload, TOP_LEVEL_FIELDS, '', fieldErrors);
     this.addOptionalStringFieldError(payload, 'id', fieldErrors);
+    this.addOptionalStringFieldError(payload, 'handle', fieldErrors);
     this.addOptionalStringFieldError(payload, 'name', fieldErrors);
     this.addOptionalStringFieldError(payload, 'method', fieldErrors);
     this.addOptionalStringFieldError(payload, 'address', fieldErrors);

@@ -228,6 +228,252 @@ describe('ApiEaseCreateRequestClient', () => {
       });
     });
 
+    it('should read an existing request by handle and update it', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const request = {
+        handle: 'create-product',
+        name: 'Create product',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/products',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          if (options.method === 'GET') {
+            return createJsonResponse(200, {
+              ok: true,
+              request: {
+                id: 'server-request-1',
+                handle: 'create-product',
+              },
+            });
+          }
+
+          return createJsonResponse(200, {
+            ok: true,
+            request: {
+              id: 'server-request-1',
+              ...request,
+            },
+          });
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 2);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/requests/create-product');
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.equal(fetchCalls[1].url, 'https://apiease.example.com/root/api/v1/resources/requests/create-product');
+      assert.equal(fetchCalls[1].options.method, 'PUT');
+      assert.equal(fetchCalls[1].options.body, JSON.stringify(request));
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        request: {
+          id: 'server-request-1',
+          ...request,
+        },
+      });
+    });
+
+    it('should create a new request when handle lookup returns not found', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const request = {
+        handle: 'create-order',
+        name: 'Create order',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/orders',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          if (options.method === 'GET') {
+            return createJsonResponse(404, {
+              ok: false,
+              errorCode: 'REQUEST_NOT_FOUND',
+              message: 'Request not found',
+              fieldErrors: [],
+            });
+          }
+
+          return createJsonResponse(201, {
+            ok: true,
+            request: {
+              id: 'server-request-2',
+              ...request,
+            },
+          });
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 2);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/requests/create-order');
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.equal(fetchCalls[1].url, 'https://apiease.example.com/root/api/v1/resources/requests');
+      assert.equal(fetchCalls[1].options.method, 'POST');
+      assert.equal(fetchCalls[1].options.body, JSON.stringify(request));
+      assert.deepEqual(result, {
+        status: 201,
+        ok: true,
+        request: {
+          id: 'server-request-2',
+          ...request,
+        },
+      });
+    });
+
+    it('should not create a request when handle lookup fails for a non-not-found error', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const request = {
+        handle: 'sync-customer',
+        name: 'Sync customer',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/customers',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return createJsonResponse(503, {
+            ok: false,
+            errorCode: 'REQUEST_READ_FAILED',
+            message: 'Service unavailable',
+            fieldErrors: [],
+          });
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/requests/sync-customer');
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.deepEqual(result, {
+        status: 503,
+        ok: false,
+        errorCode: 'REQUEST_READ_FAILED',
+        message: 'Service unavailable',
+        fieldErrors: [],
+      });
+    });
+
+    it('should not create a request when handle lookup fails for an auth error', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const request = {
+        handle: 'sync-inventory',
+        name: 'Sync inventory',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/inventory',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return createJsonResponse(401, {
+            ok: false,
+            errorCode: 'UNAUTHORIZED',
+            message: 'API key is invalid',
+            fieldErrors: [],
+          });
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.deepEqual(result, {
+        status: 401,
+        ok: false,
+        errorCode: 'UNAUTHORIZED',
+        message: 'API key is invalid',
+        fieldErrors: [],
+      });
+    });
+
+    it('should not create a request when handle lookup fails for a transport error', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      let fetchCallCount = 0;
+      const request = {
+        handle: 'send-review-email',
+        name: 'Send review email',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/reviews',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        fetchImplementation: async () => {
+          fetchCallCount += 1;
+          throw new Error('network unavailable');
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(fetchCallCount, 1);
+      assert.deepEqual(result, {
+        status: 500,
+        ok: false,
+        errorCode: 'REQUEST_READ_FAILED',
+        message: 'network unavailable',
+        fieldErrors: [],
+      });
+    });
+
     it('should return backend failure payloads with the response status', async () => {
       // Arrange
       const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
@@ -401,3 +647,25 @@ describe('ApiEaseCreateRequestClient', () => {
     });
   });
 });
+
+function createValidContractValidator() {
+  return {
+    validate() {
+      return {
+        isValid: true,
+        errorCode: null,
+        message: '',
+        fieldErrors: [],
+      };
+    },
+  };
+}
+
+function createJsonResponse(status, payload) {
+  return {
+    status,
+    async json() {
+      return payload;
+    },
+  };
+}

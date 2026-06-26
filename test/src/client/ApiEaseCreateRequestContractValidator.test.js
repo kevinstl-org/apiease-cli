@@ -56,6 +56,30 @@ test('ApiEaseCreateRequestContractValidator validate should return no field erro
   });
 });
 
+test('ApiEaseCreateRequestContractValidator validate should allow handle source metadata', async () => {
+  // Arrange
+  const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
+  const apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator();
+  const payload = {
+    handle: 'inventory-lookup',
+    name: 'Inventory lookup',
+    type: 'http',
+    method: 'POST',
+    address: 'https://example.com/products/{productId}',
+  };
+
+  // Act
+  const result = apiEaseCreateRequestContractValidator.validate(payload);
+
+  // Assert
+  assert.deepEqual(result, {
+    isValid: true,
+    errorCode: null,
+    message: '',
+    fieldErrors: [],
+  });
+});
+
 test('ApiEaseCreateRequestContractValidator validate should reject unsupported top-level fields with field paths', async () => {
   // Arrange
   const { ApiEaseCreateRequestContractValidator } = await import(validatorModuleUrl);
