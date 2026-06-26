@@ -322,6 +322,7 @@ describe('apiease-cli', () => {
     it('should return zero and write the cli version when the version flag is provided', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
+      const packageJson = await readPackageJson();
       const stdoutChunks = [];
 
       // Act
@@ -339,7 +340,7 @@ describe('apiease-cli', () => {
 
       // Assert
       assert.equal(exitCode, 0);
-      assert.equal(stdoutChunks.join(''), '0.1.4\n');
+      assert.equal(stdoutChunks.join(''), `${packageJson.version}\n`);
     });
 
     it('should return one and write top-level usage output when the command is missing', async () => {
@@ -691,6 +692,13 @@ function createUnexpectedCommand(commandName) {
       throw new Error(`${commandName} command should not run`);
     },
   };
+}
+
+async function readPackageJson() {
+  const packageJsonPath = path.join(projectDirectoryPath, 'package.json');
+  const packageJsonContent = await fs.readFile(packageJsonPath, 'utf8');
+
+  return JSON.parse(packageJsonContent);
 }
 
 async function runShellScript({
