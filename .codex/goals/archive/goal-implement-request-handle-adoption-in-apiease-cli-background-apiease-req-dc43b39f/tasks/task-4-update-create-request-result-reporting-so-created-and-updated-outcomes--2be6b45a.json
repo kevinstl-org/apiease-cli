@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-06-26T20:15:09Z",
-  "updatedAt": "2026-06-26T20:38:11Z",
+  "updatedAt": "2026-06-26T20:44:46Z",
   "context": [
     "Create request can now either create a new remote request or update an existing one by handle."
   ],
@@ -39,6 +39,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-06-26T20:44:46Z"
   }
 }

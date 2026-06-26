@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-06-26T20:15:08Z",
-  "updatedAt": "2026-06-26T20:28:27Z",
+  "updatedAt": "2026-06-26T20:44:46Z",
   "context": [
     "The existing public route path slot accepts either request id or handle.",
     "Create request should use GET /api/v1/resources/requests/{handle} before deciding whether to create or update."
@@ -43,6 +43,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-06-26T20:44:46Z"
   }
 }
