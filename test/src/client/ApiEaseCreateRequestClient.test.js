@@ -439,6 +439,50 @@ describe('ApiEaseCreateRequestClient', () => {
       });
     });
 
+    it('should not create a request when handle lookup fails for a server error', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const request = {
+        handle: 'sync-orders',
+        name: 'Sync orders',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/orders',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return createJsonResponse(500, {
+            ok: false,
+            errorCode: 'REQUEST_READ_FAILED',
+            message: 'Internal server error',
+            fieldErrors: [],
+          });
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.deepEqual(result, {
+        status: 500,
+        ok: false,
+        errorCode: 'REQUEST_READ_FAILED',
+        message: 'Internal server error',
+        fieldErrors: [],
+      });
+    });
+
     it('should not create a request when handle lookup fails for a transport error', async () => {
       // Arrange
       const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);

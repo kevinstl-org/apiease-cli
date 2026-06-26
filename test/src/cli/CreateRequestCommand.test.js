@@ -868,6 +868,71 @@ describe('CreateRequestCommand', () => {
       assert.match(stderrChunks.join(''), /--auto-update-source-identifier/);
     });
 
+    it('should allow a valid request handle before create', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const requestDefinition = {
+        handle: 'lookup-discount',
+        name: 'Lookup discount',
+        type: 'http',
+      };
+      const validateRequestHandleCalls = [];
+      const createRequestCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition,
+            };
+          },
+        },
+        apiEaseRequestSourceIdentifierMigrationService: {
+          validateRequestHandle(handle) {
+            validateRequestHandleCalls.push(handle);
+            return {
+              ok: true,
+              handle,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest(options) {
+            createRequestCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              request: {
+                id: 'request-1',
+                ...requestDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(validateRequestHandleCalls, ['lookup-discount']);
+      assert.equal(createRequestCalls[0].request, requestDefinition);
+    });
+
     it('should fail before create when a request handle is invalid', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
