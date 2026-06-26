@@ -1,0 +1,48 @@
+{
+  "id": "task-2-make-create-request-idempotent-by-looking-up-and-updating-remote-reques-054db459",
+  "text": "Make create request idempotent by looking up and updating remote requests by handle.",
+  "goalId": "goal-implement-request-handle-adoption-in-apiease-cli-background-apiease-req-dc43b39f",
+  "goal": "Implement request handle adoption in APIEase CLI.\n\nBackground\n\nAPIEase requests now use three identifiers:\n\n- id is server-owned, opaque, immutable, and still supported by existing APIs.\n- handle is source-owned, stable, unique per shop, and should be the normal repository identifier.\n- name is display text only.\n\nThe APIEase public request item route accepts the existing requestId path slot as either an id or a handle. Do not introduce a separate requestHandle parameter.\n\nGoal\n\nMake create request naturally idempotent by handle while preserving id compatibility for read, update, and delete.\n\nCreate request behavior\n\nFor create request:\n\nIf handle exists in the local request JSON:\n\n- Validate that it uses the APIEase handle format.\n- Look up the remote request with GET /api/v1/resources/requests/{handle}.\n- If found, update it.\n- If not found, create it.\n- If the lookup fails for any reason other than not found, fail and do not create.\n\nIf handle is missing:\n\n- Fail.\n- Recommend rerunning with:\n  --auto-update-source-identifier\n\nIf id exists and --auto-update-source-identifier is not set:\n\n- Fail before remote lookup or create.\n- Explain that request ids are server-owned.\n- Recommend rerunning with:\n  --auto-update-source-identifier\n\nRead, update, and delete behavior\n\nRead, update, and delete must continue accepting existing request ids.\n\nThe existing --request-id option remains for compatibility, but its value may be either a server-owned id or a source-owned handle because the APIEase public request route resolves id first and handle second.\n\nDo not add a new --request-handle option in this task unless existing CLI conventions make aliases trivial and fully tested.\n\nNew option\n\nAdd:\n\n--auto-update-source-identifier\n\nThis option may modify only identifier metadata inside the local request JSON.\n\nIt must never modify request configuration.\n\nNever change:\n\n- type\n- method\n- address\n- parameters\n- triggers\n- liquid\n- body\n- nextRequest\n- or any other functional configuration\n\nIdentifier migration rules\n\nIf handle already exists:\n\n- Leave handle unchanged.\n- Remove id if present.\n\nElse if id exists:\n\n- Determine whether id is UUID-shaped.\n- UUID-shaped means 8-4-4-4-12 hexadecimal groups, case-insensitive.\n\nIf id is not UUID-shaped:\n\n- Slugify id into handle using the APIEase handle format.\n- Remove id.\n\nExample:\n\nOld source:\n\nid = lookup-shopify-discount-code-admin-graphql\n\nbecomes:\n\nhandle = lookup-shopify-discount-code-admin-graphql\n\nIf id is UUID-shaped:\n\n- Treat it as a leaked server identifier.\n- Remove it.\n- Derive handle from name.\n\nElse:\n\n- Derive handle from name.\n\nHandle format\n\nGenerate handles as lowercase slug values using letters, numbers, and hyphens.\n\nUse the same format as APIEase:\n\n^[a-z0-9]+(?:-[a-z0-9]+)*$\n\nIf an existing handle is present but invalid, fail. Do not silently rewrite explicit handles.\n\nIf neither id nor name can produce a handle, fail with an error explaining that a handle cannot be inferred.\n\nCreate output\n\nWhen create request creates a new remote request, report created.\n\nWhen create request updates an existing remote request by handle, report updated.\n\nJSON output should include enough structured information for automation to distinguish created versus updated.\n\nTests\n\nAdd tests for:\n\n- create fails when id exists and auto-update-source-identifier is absent\n- create fails when handle is missing and auto-update-source-identifier is absent\n- auto-update-source-identifier moves non-UUID id to handle\n- auto-update-source-identifier derives handle from name when id is UUID-shaped\n- auto-update-source-identifier removes id when handle already exists\n- auto-update-source-identifier derives handle from name when both id and handle are missing\n- auto-update-source-identifier never changes functional request configuration\n- create reads an existing remote request by handle and updates it\n- create creates a new request when handle lookup returns not found\n- create does not create when handle lookup fails for a transport, auth, server, or non-not-found error\n- read request accepts the existing --request-id option with an id value\n- read request accepts the existing --request-id option with a handle value\n- update request accepts the existing --request-id option with an id value\n- update request accepts the existing --request-id option with a handle value\n- delete request accepts the existing --request-id option with an id value\n- delete request accepts the existing --request-id option with a handle value\n- CLI validation allows handle and rejects invalid handle\n- CLI validation rejects source id for create unless auto-update-source-identifier is set\n- human-readable output distinguishes created from updated\n- JSON output distinguishes created from updated\n\nDocumentation\n\nUpdate CLI documentation and examples to use handle instead of id for request source files.\n\nUpdate command documentation to explain that --request-id remains the compatibility option name, but request read, update, and delete may now pass either an id or a handle.\n\nUpdate template request examples if this task owns the template change. If template changes are handled in a separate repository task, call that out clearly in the completion summary.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "client",
+    "create",
+    "idempotency"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-06-26T20:15:08Z",
+  "updatedAt": "2026-06-26T20:16:17Z",
+  "context": [
+    "The existing public route path slot accepts either request id or handle.",
+    "Create request should use GET /api/v1/resources/requests/{handle} before deciding whether to create or update."
+  ],
+  "steps": [
+    "After local source validation or migration, look up the remote request using the resolved handle.",
+    "If the lookup finds an existing request, update that remote request.",
+    "If the lookup returns not found, create a new remote request.",
+    "If the lookup fails for any non-not-found reason, fail without creating."
+  ],
+  "constraints": [
+    "Do not create when lookup fails due to transport, auth, server, or other non-not-found errors.",
+    "Do not use or add a separate requestHandle parameter.",
+    "Preserve existing id-based API compatibility outside create idempotency behavior."
+  ],
+  "acceptanceCriteria": [
+    "Create reads an existing remote request by handle and updates it.",
+    "Create creates a new request when handle lookup returns not found.",
+    "Create does not create when handle lookup fails for transport, auth, server, or non-not-found errors."
+  ],
+  "sequenceIndex": 2,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
