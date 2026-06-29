@@ -47,18 +47,18 @@ apiease upgrade
 apiease upgrade [--check]
 apiease upgrade --dry-run
 apiease create <request|widget|variable|function> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease read request --request-id <id-or-handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease read widget --widget-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease read variable --variable-name <name> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease update request --request-id <id-or-handle> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease update widget --widget-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease update variable --variable-name <name> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease delete request --request-id <id-or-handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease delete widget --widget-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease delete variable --variable-name <name> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
-apiease delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read request --request-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read widget --widget-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read variable --variable-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease read function --function-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update request --request-handle <handle> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update widget --widget-handle <handle> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update variable --variable-handle <handle> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease update function --function-handle <handle> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete request --request-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete widget --widget-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete variable --variable-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease delete function --function-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 ```
 
 ## Initialize a Project
@@ -232,9 +232,9 @@ CRUD commands require a resource name immediately after the verb. Supported reso
 
 Bare command shapes such as `apiease create` or `apiease read --request-id ...` are not supported.
 
-Use `--request-id` for `request`, `--widget-id` for `widget`, `--variable-name` for `variable`, and `--function-id` for `function`.
+Use `--request-handle` for `request`, `--widget-handle` for `widget`, `--variable-handle` for `variable`, and `--function-handle` for `function`.
 
-For `request`, `--request-id` remains the compatibility option name; pass either a server-owned id or a source-owned handle.
+Legacy id or name option flags remain available as compatibility aliases; pass handles through those options during migration only.
 
 If you are running from this repository without `npm link`, replace `apiease` with `./bin/apiease-cli` in the examples below.
 
@@ -250,9 +250,9 @@ Create a JSON file that contains the resource definition you want to send to API
 }
 ```
 
-Request source files use `handle` as the stable repository identifier. `id` is server-owned and should not be stored in request source files.
+Resource source files use `handle` as the stable repository identifier. `id` is server-owned and should not be stored in request, widget, variable, or function source files. For widgets, keep using the current APIEase JSON fields such as `widgetHandle` and `widgetName` when that is the resource contract.
 
-Request handles must be lowercase slug values using letters, numbers, and hyphens, for example `cli-demo-request`. When a request source file has a valid `handle`, `apiease create request` looks up the remote request by that handle and reports either `Request created successfully.` or `Request updated successfully.`.
+Handles must be lowercase slug values using letters, numbers, and hyphens, for example `cli-demo-request`. When a request source file has a valid `handle`, `apiease create request` looks up the remote request by that handle and reports either `Request created successfully.` or `Request updated successfully.`.
 
 For older request source files that still have `id` metadata or no `handle`, run create with `--auto-update-source-identifier`. This can update only identifier metadata in the local request JSON; it does not change request configuration such as `type`, `method`, `address`, `parameters`, `triggers`, `liquid`, `body`, or `nextRequest`.
 
@@ -303,28 +303,28 @@ apiease create request \
 Read resources:
 
 ```bash
-apiease read request --request-id cli-demo-request
-apiease read widget --widget-id widget-123
-apiease read variable --variable-name sale_banner
-apiease read function --function-id function-123
+apiease read request --request-handle cli-demo-request
+apiease read widget --widget-handle promo-banner
+apiease read variable --variable-handle sale-banner
+apiease read function --function-handle apply-discount
 ```
 
 Update resources:
 
 ```bash
-apiease update request --request-id cli-demo-request --file ./request-definition.json
-apiease update widget --widget-id widget-123 --file ./widget-definition.json
-apiease update variable --variable-name sale_banner --file ./variable-definition.json
-apiease update function --function-id function-123 --file ./function-definition.json
+apiease update request --request-handle cli-demo-request --file ./request-definition.json
+apiease update widget --widget-handle promo-banner --file ./widget-definition.json
+apiease update variable --variable-handle sale-banner --file ./variable-definition.json
+apiease update function --function-handle apply-discount --file ./function-definition.json
 ```
 
 Delete resources:
 
 ```bash
-apiease delete request --request-id cli-demo-request
-apiease delete widget --widget-id widget-123
-apiease delete variable --variable-name sale_banner
-apiease delete function --function-id function-123
+apiease delete request --request-handle cli-demo-request
+apiease delete widget --widget-handle promo-banner
+apiease delete variable --variable-handle sale-banner
+apiease delete function --function-handle apply-discount
 ```
 
 ## JSON Output
@@ -344,7 +344,7 @@ apiease create request \
 - The public installed command name is `apiease`.
 - `init` uses `../apiease-template` during local CLI development and otherwise downloads the template from [kevinstl-org/apiease-template](https://github.com/kevinstl-org/apiease-template).
 - Resource definition files must be valid JSON with an object as the root value.
-- Request source files should use `handle`, not `id`, as the source-owned identifier.
+- Resource source files should use `handle`, not `id`, as the source-owned identifier.
 - `--api-key` is optional. When omitted, the CLI resolves `APIEASE_API_KEY` from `~/.apiease/.env.<environment>`.
 - `--base-url` and `--shop-domain` are optional when `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` are present in `~/.apiease/.env.<environment>`.
 - Default output is human-readable. `--json` emits the raw structured result.

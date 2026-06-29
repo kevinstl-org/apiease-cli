@@ -96,7 +96,7 @@ describe('apiease-cli', () => {
     it('should delegate read command arguments to ReadRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['read', 'widget', '--widget-id', 'widget-123'];
+      const commandArguments = ['read', 'widget', '--widget-handle', 'promo-banner'];
       const receivedCommandArguments = [];
       const readRequestCommand = {
         async run(incomingCommandArguments) {
@@ -122,7 +122,7 @@ describe('apiease-cli', () => {
     it('should delegate update command arguments to UpdateRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['update', 'variable', '--variable-name', 'sale_banner', '--file', '/tmp/variable.json'];
+      const commandArguments = ['update', 'variable', '--variable-handle', 'sale-banner', '--file', '/tmp/variable.json'];
       const receivedCommandArguments = [];
       const updateRequestCommand = {
         async run(incomingCommandArguments) {
@@ -148,7 +148,7 @@ describe('apiease-cli', () => {
     it('should delegate delete command arguments to DeleteRequestCommand and return its exit code', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
-      const commandArguments = ['delete', 'widget', '--widget-id', 'widget-123'];
+      const commandArguments = ['delete', 'widget', '--widget-handle', 'promo-banner'];
       const receivedCommandArguments = [];
       const deleteRequestCommand = {
         async run(incomingCommandArguments) {
@@ -171,7 +171,7 @@ describe('apiease-cli', () => {
       assert.deepEqual(receivedCommandArguments, [commandArguments]);
     });
 
-    it('should return one and write read usage output when function id is missing', async () => {
+    it('should return one and write read usage output when function handle is missing', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
       const { ReadRequestCommand } = await import(createCliCommandModuleUrl('ReadRequestCommand.js'));
@@ -195,11 +195,12 @@ describe('apiease-cli', () => {
       // Assert
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
-        'Missing required arguments: --function-id',
-        'Usage: apiease read function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        'Missing required arguments: --function-handle',
+        'Usage: apiease read function --function-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
         '',
         'Options:',
-        '  --function-id <id>           APIEase function id.',
+        '  --function-handle <handle>   APIEase function handle.',
+        '  --function-id <id-or-handle> Compatibility alias; prefer --function-handle.',
         '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
         '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
         '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
@@ -208,7 +209,7 @@ describe('apiease-cli', () => {
       ].join('\n'));
     });
 
-    it('should return one and write update usage output when function id is missing', async () => {
+    it('should return one and write update usage output when function handle is missing', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
       const { UpdateRequestCommand } = await import(createCliCommandModuleUrl('UpdateRequestCommand.js'));
@@ -232,11 +233,12 @@ describe('apiease-cli', () => {
       // Assert
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
-        'Missing required arguments: --function-id',
-        'Usage: apiease update function --function-id <id> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        'Missing required arguments: --function-handle',
+        'Usage: apiease update function --function-handle <handle> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
         '',
         'Options:',
-        '  --function-id <id>           APIEase function id.',
+        '  --function-handle <handle>   APIEase function handle.',
+        '  --function-id <id-or-handle> Compatibility alias; prefer --function-handle.',
         '  --file <path>               Path to the function definition JSON file.',
         '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
         '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
@@ -246,7 +248,7 @@ describe('apiease-cli', () => {
       ].join('\n'));
     });
 
-    it('should return one and write delete usage output when function id is missing', async () => {
+    it('should return one and write delete usage output when function handle is missing', async () => {
       // Arrange
       const { runCli } = await import(entrypointModuleUrl);
       const { DeleteRequestCommand } = await import(createCliCommandModuleUrl('DeleteRequestCommand.js'));
@@ -270,11 +272,12 @@ describe('apiease-cli', () => {
       // Assert
       assert.equal(exitCode, 1);
       assert.equal(stderrChunks.join(''), [
-        'Missing required arguments: --function-id',
-        'Usage: apiease delete function --function-id <id> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
+        'Missing required arguments: --function-handle',
+        'Usage: apiease delete function --function-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]',
         '',
         'Options:',
-        '  --function-id <id>           APIEase function id.',
+        '  --function-handle <handle>   APIEase function handle.',
+        '  --function-id <id-or-handle> Compatibility alias; prefer --function-handle.',
         '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
         '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
         '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',

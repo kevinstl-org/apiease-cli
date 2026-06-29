@@ -52,9 +52,24 @@ describe('CrudResourceDefinitionCollection', () => {
         apiPathSegment: 'requests',
         responsePayloadKey: 'request',
         humanReadableLabel: 'Request',
-        identifierOptionName: '--request-id',
-        identifierValueName: 'id',
-        identifierPropertyName: 'id',
+        identifierOptionName: '--request-handle',
+        identifierValueName: 'handle',
+        legacyIdentifierOptions: [
+          {
+            optionName: '--request-id',
+            valueName: 'id-or-handle',
+          },
+        ],
+        identifierOutputProperties: [
+          {
+            propertyName: 'handle',
+            valueName: 'handle',
+          },
+          {
+            propertyName: 'id',
+            valueName: 'id',
+          },
+        ],
       });
     });
 
@@ -72,9 +87,32 @@ describe('CrudResourceDefinitionCollection', () => {
         apiPathSegment: 'widgets',
         responsePayloadKey: 'widget',
         humanReadableLabel: 'Widget',
-        identifierOptionName: '--widget-id',
-        identifierValueName: 'id',
-        identifierPropertyName: 'widgetId',
+        identifierOptionName: '--widget-handle',
+        identifierValueName: 'handle',
+        legacyIdentifierOptions: [
+          {
+            optionName: '--widget-id',
+            valueName: 'id-or-handle',
+          },
+        ],
+        identifierOutputProperties: [
+          {
+            propertyName: 'handle',
+            valueName: 'handle',
+          },
+          {
+            propertyName: 'widgetHandle',
+            valueName: 'handle',
+          },
+          {
+            propertyName: 'id',
+            valueName: 'id',
+          },
+          {
+            propertyName: 'widgetId',
+            valueName: 'id',
+          },
+        ],
       });
     });
 
@@ -92,9 +130,28 @@ describe('CrudResourceDefinitionCollection', () => {
         apiPathSegment: 'variables',
         responsePayloadKey: 'variable',
         humanReadableLabel: 'Variable',
-        identifierOptionName: '--variable-name',
-        identifierValueName: 'name',
-        identifierPropertyName: 'name',
+        identifierOptionName: '--variable-handle',
+        identifierValueName: 'handle',
+        legacyIdentifierOptions: [
+          {
+            optionName: '--variable-name',
+            valueName: 'name-or-handle',
+          },
+        ],
+        identifierOutputProperties: [
+          {
+            propertyName: 'handle',
+            valueName: 'handle',
+          },
+          {
+            propertyName: 'id',
+            valueName: 'id',
+          },
+          {
+            propertyName: 'name',
+            valueName: 'name',
+          },
+        ],
       });
     });
 
@@ -112,9 +169,28 @@ describe('CrudResourceDefinitionCollection', () => {
         apiPathSegment: 'functions',
         responsePayloadKey: 'function',
         humanReadableLabel: 'Function',
-        identifierOptionName: '--function-id',
-        identifierValueName: 'id',
-        identifierPropertyName: 'functionId',
+        identifierOptionName: '--function-handle',
+        identifierValueName: 'handle',
+        legacyIdentifierOptions: [
+          {
+            optionName: '--function-id',
+            valueName: 'id-or-handle',
+          },
+        ],
+        identifierOutputProperties: [
+          {
+            propertyName: 'handle',
+            valueName: 'handle',
+          },
+          {
+            propertyName: 'id',
+            valueName: 'id',
+          },
+          {
+            propertyName: 'functionId',
+            valueName: 'id',
+          },
+        ],
       });
     });
 

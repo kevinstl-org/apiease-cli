@@ -49,8 +49,8 @@ describe('DeleteRequestCommand', () => {
       const exitCode = await deleteRequestCommand.run([
         'delete',
         'request',
-        '--request-id',
-        'request-1',
+        '--request-handle',
+        'delete-product',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -66,7 +66,7 @@ describe('DeleteRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          requestId: 'request-1',
+          requestId: 'delete-product',
         },
       ]);
       assert.equal(resolveConfigurationCallCount, 0);
@@ -156,6 +156,7 @@ describe('DeleteRequestCommand', () => {
               shopDomain: 'cool-shop.myshopify.com',
               widget: {
                 widgetId: 'widget-1',
+                widgetHandle: 'promo-banner',
               },
             };
           },
@@ -168,8 +169,8 @@ describe('DeleteRequestCommand', () => {
       const exitCode = await deleteRequestCommand.run([
         'delete',
         'widget',
-        '--widget-id',
-        'widget-1',
+        '--widget-handle',
+        'promo-banner',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -186,12 +187,12 @@ describe('DeleteRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'widget-1',
+          resourceIdentifier: 'promo-banner',
           failureErrorCode: 'WIDGET_DELETE_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Widget deleted successfully\./);
-      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
+      assert.match(stdoutChunks.join(''), /Widget Handle: promo-banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -215,7 +216,9 @@ describe('DeleteRequestCommand', () => {
               ok: true,
               shopDomain: 'cool-shop.myshopify.com',
               variable: {
-                name: 'sale_banner',
+                id: 'variable-1',
+                handle: 'sale-banner',
+                name: 'Sale banner',
               },
             };
           },
@@ -228,8 +231,8 @@ describe('DeleteRequestCommand', () => {
       const exitCode = await deleteRequestCommand.run([
         'delete',
         'variable',
-        '--variable-name',
-        'sale_banner',
+        '--variable-handle',
+        'sale-banner',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -246,13 +249,53 @@ describe('DeleteRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'sale_banner',
+          resourceIdentifier: 'sale-banner',
           failureErrorCode: 'VARIABLE_DELETE_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Variable deleted successfully\./);
-      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
+      assert.match(stdoutChunks.join(''), /Variable Handle: sale-banner/);
       assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should accept the legacy function id option with a handle value', async () => {
+      // Arrange
+      const { DeleteRequestCommand } = await import(deleteRequestCommandModuleUrl);
+      const deleteResourceCalls = [];
+      const deleteRequestCommand = new DeleteRequestCommand({
+        apiEaseCrudResourceClient: {
+          async deleteResource(options) {
+            deleteResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              function: {
+                handle: 'apply-discount',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await deleteRequestCommand.run([
+        'delete',
+        'function',
+        '--function-id',
+        'apply-discount',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(deleteResourceCalls[0].resourceIdentifier, 'apply-discount');
     });
 
     it('should call the shared resource delete client for function resources and return zero for human-readable success output', async () => {
@@ -275,7 +318,8 @@ describe('DeleteRequestCommand', () => {
               ok: true,
               shopDomain: 'cool-shop.myshopify.com',
               function: {
-                functionId: 'function-1',
+                id: 'function-1',
+                handle: 'apply-discount',
               },
             };
           },
@@ -288,8 +332,8 @@ describe('DeleteRequestCommand', () => {
       const exitCode = await deleteRequestCommand.run([
         'delete',
         'function',
-        '--function-id',
-        'function-1',
+        '--function-handle',
+        'apply-discount',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -306,12 +350,12 @@ describe('DeleteRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'function-1',
+          resourceIdentifier: 'apply-discount',
           failureErrorCode: 'FUNCTION_DELETE_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Function deleted successfully\./);
-      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.match(stdoutChunks.join(''), /Function Handle: apply-discount/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -568,8 +612,8 @@ describe('DeleteRequestCommand', () => {
       assert.equal(exitCode, 1);
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
-      assert.match(stderrChunks.join(''), /Missing required arguments: --variable-name/);
-      assert.match(stderrChunks.join(''), /Usage: apiease delete variable --variable-name <name>/);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --variable-handle/);
+      assert.match(stderrChunks.join(''), /Usage: apiease delete variable --variable-handle <handle>/);
     });
 
     it('should fail fast with usage output when the function identifier flag is missing', async () => {
@@ -630,8 +674,8 @@ describe('DeleteRequestCommand', () => {
       assert.equal(deleteRequestCallCount, 0);
       assert.equal(deleteResourceCallCount, 0);
       assert.equal(resolveConfigurationCallCount, 0);
-      assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease delete function --function-id <id>/);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --function-handle/);
+      assert.match(stderrChunks.join(''), /Usage: apiease delete function --function-handle <handle>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

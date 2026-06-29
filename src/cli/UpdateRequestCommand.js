@@ -74,10 +74,13 @@ class UpdateRequestCommand {
     }
 
     const optionMap = this.buildOptionMap(commandArguments, 2);
-    const missingRequiredOptionNames = this.buildMissingRequiredOptionNames(optionMap, [
-      crudResourceDefinition.identifierOptionName,
-      '--file',
-    ]);
+    const missingRequiredOptionNames = [
+      ...this.buildMissingRequiredIdentifierOptionNames({
+        optionMap,
+        crudResourceDefinition,
+      }),
+      ...this.buildMissingRequiredOptionNames(optionMap, ['--file']),
+    ];
     if (missingRequiredOptionNames.length > 0) {
       return this.buildParseFailure(
         `Missing required arguments: ${missingRequiredOptionNames.join(', ')}`,
@@ -88,7 +91,7 @@ class UpdateRequestCommand {
     return {
       ok: true,
       crudResourceDefinition,
-      resourceIdentifier: optionMap[crudResourceDefinition.identifierOptionName],
+      resourceIdentifier: this.readResourceIdentifier({ optionMap, crudResourceDefinition }),
       filePath: optionMap['--file'],
       apiBaseUrl: optionMap['--base-url'],
       shopDomain: optionMap['--shop-domain'],
@@ -164,6 +167,21 @@ class UpdateRequestCommand {
     return requiredOptionNames.filter((requiredOptionName) => !optionMap[requiredOptionName]);
   }
 
+  buildMissingRequiredIdentifierOptionNames({ optionMap, crudResourceDefinition }) {
+    if (this.readResourceIdentifier({ optionMap, crudResourceDefinition })) {
+      return [];
+    }
+
+    return [crudResourceDefinition.identifierOptionName];
+  }
+
+  readResourceIdentifier({ optionMap, crudResourceDefinition }) {
+    const identifierOptionName = this.crudResourceDefinitionCollection
+      .listIdentifierOptionNames(crudResourceDefinition)
+      .find((optionName) => optionMap[optionName]);
+    return optionMap[identifierOptionName];
+  }
+
   buildParseFailure(message, crudResourceDefinition = null) {
     return {
       ok: false,
@@ -188,10 +206,12 @@ class UpdateRequestCommand {
     if (!crudResourceDefinition) {
       usageLines.push(`  ${this.buildSupportedResourceToken()}      Supported resource name.`);
       for (const resourceName of this.crudResourceDefinitionCollection.listSupportedResourceNames()) {
-        usageLines.push(this.buildIdentifierOptionLine(this.crudResourceDefinitionCollection.readResourceDefinition(resourceName)));
+        usageLines.push(...this.buildIdentifierOptionLines(
+          this.crudResourceDefinitionCollection.readResourceDefinition(resourceName),
+        ));
       }
     } else {
-      usageLines.push(this.buildIdentifierOptionLine(crudResourceDefinition));
+      usageLines.push(...this.buildIdentifierOptionLines(crudResourceDefinition));
     }
 
     usageLines.push(
@@ -210,7 +230,33 @@ class UpdateRequestCommand {
   }
 
   buildIdentifierOptionLine(crudResourceDefinition) {
-    return `  ${crudResourceDefinition.identifierOptionName} <${crudResourceDefinition.identifierValueName}>           APIEase ${crudResourceDefinition.resourceName} ${crudResourceDefinition.identifierValueName}.`;
+    return this.buildOptionLine(
+      `${crudResourceDefinition.identifierOptionName} <${crudResourceDefinition.identifierValueName}>`,
+      `APIEase ${crudResourceDefinition.resourceName} ${crudResourceDefinition.identifierValueName}.`,
+    );
+  }
+
+  buildIdentifierOptionLines(crudResourceDefinition) {
+    return [
+      this.buildIdentifierOptionLine(crudResourceDefinition),
+      ...crudResourceDefinition.legacyIdentifierOptions.map(
+        (legacyIdentifierOption) => this.buildLegacyIdentifierOptionLine(
+          crudResourceDefinition,
+          legacyIdentifierOption,
+        ),
+      ),
+    ];
+  }
+
+  buildLegacyIdentifierOptionLine(crudResourceDefinition, legacyIdentifierOption) {
+    return this.buildOptionLine(
+      `${legacyIdentifierOption.optionName} <${legacyIdentifierOption.valueName}>`,
+      `Compatibility alias; prefer ${crudResourceDefinition.identifierOptionName}.`,
+    );
+  }
+
+  buildOptionLine(optionToken, description) {
+    return `  ${optionToken.padEnd(28)} ${description}`;
   }
 
   buildFailureErrorCode(crudResourceDefinition, operationName) {
@@ -250,11 +296,15 @@ class UpdateRequestCommand {
   buildHumanReadableSuccessOutput(result, parseResult) {
     const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
     const outputLines = [`${crudResourceDefinition.humanReadableLabel} updated successfully.`];
-    const resourceIdentifier = result?.[crudResourceDefinition.responsePayloadKey]?.[crudResourceDefinition.identifierPropertyName];
+    const resourcePayload = result?.[crudResourceDefinition.responsePayloadKey];
+    const resourceIdentifierOutputProperty = this.readResourceIdentifierOutputProperty({
+      crudResourceDefinition,
+      resourcePayload,
+    });
 
-    if (resourceIdentifier) {
+    if (resourceIdentifierOutputProperty) {
       outputLines.push(
-        `${crudResourceDefinition.humanReadableLabel} ${this.buildIdentifierLabel(crudResourceDefinition)}: ${resourceIdentifier}`,
+        `${crudResourceDefinition.humanReadableLabel} ${this.buildIdentifierLabel(resourceIdentifierOutputProperty.valueName)}: ${resourceIdentifierOutputProperty.value}`,
       );
     }
 
@@ -294,12 +344,26 @@ class UpdateRequestCommand {
       .find((crudResourceDefinition) => result?.[crudResourceDefinition.responsePayloadKey]) || this.crudResourceDefinitionCollection.readResourceDefinition('request');
   }
 
-  buildIdentifierLabel(crudResourceDefinition) {
-    if (crudResourceDefinition.identifierValueName === 'id') {
+  buildIdentifierLabel(identifierValueName) {
+    if (identifierValueName === 'id') {
       return 'ID';
     }
 
-    return `${crudResourceDefinition.identifierValueName.charAt(0).toUpperCase()}${crudResourceDefinition.identifierValueName.slice(1)}`;
+    return `${identifierValueName.charAt(0).toUpperCase()}${identifierValueName.slice(1)}`;
+  }
+
+  readResourceIdentifierOutputProperty({ crudResourceDefinition, resourcePayload }) {
+    for (const identifierOutputProperty of crudResourceDefinition.identifierOutputProperties) {
+      const value = resourcePayload?.[identifierOutputProperty.propertyName];
+      if (value) {
+        return {
+          ...identifierOutputProperty,
+          value,
+        };
+      }
+    }
+
+    return null;
   }
 }
 

@@ -66,8 +66,8 @@ describe('UpdateRequestCommand', () => {
       const exitCode = await updateRequestCommand.run([
         'update',
         'request',
-        '--request-id',
-        'request-1',
+        '--request-handle',
+        'update-product',
         '--file',
         '/tmp/request.json',
         '--base-url',
@@ -86,7 +86,7 @@ describe('UpdateRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          requestId: 'request-1',
+          requestId: 'update-product',
           request: requestDefinition,
         },
       ]);
@@ -190,7 +190,8 @@ describe('UpdateRequestCommand', () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
       const variableDefinition = {
-        name: 'sale_banner',
+        handle: 'sale-banner',
+        name: 'Sale banner',
         value: 'Spring sale',
       };
       const stdoutChunks = [];
@@ -233,8 +234,8 @@ describe('UpdateRequestCommand', () => {
       const exitCode = await updateRequestCommand.run([
         'update',
         'variable',
-        '--variable-name',
-        'sale_banner',
+        '--variable-handle',
+        'sale-banner',
         '--file',
         '/tmp/variable.json',
         '--base-url',
@@ -254,13 +255,13 @@ describe('UpdateRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'sale_banner',
+          resourceIdentifier: 'sale-banner',
           resource: variableDefinition,
           failureErrorCode: 'VARIABLE_UPDATE_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Variable updated successfully\./);
-      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
+      assert.match(stdoutChunks.join(''), /Variable Handle: sale-banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -268,8 +269,8 @@ describe('UpdateRequestCommand', () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
       const widgetDefinition = {
-        widgetId: 'widget-1',
-        title: 'Promo banner',
+        widgetHandle: 'promo-banner',
+        widgetName: 'Promo banner',
       };
       const stdoutChunks = [];
       const stderrChunks = [];
@@ -311,8 +312,8 @@ describe('UpdateRequestCommand', () => {
       const exitCode = await updateRequestCommand.run([
         'update',
         'widget',
-        '--widget-id',
-        'widget-1',
+        '--widget-handle',
+        'promo-banner',
         '--file',
         '/tmp/widget.json',
         '--base-url',
@@ -332,21 +333,73 @@ describe('UpdateRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'widget-1',
+          resourceIdentifier: 'promo-banner',
           resource: widgetDefinition,
           failureErrorCode: 'WIDGET_UPDATE_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Widget updated successfully\./);
-      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
+      assert.match(stdoutChunks.join(''), /Widget Handle: promo-banner/);
       assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should accept the legacy widget id option with a handle value', async () => {
+      // Arrange
+      const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
+      const updateResourceCalls = [];
+      const updateRequestCommand = new UpdateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                widgetHandle: 'promo-banner',
+              },
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async updateResource(options) {
+            updateResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              widget: {
+                widgetHandle: 'promo-banner',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await updateRequestCommand.run([
+        'update',
+        'widget',
+        '--widget-id',
+        'promo-banner',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(updateResourceCalls[0].resourceIdentifier, 'promo-banner');
     });
 
     it('should load the function file, call the shared resource update client, and return zero for human-readable success output', async () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
       const functionDefinition = {
-        functionId: 'function-1',
+        handle: 'apply-discount',
         name: 'Apply discount',
       };
       const stdoutChunks = [];
@@ -389,8 +442,8 @@ describe('UpdateRequestCommand', () => {
       const exitCode = await updateRequestCommand.run([
         'update',
         'function',
-        '--function-id',
-        'function-1',
+        '--function-handle',
+        'apply-discount',
         '--file',
         '/tmp/function.json',
         '--base-url',
@@ -410,13 +463,13 @@ describe('UpdateRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'function-1',
+          resourceIdentifier: 'apply-discount',
           resource: functionDefinition,
           failureErrorCode: 'FUNCTION_UPDATE_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Function updated successfully\./);
-      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.match(stdoutChunks.join(''), /Function Handle: apply-discount/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -744,8 +797,8 @@ describe('UpdateRequestCommand', () => {
       assert.equal(loadRequestDefinitionCallCount, 0);
       assert.equal(updateRequestCallCount, 0);
       assert.equal(updateResourceCallCount, 0);
-      assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease update widget --widget-id <id> --file <path>/);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --widget-handle/);
+      assert.match(stderrChunks.join(''), /Usage: apiease update widget --widget-handle <handle> --file <path>/);
     });
 
     it('should fail fast with usage output when the function identifier flag is missing', async () => {
@@ -806,8 +859,8 @@ describe('UpdateRequestCommand', () => {
       assert.equal(loadRequestDefinitionCallCount, 0);
       assert.equal(updateRequestCallCount, 0);
       assert.equal(updateResourceCallCount, 0);
-      assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease update function --function-id <id> --file <path>/);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --function-handle/);
+      assert.match(stderrChunks.join(''), /Usage: apiease update function --function-handle <handle> --file <path>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {

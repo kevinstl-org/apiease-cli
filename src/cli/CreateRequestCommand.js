@@ -312,11 +312,15 @@ class CreateRequestCommand {
     const crudResourceDefinition = this.readResultResourceDefinition(result, parseResult);
     const operationLabel = this.buildSuccessOperationLabel(result);
     const outputLines = [`${crudResourceDefinition.humanReadableLabel} ${operationLabel} successfully.`];
-    const resourceIdentifier = result?.[crudResourceDefinition.responsePayloadKey]?.[crudResourceDefinition.identifierPropertyName];
+    const resourcePayload = result?.[crudResourceDefinition.responsePayloadKey];
+    const resourceIdentifierOutputProperty = this.readResourceIdentifierOutputProperty({
+      crudResourceDefinition,
+      resourcePayload,
+    });
 
-    if (resourceIdentifier) {
+    if (resourceIdentifierOutputProperty) {
       outputLines.push(
-        `${crudResourceDefinition.humanReadableLabel} ${this.buildIdentifierLabel(crudResourceDefinition)}: ${resourceIdentifier}`,
+        `${crudResourceDefinition.humanReadableLabel} ${this.buildIdentifierLabel(resourceIdentifierOutputProperty.valueName)}: ${resourceIdentifierOutputProperty.value}`,
       );
     }
 
@@ -356,12 +360,26 @@ class CreateRequestCommand {
       .find((crudResourceDefinition) => result?.[crudResourceDefinition.responsePayloadKey]) || this.crudResourceDefinitionCollection.readResourceDefinition('request');
   }
 
-  buildIdentifierLabel(crudResourceDefinition) {
-    if (crudResourceDefinition.identifierValueName === 'id') {
+  buildIdentifierLabel(identifierValueName) {
+    if (identifierValueName === 'id') {
       return 'ID';
     }
 
-    return `${crudResourceDefinition.identifierValueName.charAt(0).toUpperCase()}${crudResourceDefinition.identifierValueName.slice(1)}`;
+    return `${identifierValueName.charAt(0).toUpperCase()}${identifierValueName.slice(1)}`;
+  }
+
+  readResourceIdentifierOutputProperty({ crudResourceDefinition, resourcePayload }) {
+    for (const identifierOutputProperty of crudResourceDefinition.identifierOutputProperties) {
+      const value = resourcePayload?.[identifierOutputProperty.propertyName];
+      if (value) {
+        return {
+          ...identifierOutputProperty,
+          value,
+        };
+      }
+    }
+
+    return null;
   }
 
   buildSuccessOperationLabel(result) {

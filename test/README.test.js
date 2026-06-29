@@ -32,9 +32,9 @@ describe('README', () => {
 
       // Assert
       assert.match(commandSection, /apiease create <request\|widget\|variable\|function> --file <path>/);
-      assert.match(commandSection, /apiease read function --function-id <id>/);
-      assert.match(commandSection, /apiease update function --function-id <id> --file <path>/);
-      assert.match(commandSection, /apiease delete function --function-id <id>/);
+      assert.match(commandSection, /apiease read function --function-handle <handle>/);
+      assert.match(commandSection, /apiease update function --function-handle <handle> --file <path>/);
+      assert.match(commandSection, /apiease delete function --function-handle <handle>/);
     });
 
     it('should describe function in the supported resource guidance', async () => {
@@ -46,7 +46,7 @@ describe('README', () => {
 
       // Assert
       assert.match(resourceGuidanceSection, /Supported resource names are `request`, `widget`, `variable`, and `function`\./);
-      assert.match(resourceGuidanceSection, /Use `--request-id` for `request`, `--widget-id` for `widget`, `--variable-name` for `variable`, and `--function-id` for `function`\./);
+      assert.match(resourceGuidanceSection, /Use `--request-handle` for `request`, `--widget-handle` for `widget`, `--variable-handle` for `variable`, and `--function-handle` for `function`\./);
     });
 
     it('should include function examples for each CRUD verb', async () => {
@@ -58,9 +58,9 @@ describe('README', () => {
 
       // Assert
       assert.match(exampleSection, /apiease create function \\\n  --file \.\/function-definition\.json/);
-      assert.match(exampleSection, /apiease read function --function-id function-123/);
-      assert.match(exampleSection, /apiease update function --function-id function-123 --file \.\/function-definition\.json/);
-      assert.match(exampleSection, /apiease delete function --function-id function-123/);
+      assert.match(exampleSection, /apiease read function --function-handle apply-discount/);
+      assert.match(exampleSection, /apiease update function --function-handle apply-discount --file \.\/function-definition\.json/);
+      assert.match(exampleSection, /apiease delete function --function-handle apply-discount/);
     });
 
     it('should document request handles as source file identifiers', async () => {
@@ -71,8 +71,8 @@ describe('README', () => {
       const requestSourceExampleSection = readme;
 
       // Assert
-      assert.match(requestSourceExampleSection, /Request source files use `handle` as the stable repository identifier\./);
-      assert.match(requestSourceExampleSection, /`id` is server-owned and should not be stored in request source files\./);
+      assert.match(requestSourceExampleSection, /Resource source files use `handle` as the stable repository identifier\./);
+      assert.match(requestSourceExampleSection, /`id` is server-owned and should not be stored in request, widget, variable, or function source files\./);
       assert.match(requestSourceExampleSection, /"handle": "cli-demo-request"/);
       assert.match(requestSourceExampleSection, /--auto-update-source-identifier/);
       assert.doesNotMatch(requestSourceExampleSection, /"id": "cli-demo-request"/);
@@ -86,13 +86,13 @@ describe('README', () => {
       const requestIdentifierSection = readme;
 
       // Assert
-      assert.match(requestIdentifierSection, /apiease read request --request-id <id-or-handle>/);
-      assert.match(requestIdentifierSection, /apiease update request --request-id <id-or-handle> --file <path>/);
-      assert.match(requestIdentifierSection, /apiease delete request --request-id <id-or-handle>/);
-      assert.match(requestIdentifierSection, /For `request`, `--request-id` remains the compatibility option name; pass either a server-owned id or a source-owned handle\./);
-      assert.match(requestIdentifierSection, /apiease read request --request-id cli-demo-request/);
-      assert.match(requestIdentifierSection, /apiease update request --request-id cli-demo-request --file \.\/request-definition\.json/);
-      assert.match(requestIdentifierSection, /apiease delete request --request-id cli-demo-request/);
+      assert.match(requestIdentifierSection, /apiease read request --request-handle <handle>/);
+      assert.match(requestIdentifierSection, /apiease update request --request-handle <handle> --file <path>/);
+      assert.match(requestIdentifierSection, /apiease delete request --request-handle <handle>/);
+      assert.match(requestIdentifierSection, /Legacy id or name option flags remain available as compatibility aliases; pass handles through those options during migration only\./);
+      assert.match(requestIdentifierSection, /apiease read request --request-handle cli-demo-request/);
+      assert.match(requestIdentifierSection, /apiease update request --request-handle cli-demo-request --file \.\/request-definition\.json/);
+      assert.match(requestIdentifierSection, /apiease delete request --request-handle cli-demo-request/);
       assert.doesNotMatch(requestIdentifierSection, /apiease read request --request-id request-123/);
     });
   });

@@ -5,36 +5,112 @@ const DEFAULT_RESOURCE_DEFINITIONS = Object.freeze([
     apiPathSegment: 'requests',
     responsePayloadKey: 'request',
     humanReadableLabel: 'Request',
-    identifierOptionName: '--request-id',
-    identifierValueName: 'id',
-    identifierPropertyName: 'id',
+    identifierOptionName: '--request-handle',
+    identifierValueName: 'handle',
+    legacyIdentifierOptions: Object.freeze([
+      Object.freeze({
+        optionName: '--request-id',
+        valueName: 'id-or-handle',
+      }),
+    ]),
+    identifierOutputProperties: Object.freeze([
+      Object.freeze({
+        propertyName: 'handle',
+        valueName: 'handle',
+      }),
+      Object.freeze({
+        propertyName: 'id',
+        valueName: 'id',
+      }),
+    ]),
   }),
   Object.freeze({
     resourceName: 'widget',
     apiPathSegment: 'widgets',
     responsePayloadKey: 'widget',
     humanReadableLabel: 'Widget',
-    identifierOptionName: '--widget-id',
-    identifierValueName: 'id',
-    identifierPropertyName: 'widgetId',
+    identifierOptionName: '--widget-handle',
+    identifierValueName: 'handle',
+    legacyIdentifierOptions: Object.freeze([
+      Object.freeze({
+        optionName: '--widget-id',
+        valueName: 'id-or-handle',
+      }),
+    ]),
+    identifierOutputProperties: Object.freeze([
+      Object.freeze({
+        propertyName: 'handle',
+        valueName: 'handle',
+      }),
+      Object.freeze({
+        propertyName: 'widgetHandle',
+        valueName: 'handle',
+      }),
+      Object.freeze({
+        propertyName: 'id',
+        valueName: 'id',
+      }),
+      Object.freeze({
+        propertyName: 'widgetId',
+        valueName: 'id',
+      }),
+    ]),
   }),
   Object.freeze({
     resourceName: 'variable',
     apiPathSegment: 'variables',
     responsePayloadKey: 'variable',
     humanReadableLabel: 'Variable',
-    identifierOptionName: '--variable-name',
-    identifierValueName: 'name',
-    identifierPropertyName: 'name',
+    identifierOptionName: '--variable-handle',
+    identifierValueName: 'handle',
+    legacyIdentifierOptions: Object.freeze([
+      Object.freeze({
+        optionName: '--variable-name',
+        valueName: 'name-or-handle',
+      }),
+    ]),
+    identifierOutputProperties: Object.freeze([
+      Object.freeze({
+        propertyName: 'handle',
+        valueName: 'handle',
+      }),
+      Object.freeze({
+        propertyName: 'id',
+        valueName: 'id',
+      }),
+      Object.freeze({
+        propertyName: 'name',
+        valueName: 'name',
+      }),
+    ]),
   }),
   Object.freeze({
     resourceName: 'function',
     apiPathSegment: 'functions',
     responsePayloadKey: 'function',
     humanReadableLabel: 'Function',
-    identifierOptionName: '--function-id',
-    identifierValueName: 'id',
-    identifierPropertyName: 'functionId',
+    identifierOptionName: '--function-handle',
+    identifierValueName: 'handle',
+    legacyIdentifierOptions: Object.freeze([
+      Object.freeze({
+        optionName: '--function-id',
+        valueName: 'id-or-handle',
+      }),
+    ]),
+    identifierOutputProperties: Object.freeze([
+      Object.freeze({
+        propertyName: 'handle',
+        valueName: 'handle',
+      }),
+      Object.freeze({
+        propertyName: 'id',
+        valueName: 'id',
+      }),
+      Object.freeze({
+        propertyName: 'functionId',
+        valueName: 'id',
+      }),
+    ]),
   }),
 ]);
 
@@ -60,6 +136,15 @@ class CrudResourceDefinitionCollection {
     }
 
     throw new Error(this.buildUnsupportedResourceMessage(resourceName));
+  }
+
+  listIdentifierOptionNames(crudResourceDefinition) {
+    return [
+      crudResourceDefinition.identifierOptionName,
+      ...crudResourceDefinition.legacyIdentifierOptions.map(
+        (legacyIdentifierOption) => legacyIdentifierOption.optionName,
+      ),
+    ];
   }
 
   buildCollectionPath(resourceName) {

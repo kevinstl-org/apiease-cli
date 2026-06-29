@@ -94,7 +94,7 @@ describe('CreateRequestCommand', () => {
       ]);
       assert.equal(resolveConfigurationCallCount, 0);
       assert.match(stdoutChunks.join(''), /Request created successfully\./);
-      assert.match(stdoutChunks.join(''), /request-1/);
+      assert.match(stdoutChunks.join(''), /Request Handle: create-product/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -161,8 +161,8 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const widgetDefinition = {
-        widgetId: 'widget-1',
-        title: 'Promo banner',
+        widgetHandle: 'promo-banner',
+        widgetName: 'Promo banner',
       };
       const stdoutChunks = [];
       const stderrChunks = [];
@@ -228,7 +228,7 @@ describe('CreateRequestCommand', () => {
         },
       ]);
       assert.match(stdoutChunks.join(''), /Widget created successfully\./);
-      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
+      assert.match(stdoutChunks.join(''), /Widget Handle: promo-banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -236,7 +236,8 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const variableDefinition = {
-        name: 'sale_banner',
+        handle: 'sale-banner',
+        name: 'Sale banner',
         value: 'Spring sale',
       };
       const stdoutChunks = [];
@@ -303,7 +304,7 @@ describe('CreateRequestCommand', () => {
         },
       ]);
       assert.match(stdoutChunks.join(''), /Variable created successfully\./);
-      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
+      assert.match(stdoutChunks.join(''), /Variable Handle: sale-banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -311,7 +312,7 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const functionDefinition = {
-        functionId: 'function-1',
+        handle: 'apply-discount',
         name: 'Apply discount',
       };
       const stdoutChunks = [];
@@ -378,7 +379,7 @@ describe('CreateRequestCommand', () => {
         },
       ]);
       assert.match(stdoutChunks.join(''), /Function created successfully\./);
-      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.match(stdoutChunks.join(''), /Function Handle: apply-discount/);
       assert.equal(stderrChunks.join(''), '');
     });
 

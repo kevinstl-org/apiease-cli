@@ -53,8 +53,8 @@ describe('ReadRequestCommand', () => {
       const exitCode = await readRequestCommand.run([
         'read',
         'request',
-        '--request-id',
-        'request-1',
+        '--request-handle',
+        'create-product',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -70,7 +70,7 @@ describe('ReadRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          requestId: 'request-1',
+          requestId: 'create-product',
         },
       ]);
       assert.equal(resolveConfigurationCallCount, 0);
@@ -160,7 +160,9 @@ describe('ReadRequestCommand', () => {
               ok: true,
               shopDomain: 'cool-shop.myshopify.com',
               variable: {
-                name: 'sale_banner',
+                id: 'variable-1',
+                handle: 'sale-banner',
+                name: 'Sale banner',
                 value: 'Spring sale',
               },
             };
@@ -174,8 +176,8 @@ describe('ReadRequestCommand', () => {
       const exitCode = await readRequestCommand.run([
         'read',
         'variable',
-        '--variable-name',
-        'sale_banner',
+        '--variable-handle',
+        'sale-banner',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -192,12 +194,12 @@ describe('ReadRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'sale_banner',
+          resourceIdentifier: 'sale-banner',
           failureErrorCode: 'VARIABLE_READ_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Variable read successfully\./);
-      assert.match(stdoutChunks.join(''), /Variable Name: sale_banner/);
+      assert.match(stdoutChunks.join(''), /Variable Handle: sale-banner/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -222,7 +224,8 @@ describe('ReadRequestCommand', () => {
               shopDomain: 'cool-shop.myshopify.com',
               widget: {
                 widgetId: 'widget-1',
-                title: 'Promo banner',
+                widgetHandle: 'promo-banner',
+                widgetName: 'Promo banner',
               },
             };
           },
@@ -235,8 +238,8 @@ describe('ReadRequestCommand', () => {
       const exitCode = await readRequestCommand.run([
         'read',
         'widget',
-        '--widget-id',
-        'widget-1',
+        '--widget-handle',
+        'promo-banner',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -253,13 +256,53 @@ describe('ReadRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'widget-1',
+          resourceIdentifier: 'promo-banner',
           failureErrorCode: 'WIDGET_READ_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Widget read successfully\./);
-      assert.match(stdoutChunks.join(''), /Widget ID: widget-1/);
+      assert.match(stdoutChunks.join(''), /Widget Handle: promo-banner/);
       assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should accept the legacy variable name option with a handle value', async () => {
+      // Arrange
+      const { ReadRequestCommand } = await import(readRequestCommandModuleUrl);
+      const readResourceCalls = [];
+      const readRequestCommand = new ReadRequestCommand({
+        apiEaseCrudResourceClient: {
+          async readResource(options) {
+            readResourceCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              variable: {
+                handle: 'sale-banner',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await readRequestCommand.run([
+        'read',
+        'variable',
+        '--variable-name',
+        'sale-banner',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.equal(readResourceCalls[0].resourceIdentifier, 'sale-banner');
     });
 
     it('should call the shared resource read client for function resources and return zero for human-readable success output', async () => {
@@ -282,7 +325,8 @@ describe('ReadRequestCommand', () => {
               ok: true,
               shopDomain: 'cool-shop.myshopify.com',
               function: {
-                functionId: 'function-1',
+                id: 'function-1',
+                handle: 'apply-discount',
                 name: 'Calculate discounts',
               },
             };
@@ -296,8 +340,8 @@ describe('ReadRequestCommand', () => {
       const exitCode = await readRequestCommand.run([
         'read',
         'function',
-        '--function-id',
-        'function-1',
+        '--function-handle',
+        'apply-discount',
         '--base-url',
         'https://apiease.example.com',
         '--shop-domain',
@@ -314,12 +358,12 @@ describe('ReadRequestCommand', () => {
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
-          resourceIdentifier: 'function-1',
+          resourceIdentifier: 'apply-discount',
           failureErrorCode: 'FUNCTION_READ_FAILED',
         },
       ]);
       assert.match(stdoutChunks.join(''), /Function read successfully\./);
-      assert.match(stdoutChunks.join(''), /Function ID: function-1/);
+      assert.match(stdoutChunks.join(''), /Function Handle: apply-discount/);
       assert.equal(stderrChunks.join(''), '');
     });
 
@@ -576,8 +620,8 @@ describe('ReadRequestCommand', () => {
       assert.equal(exitCode, 1);
       assert.equal(readRequestCallCount, 0);
       assert.equal(readResourceCallCount, 0);
-      assert.match(stderrChunks.join(''), /Missing required arguments: --widget-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease read widget --widget-id <id>/);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --widget-handle/);
+      assert.match(stderrChunks.join(''), /Usage: apiease read widget --widget-handle <handle>/);
     });
 
     it('should fail fast with usage output when the function identifier flag is missing', async () => {
@@ -638,8 +682,8 @@ describe('ReadRequestCommand', () => {
       assert.equal(readRequestCallCount, 0);
       assert.equal(readResourceCallCount, 0);
       assert.equal(resolveConfigurationCallCount, 0);
-      assert.match(stderrChunks.join(''), /Missing required arguments: --function-id/);
-      assert.match(stderrChunks.join(''), /Usage: apiease read function --function-id <id>/);
+      assert.match(stderrChunks.join(''), /Missing required arguments: --function-handle/);
+      assert.match(stderrChunks.join(''), /Usage: apiease read function --function-handle <handle>/);
     });
 
     it('should fail fast with usage output and no delegated calls when required arguments are missing', async () => {
