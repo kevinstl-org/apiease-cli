@@ -252,7 +252,11 @@ Create a JSON file that contains the resource definition you want to send to API
 
 Resource source files use `handle` as the stable repository identifier. `id` is server-owned and should not be stored in request, widget, variable, or function source files. Widget source files use `handle` for the stable identifier and `name` for display text.
 
-Handles must be lowercase slug values using letters, numbers, and hyphens, for example `cli-demo-request`. When a request source file has a valid `handle`, `apiease create request` looks up the remote request by that handle and reports either `Request created successfully.` or `Request updated successfully.`.
+Handles must be lowercase slug values using letters, numbers, and hyphens, for example `cli-demo-request`.
+
+`apiease create` is idempotent by `handle` for `request`, `widget`, `variable`, and `function` source files. When a source file has a valid `handle`, the CLI looks up the remote resource by handle, updates it when found, and creates it when missing.
+
+Lookup failures other than not found stop the command instead of falling back to create. Human output reports either `<Resource> created successfully.` or `<Resource> updated successfully.`, and JSON output keeps the structured `operation` value as `created` or `updated`. Rerunning `apiease create widget --file <widget.json>` updates the existing widget instead of creating a duplicate.
 
 For older request source files that still have `id` metadata or no `handle`, run create with `--auto-update-source-identifier`. `--auto-update-source-identifier` rewrites the source JSON file before creating the resource. For requests, it updates only identifier metadata in the local request JSON; it does not change request configuration such as `type`, `method`, `address`, `parameters`, `triggers`, `liquid`, `body`, or `nextRequest`.
 
@@ -270,7 +274,7 @@ apiease create widget \
   --auto-update-source-identifier
 ```
 
-Create resources:
+Create or update resources by handle:
 
 ```bash
 apiease create request \

@@ -91,6 +91,20 @@ describe('README', () => {
       assert.doesNotMatch(widgetSourceGuidance, /`widgetName`/);
     });
 
+    it('should document create as idempotent by handle for every supported resource', async () => {
+      // Arrange
+      const readme = await fs.readFile(readmeFilePath, 'utf8');
+
+      // Act
+      const createBehaviorSection = readme;
+
+      // Assert
+      assert.match(createBehaviorSection, /`apiease create` is idempotent by `handle` for `request`, `widget`, `variable`, and `function` source files\./);
+      assert.match(createBehaviorSection, /When a source file has a valid `handle`, the CLI looks up the remote resource by handle, updates it when found, and creates it when missing\./);
+      assert.match(createBehaviorSection, /Rerunning `apiease create widget --file <widget\.json>` updates the existing widget instead of creating a duplicate\./);
+      assert.doesNotMatch(createBehaviorSection, /When a request source file has a valid `handle`, `apiease create request` looks up the remote request/);
+    });
+
     it('should document that auto source identifier update rewrites request and widget source files', async () => {
       // Arrange
       const readme = await fs.readFile(readmeFilePath, 'utf8');
