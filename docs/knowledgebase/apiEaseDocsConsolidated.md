@@ -686,7 +686,15 @@ apiease create request --file ./resources/requests/product-details-proxy.json --
 
 That updates only the local request identifier metadata. It does not change request behavior such as `type`, `method`, `address`, `parameters`, `triggers`, `liquid`, or `nextRequest`.
 
-For widgets, variables, and functions, update the JSON source manually so it contains `handle`, the stable source identifier, and no server-owned id. Older widget files that use `widgetHandle` and `widgetName` should be migrated to `handle` and `name`.
+For older widget source files that still use `widgetHandle` or `widgetName`, run:
+
+```bash
+apiease create widget --file ./resources/widgets/product-details-widget.json --auto-update-source-identifier
+```
+
+That rewrites the local widget JSON before create. If `widgetHandle` exists and `handle` is missing, the CLI writes `handle` from `widgetHandle`. If `widgetName` exists and `name` is missing, the CLI writes `name` from `widgetName`. Existing `handle` and `name` values are preserved, unrelated widget fields stay unchanged, and the resulting `handle` is used for create-or-update behavior.
+
+For variables and functions, update the JSON source manually so it contains `handle`, the stable source identifier, and no server-owned id.
 
 SOURCE
 https://docs.apiease.com/docs/developers/using-apiease-with-ai-agents
@@ -1352,7 +1360,7 @@ The CLI manages four saved APIEase resource types:
 
 All definition files must contain valid JSON with an object at the root. Use `handle` as the stable source-controlled identifier. Server-owned `id` values are metadata returned by APIEase and should not be stored in request, widget, variable, or function source files.
 
-Widget files use `handle` for the stable identifier and `name` for display text. Older widget files that use `widgetHandle` or `widgetName` should be migrated before new CLI-driven work.
+Widget files use `handle` for the stable identifier and `name` for display text. Older widget files that use `widgetHandle` or `widgetName` can be migrated with `apiease create widget --file ./widget-definition.json --auto-update-source-identifier` before create.
 
 Handles should be lowercase slug values using letters, numbers, and hyphens, for example:
 
@@ -1415,6 +1423,14 @@ For older request files that still contain `id` metadata or no `handle`, you can
 ```bash
 apiease create request --file ./request-definition.json --auto-update-source-identifier
 ```
+
+For older widget files that still contain `widgetHandle` or `widgetName`, you can migrate the local source fields before create:
+
+```bash
+apiease create widget --file ./widget-definition.json --auto-update-source-identifier
+```
+
+The widget migration writes `handle` from `widgetHandle` only when `handle` is missing, writes `name` from `widgetName` only when `name` is missing, preserves unrelated widget fields, and uses the resulting `handle` for create-or-update behavior.
 
 Inside a template-based repository, the example resource files currently live under:
 
