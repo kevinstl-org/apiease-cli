@@ -913,6 +913,68 @@ describe('CreateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should report a created function when function create-or-update creates a missing function', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const functionDefinition = {
+        handle: 'apply-discount',
+        name: 'Apply discount',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: functionDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for function resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return {
+              status: 201,
+              ok: true,
+              operation: 'created',
+              shopDomain: 'cool-shop.myshopify.com',
+              function: {
+                ...functionDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'function',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.match(stdoutChunks.join(''), /Function created successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Function updated successfully\./);
+      assert.match(stdoutChunks.join(''), /Function Handle: apply-discount/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should write raw json output when function create-or-update creates a missing function', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
@@ -924,6 +986,68 @@ describe('CreateRequestCommand', () => {
         status: 201,
         ok: true,
         operation: 'created',
+        function: {
+          id: 'function-1',
+          ...functionDefinition,
+        },
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: functionDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for function resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'function',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write raw json output when function create-or-update updates an existing function', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const functionDefinition = {
+        handle: 'apply-discount',
+        name: 'Apply discount',
+      };
+      const result = {
+        status: 200,
+        ok: true,
+        operation: 'updated',
         function: {
           id: 'function-1',
           ...functionDefinition,
