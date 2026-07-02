@@ -1,0 +1,92 @@
+import { ApiEaseCrudResourceClient } from './ApiEaseCrudResourceClient.js';
+
+const NOT_FOUND_STATUS = 404;
+const CREATED_OPERATION = 'created';
+const UPDATED_OPERATION = 'updated';
+
+class ApiEaseHandleBasedCreateOrUpdateService {
+  constructor({
+    apiEaseCrudResourceClient = new ApiEaseCrudResourceClient(),
+  } = {}) {
+    this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
+  }
+
+  async createOrUpdateResourceByHandle(options = {}) {
+    const lookupResult = await this.readResourceByHandle(options);
+    if (lookupResult.ok) {
+      return await this.updateExistingResourceByHandle(options);
+    }
+
+    if (lookupResult.status === NOT_FOUND_STATUS) {
+      return await this.createMissingResource(options);
+    }
+
+    return lookupResult;
+  }
+
+  async readResourceByHandle({
+    resourceName,
+    apiBaseUrl,
+    apiKey,
+    shopDomain,
+    resourceHandle,
+    readFailureErrorCode,
+  }) {
+    return await this.apiEaseCrudResourceClient.readResource({
+      resourceName,
+      apiBaseUrl,
+      apiKey,
+      shopDomain,
+      resourceIdentifier: resourceHandle,
+      failureErrorCode: readFailureErrorCode,
+    });
+  }
+
+  async updateExistingResourceByHandle(options) {
+    const result = await this.apiEaseCrudResourceClient.updateResource({
+      ...this.buildSharedWriteOptions(options),
+      resourceIdentifier: options.resourceHandle,
+      failureErrorCode: options.updateFailureErrorCode,
+    });
+
+    return this.addOperationToSuccessfulResult(result, UPDATED_OPERATION);
+  }
+
+  async createMissingResource(options) {
+    const result = await this.apiEaseCrudResourceClient.createResource({
+      ...this.buildSharedWriteOptions(options),
+      failureErrorCode: options.createFailureErrorCode,
+    });
+
+    return this.addOperationToSuccessfulResult(result, CREATED_OPERATION);
+  }
+
+  buildSharedWriteOptions({
+    resourceName,
+    apiBaseUrl,
+    apiKey,
+    shopDomain,
+    resource,
+  }) {
+    return {
+      resourceName,
+      apiBaseUrl,
+      apiKey,
+      shopDomain,
+      resource,
+    };
+  }
+
+  addOperationToSuccessfulResult(result, operation) {
+    if (!result.ok) {
+      return result;
+    }
+
+    return {
+      ...result,
+      operation,
+    };
+  }
+}
+
+export { ApiEaseHandleBasedCreateOrUpdateService };
