@@ -634,7 +634,7 @@ Prefer the handle-named flags for read, update, and delete commands:
 
 Legacy flags such as `--request-id`, `--widget-id`, `--variable-name`, and `--function-id` remain available as compatibility aliases in current CLI versions. When you use those aliases during migration, pass the handle as the value unless you are intentionally addressing an older server-owned id.
 
-With request files, `apiease create request --file <path>` is idempotent when the file has a valid `handle`: the CLI creates the request if it does not exist, or updates the existing request with that handle if it does. For widgets, variables, and functions, create the resource with a stable handle in the file, then use the matching handle flag for later updates.
+For requests, widgets, variables, and functions, `apiease create <resource> --file <path>` is idempotent when the file has a valid `handle`: the CLI creates the resource if it does not exist, or updates the existing resource with that handle if it does.
 
 ## Public API identifiers
 
@@ -1380,7 +1380,7 @@ Create a resource from a JSON file:
 apiease create request --file ./request-definition.json
 ```
 
-When a request file has a valid `handle`, `apiease create request` checks for an existing remote request with that handle. It creates the request if none exists, or updates the existing request if it already exists.
+When a request, widget, variable, or function file has a valid `handle`, `apiease create <resource>` checks for an existing remote resource with that handle. It creates the resource if none exists, or updates the existing resource if it already exists.
 
 Read, update, and delete by handle:
 
