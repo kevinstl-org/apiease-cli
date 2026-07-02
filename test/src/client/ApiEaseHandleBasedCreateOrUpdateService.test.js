@@ -207,6 +207,96 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       });
     });
 
+    it('should create a widget when lookup by handle returns not found', async () => {
+      // Arrange
+      const { ApiEaseHandleBasedCreateOrUpdateService } = await import(serviceModuleUrl);
+      const resource = {
+        handle: 'promo-banner',
+        name: 'Promo banner',
+      };
+      const crudResourceCalls = [];
+      const apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
+        apiEaseCrudResourceClient: {
+          async readResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'readResourceByHandle', options });
+            return {
+              status: 404,
+              ok: false,
+              errorCode: 'WIDGET_NOT_FOUND',
+              message: 'Widget not found',
+              fieldErrors: [],
+            };
+          },
+          async updateResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'updateResourceByHandle', options });
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+          async createResource(options) {
+            crudResourceCalls.push({ methodName: 'createResource', options });
+            return {
+              status: 201,
+              ok: true,
+              widget: {
+                id: 'widget-1',
+                ...resource,
+              },
+            };
+          },
+        },
+      });
+
+      // Act
+      const result = await apiEaseHandleBasedCreateOrUpdateService.createOrUpdateResourceByHandle({
+        resourceName: 'widget',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'promo-banner',
+        resource,
+        readFailureErrorCode: 'WIDGET_READ_FAILED',
+        createFailureErrorCode: 'WIDGET_CREATE_FAILED',
+        updateFailureErrorCode: 'WIDGET_UPDATE_FAILED',
+      });
+
+      // Assert
+      assert.deepEqual(crudResourceCalls, [
+        {
+          methodName: 'readResourceByHandle',
+          options: {
+            resourceName: 'widget',
+            apiBaseUrl: 'https://apiease.example.com/root',
+            apiKey: 'api-key-1',
+            shopDomain: 'cool-shop.myshopify.com',
+            resourceHandle: 'promo-banner',
+            failureErrorCode: 'WIDGET_READ_FAILED',
+          },
+        },
+        {
+          methodName: 'createResource',
+          options: {
+            resourceName: 'widget',
+            apiBaseUrl: 'https://apiease.example.com/root',
+            apiKey: 'api-key-1',
+            shopDomain: 'cool-shop.myshopify.com',
+            resource,
+            failureErrorCode: 'WIDGET_CREATE_FAILED',
+          },
+        },
+      ]);
+      assert.deepEqual(result, {
+        status: 201,
+        ok: true,
+        operation: 'created',
+        widget: {
+          id: 'widget-1',
+          ...resource,
+        },
+      });
+    });
+
     it('should surface widget lookup failures other than not found without creating', async () => {
       // Arrange
       const { ApiEaseHandleBasedCreateOrUpdateService } = await import(serviceModuleUrl);

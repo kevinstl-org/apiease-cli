@@ -242,6 +242,69 @@ describe('CreateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should report a created widget when widget create-or-update creates a missing widget', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const widgetDefinition = {
+        handle: 'promo-banner',
+        name: 'Promo banner',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: widgetDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for widget resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return {
+              status: 201,
+              ok: true,
+              operation: 'created',
+              shopDomain: 'cool-shop.myshopify.com',
+              widget: {
+                id: 'widget-1',
+                ...widgetDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.match(stdoutChunks.join(''), /Widget created successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Widget updated successfully\./);
+      assert.match(stdoutChunks.join(''), /Widget Handle: promo-banner/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should write raw json output when widget create-or-update creates a missing widget', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
@@ -253,6 +316,68 @@ describe('CreateRequestCommand', () => {
         status: 201,
         ok: true,
         operation: 'created',
+        widget: {
+          id: 'widget-1',
+          ...widgetDefinition,
+        },
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: widgetDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for widget resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write raw json output when widget create-or-update updates an existing widget', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const widgetDefinition = {
+        handle: 'promo-banner',
+        name: 'Promo banner',
+      };
+      const result = {
+        status: 200,
+        ok: true,
+        operation: 'updated',
         widget: {
           id: 'widget-1',
           ...widgetDefinition,
