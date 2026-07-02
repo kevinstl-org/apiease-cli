@@ -1,0 +1,45 @@
+{
+  "id": "task-10-add-unit-coverage-for-function-create-or-update-behavior",
+  "text": "Add unit coverage for function create-or-update behavior.",
+  "goalId": "goal-codex-dev-bot-statement-implement-cli-create-or-update-behavior-for-all-645463b4",
+  "goal": "codex-dev-bot statement:\n\nImplement CLI create-or-update behavior for all handle-based APIEase resources in ../apiease-cli.\n\nCurrent behavior:\n- apiease create request --file <file> reads by handle, updates if found, and creates if missing.\n- apiease create widget, variable, and function still use POST-only create behavior.\n- Rerunning widget create can fail with handle NOT_UNIQUE.\n\nGoal:\nMake create behavior consistent for request, widget, variable, and function.\n\nImplementation guidance:\n- Keep APIEase public API POST endpoints strict.\n- Generalize the existing request create-or-update logic in apiease-cli.\n- For source files with a valid handle:\n  - GET the resource by handle.\n  - If found, PUT the resource by handle.\n  - If 404, POST a new resource.\n  - Surface any lookup failure other than 404.\n  - Preserve operation values created and updated.\n- Keep existing widget source migration behavior for --auto-update-source-identifier.\n- Prefer a small shared abstraction over copying request-only logic into separate paths.\n\nTests:\n- Add or update unit tests for widget, variable, and function create-or-update behavior.\n- Keep request tests passing.\n- Cover found updates, missing creates, non-404 lookup failures, human output, and JSON output.\n\nDocumentation:\n- Update README and bundled knowledgebase docs in ../apiease-cli.\n- State that create is idempotent by handle for request, widget, variable, and function.\n- Remove text saying only requests support create-or-update.\n- Keep guidance that handle is the stable source identifier and server id values are metadata.\n\nAcceptance criteria:\n- Rerunning apiease create widget --file <widget.json> updates the existing widget instead of failing with handle NOT_UNIQUE.\n- The same rerun behavior works for variables and functions.\n- Documentation matches the implemented CLI behavior.",
+  "project": "apiease-cli",
+  "status": "approved",
+  "priority": "high",
+  "tags": [
+    "function",
+    "tests"
+  ],
+  "createdBy": "kevin",
+  "createdAt": "2026-07-02T15:14:51Z",
+  "updatedAt": "2026-07-02T15:15:35Z",
+  "context": [
+    "The goal explicitly requires unit tests for function create-or-update behavior."
+  ],
+  "steps": [
+    "Cover update when lookup by handle finds an existing function.",
+    "Cover create when lookup by handle returns 404.",
+    "Cover error handling when lookup by handle fails with a non-404 response.",
+    "Cover human output and JSON output for created and updated operations."
+  ],
+  "constraints": [
+    "Use Node's built-in test runner and the prevailing local test style.",
+    "Keep tests hermetic with injected client doubles."
+  ],
+  "acceptanceCriteria": [
+    "Function tests prove rerun behavior updates by handle instead of duplicate POST creation.",
+    "Function tests prove non-404 lookup failures are not swallowed.",
+    "Function output tests assert the operation value for created and updated."
+  ],
+  "sequenceIndex": 10,
+  "codexSettings": {
+    "workingDirectory": ".",
+    "branchStrategy": "current",
+    "maxRuns": 1
+  },
+  "result": {
+    "summary": "",
+    "notes": [],
+    "completedAt": null
+  }
+}
