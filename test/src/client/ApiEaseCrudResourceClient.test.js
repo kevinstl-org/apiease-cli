@@ -311,6 +311,51 @@ describe('ApiEaseCrudResourceClient', () => {
       });
     });
 
+    it('should get the function from the versioned function item endpoint by handle', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const functionDefinition = {
+        id: 'function-1',
+        handle: 'order-total',
+        name: 'Order total',
+      };
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                function: functionDefinition,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.readResourceByHandle({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'order-total',
+        failureErrorCode: 'FUNCTION_READ_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/functions/order-total');
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        function: functionDefinition,
+      });
+    });
+
     it('should return a structured widget lookup failure without rewriting the status', async () => {
       // Arrange
       const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
@@ -380,6 +425,43 @@ describe('ApiEaseCrudResourceClient', () => {
         status: 503,
         ok: false,
         errorCode: 'VARIABLE_READ_FAILED',
+        message: 'Service unavailable',
+        fieldErrors: [],
+      });
+    });
+
+    it('should return a structured function lookup failure without rewriting the status', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async () => ({
+          status: 503,
+          async json() {
+            return {
+              ok: false,
+              errorCode: 'FUNCTION_READ_FAILED',
+              message: 'Service unavailable',
+              fieldErrors: [],
+            };
+          },
+        }),
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.readResourceByHandle({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'order-total',
+        failureErrorCode: 'FUNCTION_READ_FAILED',
+      });
+
+      // Assert
+      assert.deepEqual(result, {
+        status: 503,
+        ok: false,
+        errorCode: 'FUNCTION_READ_FAILED',
         message: 'Service unavailable',
         fieldErrors: [],
       });
@@ -595,6 +677,60 @@ describe('ApiEaseCrudResourceClient', () => {
         variable: {
           id: 'variable-1',
           ...variable,
+        },
+      });
+    });
+
+    it('should put the function payload to the versioned function item endpoint by handle', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const functionDefinition = {
+        handle: 'order-total',
+        name: 'Order total updated',
+        code: '{{ line_items | sum: "price" }}',
+      };
+      const fetchCalls = [];
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                function: {
+                  id: 'function-1',
+                  ...functionDefinition,
+                },
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.updateResourceByHandle({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root/',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'order-total',
+        resource: functionDefinition,
+        failureErrorCode: 'FUNCTION_UPDATE_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/functions/order-total');
+      assert.equal(fetchCalls[0].options.method, 'PUT');
+      assert.equal(fetchCalls[0].options.headers['content-type'], 'application/json');
+      assert.equal(fetchCalls[0].options.body, JSON.stringify(functionDefinition));
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        function: {
+          id: 'function-1',
+          ...functionDefinition,
         },
       });
     });

@@ -273,5 +273,72 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       ]);
       assert.deepEqual(result, lookupFailure);
     });
+
+    it('should surface function lookup failures other than not found without creating', async () => {
+      // Arrange
+      const { ApiEaseHandleBasedCreateOrUpdateService } = await import(serviceModuleUrl);
+      const lookupFailure = {
+        status: 503,
+        ok: false,
+        errorCode: 'FUNCTION_READ_FAILED',
+        message: 'Service unavailable',
+        fieldErrors: [],
+      };
+      const crudResourceCalls = [];
+      const apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
+        apiEaseCrudResourceClient: {
+          async readResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'readResourceByHandle', options });
+            return lookupFailure;
+          },
+          async updateResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'updateResourceByHandle', options });
+            return {
+              status: 200,
+              ok: true,
+            };
+          },
+          async createResource(options) {
+            crudResourceCalls.push({ methodName: 'createResource', options });
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+      });
+
+      // Act
+      const result = await apiEaseHandleBasedCreateOrUpdateService.createOrUpdateResourceByHandle({
+        resourceName: 'function',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'order-total',
+        resource: {
+          handle: 'order-total',
+          name: 'Order total',
+        },
+        readFailureErrorCode: 'FUNCTION_READ_FAILED',
+        createFailureErrorCode: 'FUNCTION_CREATE_FAILED',
+        updateFailureErrorCode: 'FUNCTION_UPDATE_FAILED',
+      });
+
+      // Assert
+      assert.deepEqual(crudResourceCalls, [
+        {
+          methodName: 'readResourceByHandle',
+          options: {
+            resourceName: 'function',
+            apiBaseUrl: 'https://apiease.example.com/root',
+            apiKey: 'api-key-1',
+            shopDomain: 'cool-shop.myshopify.com',
+            resourceHandle: 'order-total',
+            failureErrorCode: 'FUNCTION_READ_FAILED',
+          },
+        },
+      ]);
+      assert.deepEqual(result, lookupFailure);
+    });
   });
 });
