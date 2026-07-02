@@ -13,7 +13,7 @@
   ],
   "createdBy": "kevin",
   "createdAt": "2026-07-02T15:14:45Z",
-  "updatedAt": "2026-07-02T15:30:01Z",
+  "updatedAt": "2026-07-02T15:54:06Z",
   "context": [
     "Rerunning apiease create widget --file <widget.json> should update the existing widget instead of failing with handle NOT_UNIQUE."
   ],
@@ -41,6 +41,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-07-02T15:54:06Z"
   }
 }

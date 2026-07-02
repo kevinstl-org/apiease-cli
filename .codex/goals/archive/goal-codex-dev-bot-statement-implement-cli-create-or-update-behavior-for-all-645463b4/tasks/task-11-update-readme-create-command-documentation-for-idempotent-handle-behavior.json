@@ -1,37 +1,36 @@
 {
-  "id": "task-7-implement-function-create-or-update-command-behavior",
-  "text": "Implement function create-or-update command behavior.",
+  "id": "task-11-update-readme-create-command-documentation-for-idempotent-handle-behavior",
+  "text": "Update README create command documentation for idempotent handle behavior.",
   "goalId": "goal-codex-dev-bot-statement-implement-cli-create-or-update-behavior-for-all-645463b4",
   "goal": "codex-dev-bot statement:\n\nImplement CLI create-or-update behavior for all handle-based APIEase resources in ../apiease-cli.\n\nCurrent behavior:\n- apiease create request --file <file> reads by handle, updates if found, and creates if missing.\n- apiease create widget, variable, and function still use POST-only create behavior.\n- Rerunning widget create can fail with handle NOT_UNIQUE.\n\nGoal:\nMake create behavior consistent for request, widget, variable, and function.\n\nImplementation guidance:\n- Keep APIEase public API POST endpoints strict.\n- Generalize the existing request create-or-update logic in apiease-cli.\n- For source files with a valid handle:\n  - GET the resource by handle.\n  - If found, PUT the resource by handle.\n  - If 404, POST a new resource.\n  - Surface any lookup failure other than 404.\n  - Preserve operation values created and updated.\n- Keep existing widget source migration behavior for --auto-update-source-identifier.\n- Prefer a small shared abstraction over copying request-only logic into separate paths.\n\nTests:\n- Add or update unit tests for widget, variable, and function create-or-update behavior.\n- Keep request tests passing.\n- Cover found updates, missing creates, non-404 lookup failures, human output, and JSON output.\n\nDocumentation:\n- Update README and bundled knowledgebase docs in ../apiease-cli.\n- State that create is idempotent by handle for request, widget, variable, and function.\n- Remove text saying only requests support create-or-update.\n- Keep guidance that handle is the stable source identifier and server id values are metadata.\n\nAcceptance criteria:\n- Rerunning apiease create widget --file <widget.json> updates the existing widget instead of failing with handle NOT_UNIQUE.\n- The same rerun behavior works for variables and functions.\n- Documentation matches the implemented CLI behavior.",
   "project": "apiease-cli",
   "status": "complete",
-  "priority": "high",
+  "priority": "medium",
   "tags": [
-    "function",
-    "cli",
-    "create"
+    "docs",
+    "readme"
   ],
   "createdBy": "kevin",
-  "createdAt": "2026-07-02T15:14:49Z",
-  "updatedAt": "2026-07-02T15:41:56Z",
+  "createdAt": "2026-07-02T15:14:52Z",
+  "updatedAt": "2026-07-02T15:54:05Z",
   "context": [
-    "Rerunning apiease create function --file <function.json> should update the existing function instead of attempting a duplicate create."
+    "The goal explicitly requires README documentation updates."
   ],
   "steps": [
-    "Route function create command execution through the shared create-or-update abstraction.",
-    "Preserve created and updated operation values in human and JSON output."
+    "State that create is idempotent by handle for request, widget, variable, and function.",
+    "Remove or revise text that says only requests support create-or-update.",
+    "Keep guidance that handle is the stable source identifier and server id values are metadata."
   ],
   "constraints": [
-    "Only source files with a valid handle should use handle-based create-or-update behavior.",
-    "Do not copy request-only logic into a function-specific implementation."
+    "Keep examples aligned with the public command name apiease.",
+    "Do not describe server id values as stable source identifiers."
   ],
   "acceptanceCriteria": [
-    "apiease create function --file <function.json> updates when the function handle already exists.",
-    "apiease create function --file <function.json> creates when the function handle does not exist.",
-    "Function JSON output reports updated for updates and created for creates.",
-    "Function human output reflects whether the command created or updated the function."
+    "README accurately documents rerun behavior for request, widget, variable, and function create commands.",
+    "README no longer claims create-or-update is request-only.",
+    "README preserves handle-versus-id guidance."
   ],
-  "sequenceIndex": 7,
+  "sequenceIndex": 11,
   "codexSettings": {
     "workingDirectory": ".",
     "branchStrategy": "current",
@@ -40,6 +39,6 @@
   "result": {
     "summary": "",
     "notes": [],
-    "completedAt": null
+    "completedAt": "2026-07-02T15:54:05Z"
   }
 }
