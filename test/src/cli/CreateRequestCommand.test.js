@@ -576,6 +576,70 @@ describe('CreateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
+    it('should report a created variable when variable create-or-update creates a missing variable', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const variableDefinition = {
+        handle: 'sale-banner',
+        name: 'Sale banner',
+        value: 'Spring sale',
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: variableDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for variable resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return {
+              status: 201,
+              ok: true,
+              operation: 'created',
+              shopDomain: 'cool-shop.myshopify.com',
+              variable: {
+                id: 'variable-1',
+                ...variableDefinition,
+              },
+            };
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'variable',
+        '--file',
+        '/tmp/variable.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.match(stdoutChunks.join(''), /Variable created successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Variable updated successfully\./);
+      assert.match(stdoutChunks.join(''), /Variable Handle: sale-banner/);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
     it('should write raw json output when variable create-or-update creates a missing variable', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
@@ -588,6 +652,69 @@ describe('CreateRequestCommand', () => {
         status: 201,
         ok: true,
         operation: 'created',
+        variable: {
+          id: 'variable-1',
+          ...variableDefinition,
+        },
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: variableDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for variable resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'variable',
+        '--file',
+        '/tmp/variable.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write raw json output when variable create-or-update updates an existing variable', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const variableDefinition = {
+        handle: 'sale-banner',
+        name: 'Sale banner',
+        value: 'Spring sale',
+      };
+      const result = {
+        status: 200,
+        ok: true,
+        operation: 'updated',
         variable: {
           id: 'variable-1',
           ...variableDefinition,
