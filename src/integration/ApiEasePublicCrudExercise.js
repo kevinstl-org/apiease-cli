@@ -116,19 +116,19 @@ class ApiEasePublicCrudExercise {
       path: this.buildWidgetCollectionPath(),
       body: this.buildCreateWidgetPayload(),
     });
-    const widgetId = this.readRequiredIdentifier({
+    const widgetResourceId = this.readRequiredIdentifier({
       resourceType: 'widget',
       resourceObject: createPayload.widget,
-      identifierKey: 'widgetId',
+      identifierKey: 'id',
     });
-    const widgetHandle = this.readRequiredIdentifier({
+    const widgetResourceHandle = this.readRequiredIdentifier({
       resourceType: 'widget',
       resourceObject: createPayload.widget,
-      identifierKey: 'widgetHandle',
+      identifierKey: 'handle',
     });
     this.createdResources.widget = {
-      widgetId,
-      widgetHandle,
+      id: widgetResourceId,
+      handle: widgetResourceHandle,
       createdWidget: createPayload.widget,
       updatedWidget: null,
     };
@@ -140,22 +140,22 @@ class ApiEasePublicCrudExercise {
     });
     this.assertCollectionContains({
       collection: listPayload.widgets,
-      identifierKey: 'widgetId',
-      identifierValue: widgetId,
+      identifierKey: 'handle',
+      identifierValue: widgetResourceHandle,
       resourceType: 'widget',
     });
 
-    this.reportStep(`Reading widget ${widgetId}`);
+    this.reportStep(`Reading widget ${widgetResourceHandle}`);
     await this.requestJson({
       method: 'GET',
-      path: this.buildWidgetItemPath(widgetId),
+      path: this.buildWidgetItemPath(widgetResourceHandle),
     });
 
-    this.reportStep(`Updating widget ${widgetId}`);
+    this.reportStep(`Updating widget ${widgetResourceHandle}`);
     const updatePayload = await this.requestJson({
       method: 'PUT',
-      path: this.buildWidgetItemPath(widgetId),
-      body: this.buildUpdateWidgetPayload(widgetHandle),
+      path: this.buildWidgetItemPath(widgetResourceHandle),
+      body: this.buildUpdateWidgetPayload(widgetResourceHandle),
     });
 
     this.createdResources.widget.updatedWidget = updatePayload.widget;
@@ -210,7 +210,7 @@ class ApiEasePublicCrudExercise {
     const shopVariableName = this.createdResources.shopVariable?.variableName
       || result.shopVariable?.variableName
       || '';
-    const widgetId = this.createdResources.widget?.widgetId || result.widget?.widgetId || '';
+    const widgetResourceHandle = this.createdResources.widget?.handle || result.widget?.handle || '';
     const requestId = this.createdResources.request?.requestId || result.request?.requestId || '';
 
     const cleanupTargets = [
@@ -221,8 +221,8 @@ class ApiEasePublicCrudExercise {
       }),
       this.buildCleanupTarget({
         resourceType: 'widget',
-        identifierValue: widgetId,
-        path: widgetId ? this.buildWidgetItemPath(widgetId) : '',
+        identifierValue: widgetResourceHandle,
+        path: widgetResourceHandle ? this.buildWidgetItemPath(widgetResourceHandle) : '',
       }),
       this.buildCleanupTarget({
         resourceType: 'request',
@@ -379,8 +379,8 @@ class ApiEasePublicCrudExercise {
     return 'api/v1/resources/widgets';
   }
 
-  buildWidgetItemPath(widgetId) {
-    return `api/v1/resources/widgets/${encodeURIComponent(widgetId)}`;
+  buildWidgetItemPath(widgetResourceIdentifier) {
+    return `api/v1/resources/widgets/${encodeURIComponent(widgetResourceIdentifier)}`;
   }
 
   buildShopVariableCollectionPath() {
@@ -411,16 +411,17 @@ class ApiEasePublicCrudExercise {
 
   buildCreateWidgetPayload() {
     return {
-      widgetName: `Codex Widget ${this.exerciseId}`,
+      handle: this.buildWidgetResourceHandle(),
+      name: `Codex Widget ${this.exerciseId}`,
       liquid: `<section>${this.exerciseId}</section>`,
       javascript: `console.log("${this.exerciseId}");`,
     };
   }
 
-  buildUpdateWidgetPayload(widgetHandle) {
+  buildUpdateWidgetPayload(widgetResourceHandle) {
     return {
-      widgetHandle,
-      widgetName: `Codex Widget Updated ${this.exerciseId}`,
+      handle: widgetResourceHandle,
+      name: `Codex Widget Updated ${this.exerciseId}`,
       liquid: `<section>updated ${this.exerciseId}</section>`,
       javascript: `console.log("updated-${this.exerciseId}");`,
     };
@@ -445,8 +446,19 @@ class ApiEasePublicCrudExercise {
     return `codex_variable_${this.buildNormalizedIdentifier(this.exerciseId)}`;
   }
 
-  buildNormalizedIdentifier(identifierValue) {
-    return String(identifierValue).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  buildWidgetResourceHandle() {
+    return `codex-widget-${this.buildNormalizedHandleSegment(this.exerciseId)}`;
+  }
+
+  buildNormalizedHandleSegment(identifierValue) {
+    return this.buildNormalizedIdentifier(identifierValue, '-');
+  }
+
+  buildNormalizedIdentifier(identifierValue, replacementCharacter = '_') {
+    return String(identifierValue)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, replacementCharacter)
+      .replace(/^[-_]+|[-_]+$/g, '');
   }
 
   reportStep(message) {

@@ -223,9 +223,9 @@ describe('ReadRequestCommand', () => {
               ok: true,
               shopDomain: 'cool-shop.myshopify.com',
               widget: {
-                widgetId: 'widget-1',
-                widgetHandle: 'promo-banner',
-                widgetName: 'Promo banner',
+                id: 'widget-1',
+                handle: 'promo-banner',
+                name: 'Promo banner',
               },
             };
           },

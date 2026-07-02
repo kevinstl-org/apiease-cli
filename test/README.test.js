@@ -78,6 +78,19 @@ describe('README', () => {
       assert.doesNotMatch(requestSourceExampleSection, /"id": "cli-demo-request"/);
     });
 
+    it('should document canonical widget source fields', async () => {
+      // Arrange
+      const readme = await fs.readFile(readmeFilePath, 'utf8');
+
+      // Act
+      const widgetSourceGuidance = readme;
+
+      // Assert
+      assert.match(widgetSourceGuidance, /Widget source files use `handle` for the stable identifier and `name` for display text\./);
+      assert.doesNotMatch(widgetSourceGuidance, /`widgetHandle`/);
+      assert.doesNotMatch(widgetSourceGuidance, /`widgetName`/);
+    });
+
     it('should document request id option compatibility with handles', async () => {
       // Arrange
       const readme = await fs.readFile(readmeFilePath, 'utf8');

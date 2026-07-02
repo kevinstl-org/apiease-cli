@@ -29,7 +29,8 @@ describe('ApiEaseCrudResourceClient', () => {
       // Arrange
       const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
       const widget = {
-        widgetName: 'Featured products',
+        handle: 'featured-products',
+        name: 'Featured products',
         liquid: '<section>featured</section>',
       };
       const fetchCalls = [];
@@ -42,7 +43,7 @@ describe('ApiEaseCrudResourceClient', () => {
               return {
                 ok: true,
                 widget: {
-                  widgetId: 'widget-1',
+                  id: 'widget-1',
                   ...widget,
                 },
               };
@@ -73,7 +74,7 @@ describe('ApiEaseCrudResourceClient', () => {
         status: 201,
         ok: true,
         widget: {
-          widgetId: 'widget-1',
+          id: 'widget-1',
           ...widget,
         },
       });
@@ -223,7 +224,8 @@ describe('ApiEaseCrudResourceClient', () => {
       // Arrange
       const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
       const widget = {
-        widgetName: 'Featured products updated',
+        handle: 'featured-products',
+        name: 'Featured products updated',
         liquid: '<section>updated</section>',
       };
       const fetchCalls = [];
@@ -236,7 +238,7 @@ describe('ApiEaseCrudResourceClient', () => {
               return {
                 ok: true,
                 widget: {
-                  widgetId: 'widget/1 & 2',
+                  id: 'widget/1 & 2',
                   ...widget,
                 },
               };
@@ -268,7 +270,7 @@ describe('ApiEaseCrudResourceClient', () => {
         status: 200,
         ok: true,
         widget: {
-          widgetId: 'widget/1 & 2',
+          id: 'widget/1 & 2',
           ...widget,
         },
       });

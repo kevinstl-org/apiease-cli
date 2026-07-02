@@ -101,19 +101,26 @@ describe('CrudResourceDefinitionCollection', () => {
             valueName: 'handle',
           },
           {
-            propertyName: 'widgetHandle',
-            valueName: 'handle',
-          },
-          {
             propertyName: 'id',
-            valueName: 'id',
-          },
-          {
-            propertyName: 'widgetId',
             valueName: 'id',
           },
         ],
       });
+    });
+
+    it('should not expose legacy widget response aliases as identifier output properties', async () => {
+      // Arrange
+      const { CrudResourceDefinitionCollection } = await import(crudResourceDefinitionCollectionModuleUrl);
+      const crudResourceDefinitionCollection = new CrudResourceDefinitionCollection();
+
+      // Act
+      const result = crudResourceDefinitionCollection.readResourceDefinition('widget');
+
+      // Assert
+      assert.deepEqual(
+        result.identifierOutputProperties.map((identifierOutputProperty) => identifierOutputProperty.propertyName),
+        ['handle', 'id'],
+      );
     });
 
     it('should return the variable resource definition metadata', async () => {

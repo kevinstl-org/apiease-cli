@@ -43,15 +43,7 @@ const DEFAULT_RESOURCE_DEFINITIONS = Object.freeze([
         valueName: 'handle',
       }),
       Object.freeze({
-        propertyName: 'widgetHandle',
-        valueName: 'handle',
-      }),
-      Object.freeze({
         propertyName: 'id',
-        valueName: 'id',
-      }),
-      Object.freeze({
-        propertyName: 'widgetId',
         valueName: 'id',
       }),
     ]),

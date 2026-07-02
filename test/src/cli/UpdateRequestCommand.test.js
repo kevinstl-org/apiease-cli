@@ -269,8 +269,8 @@ describe('UpdateRequestCommand', () => {
       // Arrange
       const { UpdateRequestCommand } = await import(updateRequestCommandModuleUrl);
       const widgetDefinition = {
-        widgetHandle: 'promo-banner',
-        widgetName: 'Promo banner',
+        handle: 'promo-banner',
+        name: 'Promo banner',
       };
       const stdoutChunks = [];
       const stderrChunks = [];
@@ -353,7 +353,7 @@ describe('UpdateRequestCommand', () => {
             return {
               ok: true,
               requestDefinition: {
-                widgetHandle: 'promo-banner',
+                handle: 'promo-banner',
               },
             };
           },
@@ -365,7 +365,7 @@ describe('UpdateRequestCommand', () => {
               status: 200,
               ok: true,
               widget: {
-                widgetHandle: 'promo-banner',
+                handle: 'promo-banner',
               },
             };
           },

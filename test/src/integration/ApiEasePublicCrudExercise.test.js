@@ -67,9 +67,9 @@ describe('ApiEasePublicCrudExercise', () => {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
           widget: {
-            widgetId: 'widget-1',
-            widgetHandle: 'codex-widget-exercise-123',
-            widgetName: 'Codex Widget exercise-123',
+            id: 'widget-1',
+            handle: 'codex-widget-exercise-123',
+            name: 'Codex Widget exercise-123',
             liquid: '<section>exercise-123</section>',
             javascript: 'console.log("exercise-123");',
             externalJavascriptUrls: [],
@@ -79,15 +79,15 @@ describe('ApiEasePublicCrudExercise', () => {
         buildFetchResponse(200, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
-          widgets: [{ widgetId: 'widget-1' }],
+          widgets: [{ handle: 'codex-widget-exercise-123' }],
         }),
         buildFetchResponse(200, {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
           widget: {
-            widgetId: 'widget-1',
-            widgetHandle: 'codex-widget-exercise-123',
-            widgetName: 'Codex Widget exercise-123',
+            id: 'widget-1',
+            handle: 'codex-widget-exercise-123',
+            name: 'Codex Widget exercise-123',
             liquid: '<section>exercise-123</section>',
             javascript: 'console.log("exercise-123");',
             externalJavascriptUrls: [],
@@ -98,9 +98,9 @@ describe('ApiEasePublicCrudExercise', () => {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
           widget: {
-            widgetId: 'widget-1',
-            widgetHandle: 'codex-widget-exercise-123',
-            widgetName: 'Codex Widget Updated exercise-123',
+            id: 'widget-1',
+            handle: 'codex-widget-exercise-123',
+            name: 'Codex Widget Updated exercise-123',
             liquid: '<section>updated exercise-123</section>',
             javascript: 'console.log("updated-exercise-123");',
             externalJavascriptUrls: [],
@@ -152,9 +152,9 @@ describe('ApiEasePublicCrudExercise', () => {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
           widget: {
-            widgetId: 'widget-1',
-            widgetHandle: 'codex-widget-exercise-123',
-            widgetName: 'Codex Widget Updated exercise-123',
+            id: 'widget-1',
+            handle: 'codex-widget-exercise-123',
+            name: 'Codex Widget Updated exercise-123',
             liquid: '<section>updated exercise-123</section>',
             javascript: 'console.log("updated-exercise-123");',
             externalJavascriptUrls: [],
@@ -198,14 +198,14 @@ describe('ApiEasePublicCrudExercise', () => {
           'PUT https://apiease.example.com/root/api/v1/resources/requests/request-1',
           'POST https://apiease.example.com/root/api/v1/resources/widgets',
           'GET https://apiease.example.com/root/api/v1/resources/widgets',
-          'GET https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
-          'PUT https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
+          'GET https://apiease.example.com/root/api/v1/resources/widgets/codex-widget-exercise-123',
+          'PUT https://apiease.example.com/root/api/v1/resources/widgets/codex-widget-exercise-123',
           'POST https://apiease.example.com/root/api/v1/resources/variables',
           'GET https://apiease.example.com/root/api/v1/resources/variables',
           'GET https://apiease.example.com/root/api/v1/resources/variables/codex_variable_exercise_123',
           'PUT https://apiease.example.com/root/api/v1/resources/variables/codex_variable_exercise_123',
           'DELETE https://apiease.example.com/root/api/v1/resources/variables/codex_variable_exercise_123',
-          'DELETE https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
+          'DELETE https://apiease.example.com/root/api/v1/resources/widgets/codex-widget-exercise-123',
           'DELETE https://apiease.example.com/root/api/v1/resources/requests/request-1',
         ],
       );
@@ -217,9 +217,15 @@ describe('ApiEasePublicCrudExercise', () => {
         method: 'GET',
         address: 'https://example.com/codex/request/exercise-123',
       });
+      assert.deepEqual(JSON.parse(fetchCalls[4].options.body), {
+        handle: 'codex-widget-exercise-123',
+        name: 'Codex Widget exercise-123',
+        liquid: '<section>exercise-123</section>',
+        javascript: 'console.log("exercise-123");',
+      });
       assert.deepEqual(JSON.parse(fetchCalls[7].options.body), {
-        widgetHandle: 'codex-widget-exercise-123',
-        widgetName: 'Codex Widget Updated exercise-123',
+        handle: 'codex-widget-exercise-123',
+        name: 'Codex Widget Updated exercise-123',
         liquid: '<section>updated exercise-123</section>',
         javascript: 'console.log("updated-exercise-123");',
       });
@@ -229,7 +235,8 @@ describe('ApiEasePublicCrudExercise', () => {
       });
       assert.equal(result.exerciseId, 'exercise-123');
       assert.equal(result.request.requestId, 'request-1');
-      assert.equal(result.widget.widgetId, 'widget-1');
+      assert.equal(result.widget.id, 'widget-1');
+      assert.equal(result.widget.handle, 'codex-widget-exercise-123');
       assert.equal(result.shopVariable.variableName, 'codex_variable_exercise_123');
       assert.deepEqual(
         result.cleanupResults.map((cleanupResult) => cleanupResult.resourceType),
@@ -293,9 +300,9 @@ describe('ApiEasePublicCrudExercise', () => {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
           widget: {
-            widgetId: 'widget-1',
-            widgetHandle: 'codex-widget-exercise-123',
-            widgetName: 'Codex Widget exercise-123',
+            id: 'widget-1',
+            handle: 'codex-widget-exercise-123',
+            name: 'Codex Widget exercise-123',
             liquid: '<section>exercise-123</section>',
             javascript: 'console.log("exercise-123");',
             externalJavascriptUrls: [],
@@ -312,9 +319,9 @@ describe('ApiEasePublicCrudExercise', () => {
           ok: true,
           shopDomain: 'cool-shop.myshopify.com',
           widget: {
-            widgetId: 'widget-1',
-            widgetHandle: 'codex-widget-exercise-123',
-            widgetName: 'Codex Widget exercise-123',
+            id: 'widget-1',
+            handle: 'codex-widget-exercise-123',
+            name: 'Codex Widget exercise-123',
             liquid: '<section>exercise-123</section>',
             javascript: 'console.log("exercise-123");',
             externalJavascriptUrls: [],
@@ -359,7 +366,7 @@ describe('ApiEasePublicCrudExercise', () => {
               'PUT https://apiease.example.com/root/api/v1/resources/requests/request-1',
               'POST https://apiease.example.com/root/api/v1/resources/widgets',
               'GET https://apiease.example.com/root/api/v1/resources/widgets',
-              'DELETE https://apiease.example.com/root/api/v1/resources/widgets/widget-1',
+              'DELETE https://apiease.example.com/root/api/v1/resources/widgets/codex-widget-exercise-123',
               'DELETE https://apiease.example.com/root/api/v1/resources/requests/request-1',
             ],
           );

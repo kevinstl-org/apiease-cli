@@ -161,8 +161,8 @@ describe('CreateRequestCommand', () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const widgetDefinition = {
-        widgetHandle: 'promo-banner',
-        widgetName: 'Promo banner',
+        handle: 'promo-banner',
+        name: 'Promo banner',
       };
       const stdoutChunks = [];
       const stderrChunks = [];

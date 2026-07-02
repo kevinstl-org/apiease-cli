@@ -250,7 +250,7 @@ Create a JSON file that contains the resource definition you want to send to API
 }
 ```
 
-Resource source files use `handle` as the stable repository identifier. `id` is server-owned and should not be stored in request, widget, variable, or function source files. For widgets, keep using the current APIEase JSON fields such as `widgetHandle` and `widgetName` when that is the resource contract.
+Resource source files use `handle` as the stable repository identifier. `id` is server-owned and should not be stored in request, widget, variable, or function source files. Widget source files use `handle` for the stable identifier and `name` for display text.
 
 Handles must be lowercase slug values using letters, numbers, and hyphens, for example `cli-demo-request`. When a request source file has a valid `handle`, `apiease create request` looks up the remote request by that handle and reports either `Request created successfully.` or `Request updated successfully.`.
 
