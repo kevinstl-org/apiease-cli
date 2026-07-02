@@ -32,20 +32,20 @@ class ApiEaseHandleBasedCreateOrUpdateService {
     resourceHandle,
     readFailureErrorCode,
   }) {
-    return await this.apiEaseCrudResourceClient.readResource({
+    return await this.apiEaseCrudResourceClient.readResourceByHandle({
       resourceName,
       apiBaseUrl,
       apiKey,
       shopDomain,
-      resourceIdentifier: resourceHandle,
+      resourceHandle,
       failureErrorCode: readFailureErrorCode,
     });
   }
 
   async updateExistingResourceByHandle(options) {
-    const result = await this.apiEaseCrudResourceClient.updateResource({
+    const result = await this.apiEaseCrudResourceClient.updateResourceByHandle({
       ...this.buildSharedWriteOptions(options),
-      resourceIdentifier: options.resourceHandle,
+      resourceHandle: options.resourceHandle,
       failureErrorCode: options.updateFailureErrorCode,
     });
 

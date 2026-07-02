@@ -50,6 +50,24 @@ class ApiEaseCrudResourceClient {
     });
   }
 
+  async readResourceByHandle({
+    resourceName,
+    apiBaseUrl,
+    apiKey,
+    shopDomain,
+    resourceHandle,
+    failureErrorCode,
+  } = {}) {
+    return await this.readResource({
+      resourceName,
+      apiBaseUrl,
+      apiKey,
+      shopDomain,
+      resourceIdentifier: resourceHandle,
+      failureErrorCode,
+    });
+  }
+
   async updateResource({
     resourceName,
     apiBaseUrl,
@@ -66,6 +84,26 @@ class ApiEaseCrudResourceClient {
       apiKey,
       shopDomain,
       resourceIdentifier,
+      resource,
+      failureErrorCode,
+    });
+  }
+
+  async updateResourceByHandle({
+    resourceName,
+    apiBaseUrl,
+    apiKey,
+    shopDomain,
+    resourceHandle,
+    resource,
+    failureErrorCode,
+  } = {}) {
+    return await this.updateResource({
+      resourceName,
+      apiBaseUrl,
+      apiKey,
+      shopDomain,
+      resourceIdentifier: resourceHandle,
       resource,
       failureErrorCode,
     });

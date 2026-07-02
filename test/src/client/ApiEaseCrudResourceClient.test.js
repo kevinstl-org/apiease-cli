@@ -219,6 +219,90 @@ describe('ApiEaseCrudResourceClient', () => {
     });
   });
 
+  describe('readResourceByHandle', () => {
+    it('should get the widget from the versioned widget item endpoint by handle', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const fetchCalls = [];
+      const widget = {
+        id: 'widget-1',
+        handle: 'featured-products',
+        name: 'Featured products',
+      };
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                widget,
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.readResourceByHandle({
+        resourceName: 'widget',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'featured-products',
+        failureErrorCode: 'WIDGET_READ_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/widgets/featured-products');
+      assert.equal(fetchCalls[0].options.method, 'GET');
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        widget,
+      });
+    });
+
+    it('should return a structured widget lookup failure without rewriting the status', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async () => ({
+          status: 503,
+          async json() {
+            return {
+              ok: false,
+              errorCode: 'WIDGET_READ_FAILED',
+              message: 'Service unavailable',
+              fieldErrors: [],
+            };
+          },
+        }),
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.readResourceByHandle({
+        resourceName: 'widget',
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'featured-products',
+        failureErrorCode: 'WIDGET_READ_FAILED',
+      });
+
+      // Assert
+      assert.deepEqual(result, {
+        status: 503,
+        ok: false,
+        errorCode: 'WIDGET_READ_FAILED',
+        message: 'Service unavailable',
+        fieldErrors: [],
+      });
+    });
+  });
+
   describe('updateResource', () => {
     it('should put the payload to the versioned widget item endpoint', async () => {
       // Arrange
@@ -319,6 +403,62 @@ describe('ApiEaseCrudResourceClient', () => {
         status: 200,
         ok: true,
         function: functionDefinition,
+      });
+    });
+  });
+
+  describe('updateResourceByHandle', () => {
+    it('should put the widget payload to the versioned widget item endpoint by handle', async () => {
+      // Arrange
+      const { ApiEaseCrudResourceClient } = await import(clientModuleUrl);
+      const widget = {
+        handle: 'featured-products',
+        name: 'Featured products updated',
+        liquid: '<section>updated</section>',
+      };
+      const fetchCalls = [];
+      const apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({
+        fetchImplementation: async (url, options) => {
+          fetchCalls.push({ url, options });
+          return {
+            status: 200,
+            async json() {
+              return {
+                ok: true,
+                widget: {
+                  id: 'widget-1',
+                  ...widget,
+                },
+              };
+            },
+          };
+        },
+      });
+
+      // Act
+      const result = await apiEaseCrudResourceClient.updateResourceByHandle({
+        resourceName: 'widget',
+        apiBaseUrl: 'https://apiease.example.com/root/',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        resourceHandle: 'featured-products',
+        resource: widget,
+        failureErrorCode: 'WIDGET_UPDATE_FAILED',
+      });
+
+      // Assert
+      assert.equal(fetchCalls.length, 1);
+      assert.equal(fetchCalls[0].url, 'https://apiease.example.com/root/api/v1/resources/widgets/featured-products');
+      assert.equal(fetchCalls[0].options.method, 'PUT');
+      assert.equal(fetchCalls[0].options.headers['content-type'], 'application/json');
+      assert.equal(fetchCalls[0].options.body, JSON.stringify(widget));
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        widget: {
+          id: 'widget-1',
+          ...widget,
+        },
       });
     });
   });

@@ -35,8 +35,8 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       const crudResourceCalls = [];
       const apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
         apiEaseCrudResourceClient: {
-          async readResource(options) {
-            crudResourceCalls.push({ methodName: 'readResource', options });
+          async readResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'readResourceByHandle', options });
             return {
               status: 200,
               ok: true,
@@ -46,8 +46,8 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
               },
             };
           },
-          async updateResource(options) {
-            crudResourceCalls.push({ methodName: 'updateResource', options });
+          async updateResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'updateResourceByHandle', options });
             return {
               status: 200,
               ok: true,
@@ -83,24 +83,24 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       // Assert
       assert.deepEqual(crudResourceCalls, [
         {
-          methodName: 'readResource',
+          methodName: 'readResourceByHandle',
           options: {
             resourceName: 'widget',
             apiBaseUrl: 'https://apiease.example.com/root',
             apiKey: 'api-key-1',
             shopDomain: 'cool-shop.myshopify.com',
-            resourceIdentifier: 'featured-products',
+            resourceHandle: 'featured-products',
             failureErrorCode: 'WIDGET_READ_FAILED',
           },
         },
         {
-          methodName: 'updateResource',
+          methodName: 'updateResourceByHandle',
           options: {
             resourceName: 'widget',
             apiBaseUrl: 'https://apiease.example.com/root',
             apiKey: 'api-key-1',
             shopDomain: 'cool-shop.myshopify.com',
-            resourceIdentifier: 'featured-products',
+            resourceHandle: 'featured-products',
             resource,
             failureErrorCode: 'WIDGET_UPDATE_FAILED',
           },
@@ -127,8 +127,8 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       const crudResourceCalls = [];
       const apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
         apiEaseCrudResourceClient: {
-          async readResource(options) {
-            crudResourceCalls.push({ methodName: 'readResource', options });
+          async readResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'readResourceByHandle', options });
             return {
               status: 404,
               ok: false,
@@ -137,8 +137,8 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
               fieldErrors: [],
             };
           },
-          async updateResource(options) {
-            crudResourceCalls.push({ methodName: 'updateResource', options });
+          async updateResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'updateResourceByHandle', options });
             return {
               status: 200,
               ok: true,
@@ -174,13 +174,13 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       // Assert
       assert.deepEqual(crudResourceCalls, [
         {
-          methodName: 'readResource',
+          methodName: 'readResourceByHandle',
           options: {
             resourceName: 'variable',
             apiBaseUrl: 'https://apiease.example.com/root',
             apiKey: 'api-key-1',
             shopDomain: 'cool-shop.myshopify.com',
-            resourceIdentifier: 'sale-banner',
+            resourceHandle: 'sale-banner',
             failureErrorCode: 'VARIABLE_READ_FAILED',
           },
         },
@@ -207,25 +207,25 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
       });
     });
 
-    it('should surface lookup failures other than not found without creating', async () => {
+    it('should surface widget lookup failures other than not found without creating', async () => {
       // Arrange
       const { ApiEaseHandleBasedCreateOrUpdateService } = await import(serviceModuleUrl);
       const lookupFailure = {
         status: 503,
         ok: false,
-        errorCode: 'FUNCTION_READ_FAILED',
+        errorCode: 'WIDGET_READ_FAILED',
         message: 'Service unavailable',
         fieldErrors: [],
       };
       const crudResourceCalls = [];
       const apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
         apiEaseCrudResourceClient: {
-          async readResource(options) {
-            crudResourceCalls.push({ methodName: 'readResource', options });
+          async readResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'readResourceByHandle', options });
             return lookupFailure;
           },
-          async updateResource(options) {
-            crudResourceCalls.push({ methodName: 'updateResource', options });
+          async updateResourceByHandle(options) {
+            crudResourceCalls.push({ methodName: 'updateResourceByHandle', options });
             return {
               status: 200,
               ok: true,
@@ -243,31 +243,31 @@ describe('ApiEaseHandleBasedCreateOrUpdateService', () => {
 
       // Act
       const result = await apiEaseHandleBasedCreateOrUpdateService.createOrUpdateResourceByHandle({
-        resourceName: 'function',
+        resourceName: 'widget',
         apiBaseUrl: 'https://apiease.example.com/root',
         apiKey: 'api-key-1',
         shopDomain: 'cool-shop.myshopify.com',
-        resourceHandle: 'calculate-discount',
+        resourceHandle: 'featured-products',
         resource: {
-          handle: 'calculate-discount',
-          functionName: 'Calculate discount',
+          handle: 'featured-products',
+          name: 'Featured products',
         },
-        readFailureErrorCode: 'FUNCTION_READ_FAILED',
-        createFailureErrorCode: 'FUNCTION_CREATE_FAILED',
-        updateFailureErrorCode: 'FUNCTION_UPDATE_FAILED',
+        readFailureErrorCode: 'WIDGET_READ_FAILED',
+        createFailureErrorCode: 'WIDGET_CREATE_FAILED',
+        updateFailureErrorCode: 'WIDGET_UPDATE_FAILED',
       });
 
       // Assert
       assert.deepEqual(crudResourceCalls, [
         {
-          methodName: 'readResource',
+          methodName: 'readResourceByHandle',
           options: {
-            resourceName: 'function',
+            resourceName: 'widget',
             apiBaseUrl: 'https://apiease.example.com/root',
             apiKey: 'api-key-1',
             shopDomain: 'cool-shop.myshopify.com',
-            resourceIdentifier: 'calculate-discount',
-            failureErrorCode: 'FUNCTION_READ_FAILED',
+            resourceHandle: 'featured-products',
+            failureErrorCode: 'WIDGET_READ_FAILED',
           },
         },
       ]);
