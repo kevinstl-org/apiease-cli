@@ -229,6 +229,137 @@ describe('ApiEaseCreateRequestClient', () => {
       });
     });
 
+    it('should route handled request create-or-update behavior through the shared service', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const createOrUpdateCalls = [];
+      const request = {
+        handle: 'sync-orders',
+        name: 'Sync orders',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/orders',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateCalls.push(options);
+            return {
+              status: 200,
+              ok: true,
+              operation: 'updated',
+              request: {
+                id: 'server-request-1',
+                ...options.resource,
+              },
+            };
+          },
+        },
+        apiEaseCrudResourceClient: createFailingCrudResourceClient(),
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.deepEqual(createOrUpdateCalls, [
+        {
+          resourceName: 'request',
+          apiBaseUrl: 'https://apiease.example.com/root',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resourceHandle: 'sync-orders',
+          resource: request,
+          readFailureErrorCode: 'REQUEST_READ_FAILED',
+          createFailureErrorCode: 'REQUEST_CREATE_FAILED',
+          updateFailureErrorCode: 'REQUEST_UPDATE_FAILED',
+        },
+      ]);
+      assert.deepEqual(result, {
+        status: 200,
+        ok: true,
+        operation: 'updated',
+        request: {
+          id: 'server-request-1',
+          ...request,
+        },
+      });
+    });
+
+    it('should not use the shared create-or-update service for requests without handles', async () => {
+      // Arrange
+      const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
+      const createResourceCalls = [];
+      let createOrUpdateCallCount = 0;
+      const request = {
+        name: 'Create order',
+        type: 'http',
+        method: 'POST',
+        address: 'https://api.example.com/orders',
+      };
+      const apiEaseCreateRequestClient = new ApiEaseCreateRequestClient({
+        apiEaseCreateRequestContractValidator: createValidContractValidator(),
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            createOrUpdateCallCount += 1;
+            return {
+              status: 500,
+              ok: false,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            createResourceCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              request: {
+                id: 'server-request-2',
+                ...request,
+              },
+            };
+          },
+        },
+      });
+
+      // Act
+      const result = await apiEaseCreateRequestClient.createRequest({
+        apiBaseUrl: 'https://apiease.example.com/root',
+        apiKey: 'api-key-1',
+        shopDomain: 'cool-shop.myshopify.com',
+        request,
+      });
+
+      // Assert
+      assert.equal(createOrUpdateCallCount, 0);
+      assert.deepEqual(createResourceCalls, [
+        {
+          resourceName: 'request',
+          apiBaseUrl: 'https://apiease.example.com/root',
+          apiKey: 'api-key-1',
+          shopDomain: 'cool-shop.myshopify.com',
+          resource: request,
+          failureErrorCode: 'REQUEST_CREATE_FAILED',
+        },
+      ]);
+      assert.deepEqual(result, {
+        status: 201,
+        ok: true,
+        operation: 'created',
+        request: {
+          id: 'server-request-2',
+          ...request,
+        },
+      });
+    });
+
     it('should read an existing request by handle and update it', async () => {
       // Arrange
       const { ApiEaseCreateRequestClient } = await import(clientModuleUrl);
@@ -713,6 +844,20 @@ function createJsonResponse(status, payload) {
     status,
     async json() {
       return payload;
+    },
+  };
+}
+
+function createFailingCrudResourceClient() {
+  return {
+    async createResource() {
+      throw new Error('Expected create-or-update flow to use the shared service.');
+    },
+    async readResource() {
+      throw new Error('Expected create-or-update flow to use the shared service.');
+    },
+    async updateResource() {
+      throw new Error('Expected create-or-update flow to use the shared service.');
     },
   };
 }

@@ -1,5 +1,6 @@
 import { ApiEaseCrudResourceClient } from './ApiEaseCrudResourceClient.js';
 import { ApiEaseCreateRequestContractValidator } from './ApiEaseCreateRequestContractValidator.js';
+import { ApiEaseHandleBasedCreateOrUpdateService } from './ApiEaseHandleBasedCreateOrUpdateService.js';
 import { ApiEaseWebhookEventService } from './ApiEaseWebhookEventService.js';
 
 const REQUEST_RESOURCE_NAME = 'request';
@@ -7,9 +8,7 @@ const INVALID_REQUEST_STATUS = 422;
 const REQUEST_CREATE_FAILED = 'REQUEST_CREATE_FAILED';
 const REQUEST_READ_FAILED = 'REQUEST_READ_FAILED';
 const REQUEST_UPDATE_FAILED = 'REQUEST_UPDATE_FAILED';
-const NOT_FOUND_STATUS = 404;
 const CREATED_OPERATION = 'created';
-const UPDATED_OPERATION = 'updated';
 
 class ApiEaseCreateRequestClient {
   constructor({
@@ -17,10 +16,14 @@ class ApiEaseCreateRequestClient {
     apiEaseWebhookEventService = new ApiEaseWebhookEventService(),
     apiEaseCreateRequestContractValidator = new ApiEaseCreateRequestContractValidator(),
     apiEaseCrudResourceClient = new ApiEaseCrudResourceClient({ fetchImplementation }),
+    apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
+      apiEaseCrudResourceClient,
+    }),
   } = {}) {
     this.apiEaseWebhookEventService = apiEaseWebhookEventService;
     this.apiEaseCreateRequestContractValidator = apiEaseCreateRequestContractValidator;
     this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
+    this.apiEaseHandleBasedCreateOrUpdateService = apiEaseHandleBasedCreateOrUpdateService;
   }
 
   async createRequest({ apiBaseUrl, apiKey, shopDomain, request } = {}) {
@@ -31,7 +34,7 @@ class ApiEaseCreateRequestClient {
     }
 
     if (normalizedRequest.handle) {
-      return await this.createOrUpdateRequestByHandle({
+      return await this.createOrUpdateHandledRequest({
         apiBaseUrl,
         apiKey,
         shopDomain,
@@ -47,35 +50,18 @@ class ApiEaseCreateRequestClient {
     });
   }
 
-  async createOrUpdateRequestByHandle({ apiBaseUrl, apiKey, shopDomain, request }) {
-    const lookupResult = await this.apiEaseCrudResourceClient.readResource({
+  async createOrUpdateHandledRequest({ apiBaseUrl, apiKey, shopDomain, request }) {
+    return await this.apiEaseHandleBasedCreateOrUpdateService.createOrUpdateResourceByHandle({
       resourceName: REQUEST_RESOURCE_NAME,
       apiBaseUrl,
       apiKey,
       shopDomain,
-      resourceIdentifier: request.handle,
-      failureErrorCode: REQUEST_READ_FAILED,
+      resourceHandle: request.handle,
+      resource: request,
+      readFailureErrorCode: REQUEST_READ_FAILED,
+      createFailureErrorCode: REQUEST_CREATE_FAILED,
+      updateFailureErrorCode: REQUEST_UPDATE_FAILED,
     });
-
-    if (lookupResult.ok) {
-      return await this.updateExistingRequest({
-        apiBaseUrl,
-        apiKey,
-        shopDomain,
-        request,
-      });
-    }
-
-    if (lookupResult.status === NOT_FOUND_STATUS) {
-      return await this.createNewRequest({
-        apiBaseUrl,
-        apiKey,
-        shopDomain,
-        request,
-      });
-    }
-
-    return lookupResult;
   }
 
   async createNewRequest({ apiBaseUrl, apiKey, shopDomain, request }) {
@@ -89,20 +75,6 @@ class ApiEaseCreateRequestClient {
     });
 
     return this.addOperationToSuccessfulResult(result, CREATED_OPERATION);
-  }
-
-  async updateExistingRequest({ apiBaseUrl, apiKey, shopDomain, request }) {
-    const result = await this.apiEaseCrudResourceClient.updateResource({
-      resourceName: REQUEST_RESOURCE_NAME,
-      apiBaseUrl,
-      apiKey,
-      shopDomain,
-      resourceIdentifier: request.handle,
-      resource: request,
-      failureErrorCode: REQUEST_UPDATE_FAILED,
-    });
-
-    return this.addOperationToSuccessfulResult(result, UPDATED_OPERATION);
   }
 
   addOperationToSuccessfulResult(result, operation) {
