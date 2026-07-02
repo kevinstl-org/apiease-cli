@@ -365,7 +365,7 @@ describe('CreateRequestCommand', () => {
       assert.match(stderrChunks.join(''), /Status: 503/);
     });
 
-    it('should load the variable file, call the shared resource create client, and return zero for human-readable success output', async () => {
+    it('should load the variable file, call the handle-based create-or-update service, and return zero for human-readable updated output', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const variableDefinition = {
@@ -376,7 +376,7 @@ describe('CreateRequestCommand', () => {
       const stdoutChunks = [];
       const stderrChunks = [];
       const loadRequestDefinitionCalls = [];
-      const createResourceCalls = [];
+      const createOrUpdateResourceByHandleCalls = [];
       const createRequestCommand = new CreateRequestCommand({
         requestDefinitionFileLoader: {
           async loadRequestDefinition(filePath) {
@@ -394,10 +394,16 @@ describe('CreateRequestCommand', () => {
         },
         apiEaseCrudResourceClient: {
           async createResource(options) {
-            createResourceCalls.push(options);
+            throw new Error(`direct resource create should not be used for variable resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
             return {
-              status: 201,
+              status: 200,
               ok: true,
+              operation: 'updated',
               shopDomain: 'cool-shop.myshopify.com',
               variable: {
                 ...variableDefinition,
@@ -426,19 +432,148 @@ describe('CreateRequestCommand', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/variable.json']);
-      assert.deepEqual(createResourceCalls, [
+      assert.deepEqual(createOrUpdateResourceByHandleCalls, [
         {
           resourceName: 'variable',
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
+          resourceHandle: 'sale-banner',
           resource: variableDefinition,
-          failureErrorCode: 'VARIABLE_CREATE_FAILED',
+          readFailureErrorCode: 'VARIABLE_READ_FAILED',
+          createFailureErrorCode: 'VARIABLE_CREATE_FAILED',
+          updateFailureErrorCode: 'VARIABLE_UPDATE_FAILED',
         },
       ]);
-      assert.match(stdoutChunks.join(''), /Variable created successfully\./);
+      assert.match(stdoutChunks.join(''), /Variable updated successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Variable created successfully\./);
       assert.match(stdoutChunks.join(''), /Variable Handle: sale-banner/);
       assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write raw json output when variable create-or-update creates a missing variable', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const variableDefinition = {
+        handle: 'sale-banner',
+        name: 'Sale banner',
+        value: 'Spring sale',
+      };
+      const result = {
+        status: 201,
+        ok: true,
+        operation: 'created',
+        variable: {
+          id: 'variable-1',
+          ...variableDefinition,
+        },
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: variableDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for variable resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'variable',
+        '--file',
+        '/tmp/variable.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should surface variable handle lookup failures before creating a variable', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const variableDefinition = {
+        handle: 'sale-banner',
+        name: 'Sale banner',
+        value: 'Spring sale',
+      };
+      const stderrChunks = [];
+      const createOrUpdateResourceByHandleCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: variableDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for variable resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
+            return {
+              status: 503,
+              ok: false,
+              errorCode: 'VARIABLE_READ_FAILED',
+              message: 'Unable to read variable by handle.',
+              fieldErrors: [],
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'variable',
+        '--file',
+        '/tmp/variable.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createOrUpdateResourceByHandleCalls[0].readFailureErrorCode, 'VARIABLE_READ_FAILED');
+      assert.match(stderrChunks.join(''), /Variable creation failed\./);
+      assert.match(stderrChunks.join(''), /Error Code: VARIABLE_READ_FAILED/);
+      assert.match(stderrChunks.join(''), /Status: 503/);
     });
 
     it('should load the function file, call the shared resource create client, and return zero for human-readable success output', async () => {

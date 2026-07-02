@@ -13,6 +13,7 @@ const JSON_FLAG = '--json';
 const AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG = '--auto-update-source-identifier';
 const COMMAND_REQUIRED_OPTION_NAMES = ['--file'];
 const CONFIGURATION_OPTION_NAMES = ['--base-url', '--shop-domain'];
+const HANDLE_BASED_CREATE_OR_UPDATE_RESOURCE_NAMES = new Set(['widget', 'variable']);
 
 class CreateRequestCommand {
   constructor({
@@ -184,9 +185,16 @@ class CreateRequestCommand {
   }
 
   shouldCreateOrUpdateSharedResourceByHandle({ parseResult, resourceDefinition }) {
-    return parseResult.crudResourceDefinition.resourceName === 'widget'
-      && typeof resourceDefinition.handle === 'string'
-      && resourceDefinition.handle.length > 0;
+    return this.isHandleBasedCreateOrUpdateResource(parseResult.crudResourceDefinition.resourceName)
+      && this.hasHandle(resourceDefinition);
+  }
+
+  isHandleBasedCreateOrUpdateResource(resourceName) {
+    return HANDLE_BASED_CREATE_OR_UPDATE_RESOURCE_NAMES.has(resourceName);
+  }
+
+  hasHandle(resourceDefinition) {
+    return typeof resourceDefinition.handle === 'string' && resourceDefinition.handle.length > 0;
   }
 
   async createOrUpdateSharedResourceByHandle({ parseResult, configurationResult, resourceDefinition }) {
