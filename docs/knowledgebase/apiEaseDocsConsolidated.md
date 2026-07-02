@@ -7,7 +7,7 @@ APIEase
 CONTENT
 # APIEase
 
-The API Integration And Automation Platform
+The API Integration And Automation Runtime
 ===========================================
 
 APIEase is a managed system where your API requests, workflows, and custom logic 
@@ -82,7 +82,7 @@ APIEase runs the requests and logic you define. Each request ([HTTP](../requests
 
 This page describes how requests are configured, how they are triggered, and how these elements combine to create custom functionality.
 
-APIEase also includes reusable [Functions](../functions/functions-overview.md), persisted [Variables](../variables/variables-overview.md), and storefront widgets. Widgets render Liquid and JavaScript through a theme app block and are managed in the same admin.
+APIEase also includes reusable [Functions](../functions/functions-overview.md), persisted [Variables](../variables/variables-overview.md), and storefront widgets. Widgets render Liquid and JavaScript through the Widget App Block or Widget App Embed and are managed in the same admin.
 
 ---
 
@@ -110,7 +110,7 @@ Create widgets in the APIEase admin by defining a name, handle, and Liquid templ
 
 ## Displaying Widgets
 
-Add the **APIEase App Block** block to your theme and set the widget handle. The block loads the widget content and scripts automatically. See [Storefront block extension](../widgets/storefront-block-extension.md).
+Use the **APIEase Widget App Block** for widgets on a specific page or template, or the **APIEase Widget App Embed** for widgets that should run across the storefront. See [Widget App Extensions](../widgets/widget-app-extensions.md).
 
 ---
 
@@ -207,10 +207,11 @@ Use this reading order when you are getting started:
 
 1. [Why use the template](./why-use-the-template.md) to understand why `apiease-template` is the recommended starting point
 2. [Quickstart with apiease-template](./quickstart-with-apiease-template.md) to initialize the project, configure auth, and sync resources
-3. [apiease-template](./apiease-template.md) to understand the repository layout and what belongs in source control
-4. [apiease-cli](./apiease-cli.md) for the command-line workflow that manages saved resources
-5. [APIEase Public API](./apiease-public-api.md) when you need lower-level HTTP integration
-6. [Using APIEase with AI agents](./using-apiease-with-ai-agents.md) when Codex-style agents will work inside the repository
+3. [Resource handles](./resource-handles.md) to understand stable identifiers for source-controlled resources
+4. [apiease-template](./apiease-template.md) to understand the repository layout and what belongs in source control
+5. [apiease-cli](./apiease-cli.md) for the command-line workflow that manages saved resources
+6. [APIEase Public API](./apiease-public-api.md) when you need lower-level HTTP integration
+7. [Using APIEase with AI agents](./using-apiease-with-ai-agents.md) when Codex-style agents will work inside the repository
 
 ## Choose the right page
 
@@ -218,6 +219,7 @@ Use these pages based on the job you need to do:
 
 - [Quickstart with apiease-template](./quickstart-with-apiease-template.md): the canonical start-here path for repository-based APIEase development
 - [Why use the template](./why-use-the-template.md): why the template comes before the CLI or public API in most projects
+- [Resource handles](./resource-handles.md): stable public identifiers for requests, widgets, variables, and functions
 - [apiease-template](./apiease-template.md): expected repository layout, template-managed files, and version-controlled artifacts
 - [apiease-cli](./apiease-cli.md): installation, configuration, CRUD commands, and template upgrade workflow
 - [APIEase Public API](./apiease-public-api.md): authentication, resource routes, remote request execution, and direct HTTP usage
@@ -318,7 +320,7 @@ The template bundles more than empty directories. It also includes:
 - `CUSTOM_README.md` for project-specific human documentation
 - `CUSTOM_AGENT_GUIDANCE.md` for project-specific agent instructions
 
-This is one of the biggest reasons to start from the template. Humans, Codex-style agents, and the CLI all work from the same repository instead of relying on hidden conventions or repeated prompt context.
+This is one of the biggest reasons to start from the template. Humans, Codex/Claude Code style agents, and the CLI all work from the same repository instead of relying on hidden conventions or repeated prompt context.
 
 For more on that workflow, see [Using APIEase with AI agents](./using-apiease-with-ai-agents.md).
 
@@ -463,14 +465,14 @@ For example:
 
 ```bash
 cp docs/examples/resources/requests/example-request.json resources/requests/product-details-proxy.json
-cp docs/examples/resources/variables/example-variable.json resources/variables/support_api_key.json
+cp docs/examples/resources/variables/example-variable.json resources/variables/support-api-key.json
 ```
 
-Then update the copied files with your real identifiers, endpoints, parameter values, and secrets.
+Then update the copied files with your real handles, display names, endpoints, parameter values, and secrets.
 
 The request example already uses the real public API request shape, including:
 
-- `id`
+- `handle`
 - `name`
 - `type`
 - `method`
@@ -492,7 +494,7 @@ Once your JSON files are ready, use `apiease-cli` to create the saved resources 
 Create a variable first if your request depends on one:
 
 ```bash
-apiease create variable --file ./resources/variables/support_api_key.json
+apiease create variable --file ./resources/variables/support-api-key.json
 ```
 
 Create a request from your project file:
@@ -504,16 +506,18 @@ apiease create request --file ./resources/requests/product-details-proxy.json
 Read it back from APIEase:
 
 ```bash
-apiease read request --request-id product-details-proxy
+apiease read request --request-handle product-details-proxy
 ```
 
 Update it after you change the JSON file:
 
 ```bash
-apiease update request --request-id product-details-proxy --file ./resources/requests/product-details-proxy.json
+apiease update request --request-handle product-details-proxy --file ./resources/requests/product-details-proxy.json
 ```
 
-The same CRUD pattern applies to widgets, variables, and functions. The CLI is the normal path here: it reads your local JSON file, resolves auth, and calls the underlying [APIEase Public API](./apiease-public-api.md) for you.
+The same CRUD pattern applies to widgets, variables, and functions with resource-specific handle flags such as `--widget-handle`, `--variable-handle`, and `--function-handle`. The CLI is the normal path here: it reads your local JSON file, resolves auth, and calls the underlying [APIEase Public API](./apiease-public-api.md) for you.
+
+For the handle-based identifier model, see [Resource handles](./resource-handles.md).
 
 Use direct HTTP calls only when you need lower-level automation outside the CLI workflow.
 
@@ -573,6 +577,118 @@ From here, use the deeper docs as needed:
 - [APIEase Public API](./apiease-public-api.md)
 
 SOURCE
+https://docs.apiease.com/docs/developers/resource-handles
+
+TITLE
+Resource handles
+
+CONTENT
+# Resource handles
+
+APIEase identifies saved request, widget, variable, and function resources by handle in the public API and CLI workflow.
+
+Use handles when you want resource definitions to live in source control and sync predictably through `apiease-cli`.
+
+## The resource identity model
+
+Each saved resource can have three identity-related values:
+
+- `id`: server-owned metadata generated by APIEase.
+- `handle`: stable, user-controlled identifier used by public API and CLI workflows.
+- `name`: human-readable display text.
+
+Do not store server-generated `id` values in repository resource files. Create the file with a handle from the start, then keep using that handle for reads, updates, deletes, request calls, and code review.
+
+Handles must be lowercase slug values using letters, numbers, and single hyphens between words:
+
+```text
+product-details-proxy
+support-api-key
+promo-banner
+format-price
+```
+
+## Source file fields
+
+Use the identifier field that belongs to the resource's public JSON shape:
+
+| Resource | Stable source identifier | Display field | Notes |
+| --- | --- | --- | --- |
+| Request | `handle` | `name` | Use the handle as the request identifier in CLI and public API calls. |
+| Widget | `handle` | `name` | Use the handle as the widget identifier in CLI, public API, and theme extension settings. |
+| Variable | `handle` | `name` | Use `handle` in System Request arguments whenever possible. |
+| Function | `handle` | `name` | The saved resource has a handle; the Liquid function tag still calls Functions by `functionName` or legacy `functionId`. |
+
+APIEase responses may include both `id` and `handle`. Treat `id` as metadata returned by the server, not as a value to copy into source files.
+
+## CLI identifiers
+
+Prefer the handle-named flags for read, update, and delete commands:
+
+| Resource | Preferred flag |
+| --- | --- |
+| Request | `--request-handle` |
+| Widget | `--widget-handle` |
+| Variable | `--variable-handle` |
+| Function | `--function-handle` |
+
+Legacy flags such as `--request-id`, `--widget-id`, `--variable-name`, and `--function-id` remain available as compatibility aliases in current CLI versions. When you use those aliases during migration, pass the handle as the value unless you are intentionally addressing an older server-owned id.
+
+With request files, `apiease create request --file <path>` is idempotent when the file has a valid `handle`: the CLI creates the request if it does not exist, or updates the existing request with that handle if it does. For widgets, variables, and functions, create the resource with a stable handle in the file, then use the matching handle flag for later updates.
+
+## Public API identifiers
+
+The public API item routes use the resource handle as the path value:
+
+```text
+/api/v1/resources/requests/{handle}
+/api/v1/resources/widgets/{handle}
+/api/v1/resources/variables/{handle}
+/api/v1/resources/functions/{handle}
+```
+
+For example:
+
+```bash
+curl -X GET 'https://app-admin.apiease.com/api/v1/resources/requests/product-details-proxy' \
+  -H 'x-apiease-api-key: your-apiease-api-key' \
+  -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
+```
+
+Some older route parameters, UI internals, and examples may still use names like `requestId`, `widgetId`, `widgetHandle`, `widgetName`, `variableName`, or `functionId`. For public CRUD workflows, treat those as legacy parameter names and pass the resource handle as the value.
+
+## Runtime request calls
+
+Several request execution surfaces still use the parameter name `requestId`, including Liquid `call` tags, storefront app proxy calls, widget JavaScript, and the remote caller API.
+
+Use the request handle as the `requestId` value:
+
+```liquid
+{% call { "requestId": "product-details-proxy" } as response %}
+{{ response.status }}
+```
+
+```js
+const queryParams = new URLSearchParams({
+  requestId: 'product-details-proxy',
+});
+```
+
+This keeps runtime calls stable without copying APIEase-generated ids into theme code or repository files.
+
+## Migrating older source files
+
+For old request source files that still contain `id` or do not contain `handle`, run:
+
+```bash
+apiease create request --file ./resources/requests/product-details-proxy.json --auto-update-source-identifier
+```
+
+That updates only the local request identifier metadata. It does not change request behavior such as `type`, `method`, `address`, `parameters`, `triggers`, `liquid`, or `nextRequest`.
+
+For widgets, variables, and functions, update the JSON source manually so it contains `handle`, the stable source identifier, and no server-owned id. Older widget files that use `widgetHandle` and `widgetName` should be migrated to `handle` and `name`.
+
+SOURCE
 https://docs.apiease.com/docs/developers/using-apiease-with-ai-agents
 
 TITLE
@@ -581,7 +697,7 @@ Using APIEase with AI agents
 CONTENT
 # Using APIEase with AI agents
 
-This page is for coding agents such as Codex working in an `apiease-template` project repository.
+This page is for coding agents such as Codex or Claude Code working in an `apiease-template` project repository.
 
 Most agent-driven APIEase work should follow this path:
 
@@ -636,6 +752,8 @@ Use `apiease.config.js` as the source of truth for resource directory names. In 
 
 Use `docs/examples/resources/*` as copyable examples, not as the long-term home for project resources.
 
+Resource files should use `handle` as the stable identifier across requests, widgets, variables, and functions. Do not copy server-owned `id` values into source files. For the full convention, see [Resource handles](./resource-handles.md).
+
 When the task involves request behavior, do not re-invent request concepts from memory. Reuse the existing Requests documentation for detailed semantics:
 
 - [Requests Overview](../requests/requests-overview.md)
@@ -679,16 +797,16 @@ Example flow for a request:
 ```bash
 cp docs/examples/resources/requests/example-request.json resources/requests/product-details-proxy.json
 apiease create request --file ./resources/requests/product-details-proxy.json
-apiease read request --request-id product-details-proxy
+apiease read request --request-handle product-details-proxy
 ```
 
 After editing the same file again:
 
 ```bash
-apiease update request --request-id product-details-proxy --file ./resources/requests/product-details-proxy.json
+apiease update request --request-handle product-details-proxy --file ./resources/requests/product-details-proxy.json
 ```
 
-Use the same CRUD pattern for widgets, variables, and functions with the resource-specific identifier flags documented in [apiease-cli](./apiease-cli.md).
+Use the same CRUD pattern for widgets, variables, and functions with the resource-specific handle flags documented in [apiease-cli](./apiease-cli.md).
 
 ## Prefer the CLI over direct HTTP
 
@@ -709,6 +827,8 @@ curl -X POST 'https://app-admin.apiease.com/api/remote/caller/call?requestId=pro
   -H 'x-apiease-api-key: your-apiease-api-key' \
   -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
 ```
+
+The remote caller parameter is still named `requestId`; pass the request handle as its value for new work.
 
 ## Keep source control in the loop
 
@@ -801,10 +921,10 @@ The current resource base path is `/api/v1/resources`.
 
 | Resource | Collection route | Item route |
 | --- | --- | --- |
-| Requests | `/api/v1/resources/requests` | `/api/v1/resources/requests/{requestId}` |
-| Functions | `/api/v1/resources/functions` | `/api/v1/resources/functions/{functionId}` |
-| Variables | `/api/v1/resources/variables` | `/api/v1/resources/variables/{variableName}` |
-| Widgets | `/api/v1/resources/widgets` | `/api/v1/resources/widgets/{widgetId}` |
+| Requests | `/api/v1/resources/requests` | `/api/v1/resources/requests/{handle}` |
+| Functions | `/api/v1/resources/functions` | `/api/v1/resources/functions/{handle}` |
+| Variables | `/api/v1/resources/variables` | `/api/v1/resources/variables/{handle}` |
+| Widgets | `/api/v1/resources/widgets` | `/api/v1/resources/widgets/{handle}` |
 
 Collection routes support:
 
@@ -819,6 +939,21 @@ Item routes support:
 
 In practice, `apiease-cli` is a thin wrapper around these routes.
 
+## Resource identity
+
+Use handles as the public identifiers for saved resources:
+
+- request resources use `handle`
+- function resources use `handle`
+- variable resources use `handle`
+- widget resources use `handle`
+
+APIEase still returns server-owned ids in some responses, such as `id`. Treat those values as APIEase metadata. Do not store them in source-controlled resource definition files, and do not use them for new public API automation. Older widget responses or examples may use `widgetId`; use `id` when you need to inspect server-owned widget metadata.
+
+Handles must be lowercase slug values using letters, numbers, and single hyphens between words, such as `product-details-proxy` or `support-api-key`.
+
+For a fuller explanation, see [Resource handles](./resource-handles.md).
+
 ## Request conventions
 
 If you are working with request resources, keep these conventions in mind:
@@ -828,6 +963,8 @@ If you are working with request resources, keep these conventions in mind:
 - `liquid` is required for `liquid` requests
 - `parameters` are optional for many requests but required for `system` requests
 - `triggers` are optional and describe how a saved request can run later
+- For `liquid` requests, include saved Liquid `parameters` only for saved values, sensitive values, or `{parameterName}` substitution.
+- Add a `storefrontAppProxy` trigger only to requests that should be called directly through Shopify's app proxy. Do not add it to Liquid helper requests that are only called by other APIEase requests.
 
 The public API accepts the same request concepts already documented in the Requests section. Use those pages as the source of truth for detailed behavior instead of duplicating that material here:
 
@@ -849,7 +986,7 @@ curl -X POST 'https://app-admin.apiease.com/api/v1/resources/requests' \
   -H 'x-apiease-api-key: your-apiease-api-key' \
   -H 'x-shop-myshopify-domain: yourstore.myshopify.com' \
   -d '{
-    "id": "product-details-proxy",
+    "handle": "product-details-proxy",
     "name": "Product Details Proxy",
     "type": "http",
     "method": "POST",
@@ -888,8 +1025,55 @@ curl -X POST 'https://app-admin.apiease.com/api/v1/resources/requests' \
 When creating or updating a request:
 
 - send only the fields that belong to the resource itself
-- do not send `shop`, `shopId`, `shopDomain`, or `myshopifyDomain`
+- use `handle` as the stable source-owned identifier
+- do not send server-owned or shop-owned metadata such as `id`, `shop`, `shopId`, `shopDomain`, or `myshopifyDomain`
 - mark confidential parameter values as `sensitive: true`
+
+## Other resource payloads
+
+The other saved resource types follow the same handle-first identity model.
+
+Variable example:
+
+```json
+{
+  "handle": "support-api-key",
+  "name": "Support API Key",
+  "value": "replace-with-real-secret",
+  "sensitive": true
+}
+```
+
+Function example:
+
+```json
+{
+  "handle": "format-price",
+  "name": "format_price",
+  "description": "Format a numeric amount for display.",
+  "type": "liquid",
+  "liquid": "{{ amount }} {{ currency }}",
+  "parameters": [
+    { "name": "amount", "type": "number" },
+    { "name": "currency", "type": "string" }
+  ]
+}
+```
+
+Widget example:
+
+```json
+{
+  "handle": "promo-banner",
+  "name": "Promo Banner",
+  "liquid": "<section>Sale now live</section>",
+  "javascript": "",
+  "externalJavascriptUrls": [],
+  "disableJavascript": false
+}
+```
+
+For widgets, `handle` is the stable public identifier and `name` is display text. Older widget payloads or examples may use `widgetHandle`, `widgetId`, or `widgetName`; use `handle`, `id`, and `name` for new public API automation.
 
 ## Read, update, and delete
 
@@ -928,7 +1112,7 @@ curl -X DELETE 'https://app-admin.apiease.com/api/v1/resources/requests/product-
   -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
 ```
 
-The same CRUD pattern also applies to functions, variables, and widgets with their respective routes.
+The same CRUD pattern also applies to functions, variables, and widgets with their respective handle-based item routes.
 
 ## Execute a saved request remotely
 
@@ -940,7 +1124,7 @@ curl -X POST 'https://app-admin.apiease.com/api/remote/caller/call?requestId=pro
   -H 'x-shop-myshopify-domain: yourstore.myshopify.com'
 ```
 
-Use that route when the request definition already exists in APIEase and you want to trigger it from another system. For more detail, see [Calling APIEase Requests Remotely](../requests/triggers/calling-requests-remotely.md).
+Use that route when the request definition already exists in APIEase and you want to trigger it from another system. The query parameter is still named `requestId`, but pass the request handle as the value for new integrations. For more detail, see [Calling APIEase Requests Remotely](../requests/triggers/calling-requests-remotely.md).
 
 ## Response shape
 
@@ -1107,10 +1291,10 @@ CRUD commands always require a resource name immediately after the verb. Support
 - `variable`
 - `function`
 
-Legacy bare command shapes such as `apiease read --request-id request-1` are not supported. Use the resource name explicitly:
+Legacy bare command shapes such as `apiease read --request-handle product-details-proxy` are not supported. Use the resource name explicitly:
 
 ```bash
-apiease read request --request-id request-1
+apiease read request --request-handle product-details-proxy
 ```
 
 ## Initialize a project
@@ -1159,31 +1343,77 @@ This is the CLI command that keeps a template-based repository current without b
 
 The CLI manages four saved APIEase resource types:
 
-| Resource | Create or update file | Identifier flag |
+| Resource | Definition file | Preferred identifier flag |
 | --- | --- | --- |
-| Request | JSON object | `--request-id` |
-| Widget | JSON object | `--widget-id` |
-| Variable | JSON object | `--variable-name` |
-| Function | JSON object | `--function-id` |
+| Request | JSON object | `--request-handle` |
+| Widget | JSON object | `--widget-handle` |
+| Variable | JSON object | `--variable-handle` |
+| Function | JSON object | `--function-handle` |
 
-All definition files must contain valid JSON with an object at the root.
+All definition files must contain valid JSON with an object at the root. Use `handle` as the stable source-controlled identifier. Server-owned `id` values are metadata returned by APIEase and should not be stored in request, widget, variable, or function source files.
 
-Typical commands:
+Widget files use `handle` for the stable identifier and `name` for display text. Older widget files that use `widgetHandle` or `widgetName` should be migrated before new CLI-driven work.
+
+Handles should be lowercase slug values using letters, numbers, and hyphens, for example:
+
+```json
+{
+  "handle": "product-details-proxy",
+  "name": "Product Details Proxy",
+  "type": "http",
+  "method": "GET",
+  "address": "https://api.example.com/products"
+}
+```
+
+Create a resource from a JSON file:
 
 ```bash
 apiease create request --file ./request-definition.json
-apiease read request --request-id request-123
-apiease update request --request-id request-123 --file ./request-definition.json
-apiease delete request --request-id request-123
 ```
 
-The same CRUD pattern applies to widgets, variables, and functions:
+When a request file has a valid `handle`, `apiease create request` checks for an existing remote request with that handle. It creates the request if none exists, or updates the existing request if it already exists.
+
+Read, update, and delete by handle:
+
+```bash
+apiease read request --request-handle product-details-proxy
+apiease update request --request-handle product-details-proxy --file ./request-definition.json
+apiease delete request --request-handle product-details-proxy
+```
+
+The same handle-based CRUD pattern applies to widgets, variables, and functions:
 
 ```bash
 apiease create widget --file ./widget-definition.json
-apiease read variable --variable-name sale_banner
-apiease update function --function-id function-123 --file ./function-definition.json
-apiease delete widget --widget-id widget-123
+apiease read widget --widget-handle promo-banner
+apiease update widget --widget-handle promo-banner --file ./widget-definition.json
+apiease delete widget --widget-handle promo-banner
+
+apiease create variable --file ./variable-definition.json
+apiease read variable --variable-handle support-api-key
+apiease update variable --variable-handle support-api-key --file ./variable-definition.json
+apiease delete variable --variable-handle support-api-key
+
+apiease create function --file ./function-definition.json
+apiease read function --function-handle format-price
+apiease update function --function-handle format-price --file ./function-definition.json
+apiease delete function --function-handle format-price
+```
+
+Legacy flags remain available as compatibility aliases:
+
+- `--request-id`
+- `--widget-id`
+- `--variable-name`
+- `--function-id`
+
+Prefer the handle-named flags in new docs, scripts, and agent instructions. If you use a legacy alias during migration, pass the resource handle as the value.
+
+For older request files that still contain `id` metadata or no `handle`, you can migrate only the local identifier metadata:
+
+```bash
+apiease create request --file ./request-definition.json --auto-update-source-identifier
 ```
 
 Inside a template-based repository, the example resource files currently live under:
@@ -1194,6 +1424,8 @@ Inside a template-based repository, the example resource files currently live un
 - `docs/examples/resources/functions`
 
 Those files are a starting point. Replace them with project-specific resources and commit the definitions to git.
+
+For the broader identifier model, see [Resource handles](./resource-handles.md).
 
 ## Request definitions and related docs
 
@@ -1255,6 +1487,8 @@ The current template includes:
 - user-owned customization files in `CUSTOM_README.md` and `CUSTOM_AGENT_GUIDANCE.md`
 
 The example resources are intentionally lightweight. Use them as reference material or copy them into your working resource directories as you start defining your project.
+
+Those examples use `handle` as the stable source-controlled identifier across requests, widgets, variables, and functions. Server-owned `id` values should not be stored in template resource files. See [Resource handles](./resource-handles.md) for the full identifier pattern.
 
 ## Expected repository layout
 
@@ -1367,6 +1601,8 @@ Everything that you can accomplish with APIEase starts with a request.
 
 A request is a configuration that defines how APIEase should securely call an external API, trigger a Shopify Flow workflow, run Liquid logic, or execute internal system functions. Each request contains the destination (when applicable), any necessary parameters, and optional logic to determine when and how it should run.
 
+Each request has a handle. Use the handle as the stable identifier when another request calls it, storefront code triggers it, or `apiease-cli` and the public API manage it.
+
 Requests can be used for a wide variety of purposes, including:
 
 - Calling third-party APIs from your Shopify storefront
@@ -1398,8 +1634,10 @@ Follow these steps to create a request in APIEase.
    ![APIEase Requests submenu](https://cdn.shopify.com/s/files/1/0733/1820/3680/files/requests-sub-menu.png?v=1744752589)
 2. Click the **Add Request** plus button in the upper-left corner.
    ![Add request button](https://cdn.shopify.com/s/files/1/0733/1820/3680/files/add-http-api-requests.png?v=1744748372)
-3. Configure the [HTTP](./request-types/http-requests.md) or [Flow](./request-types/flow-requests.md) request.
+3. Configure the request name, handle, request type, parameters, and triggers.
 4. Click **Save**. The request is ready to run based on the triggers you selected.
+
+Keep the request handle stable after other requests, storefront code, `apiease-cli`, or public API integrations start referencing it. For repository-managed resources, see [Resource handles](../developers/resource-handles.md).
 
 SOURCE
 https://docs.apiease.com/docs/requests/import-from-postman
@@ -1488,7 +1726,8 @@ HTTP API requests are highly configurable with many options.  HTTP requests allo
 
 **HTTP Request Fields**
 
-- **Name**: Optional display name. Required if this request is called by name from a [chained request](../request-parameters/chained-requests.md).
+- **Name**: Optional display name.
+- **Handle**: Stable identifier used by [chained requests](../request-parameters/chained-requests.md), storefront calls, `apiease-cli`, and the public API.
 - **Type**: Set to `http` for a standard API call to an external service.
 - **Address**: Full endpoint of the external API (for example, `https://api.example.com/data`).
 - **Method**: Choose GET, POST, DELETE, PUT, PATCH, or OPTIONS.
@@ -1511,7 +1750,7 @@ HTTP API requests are highly configurable with many options.  HTTP requests allo
   - Manually via the "Copy and Execute" link on the requests admin page
   - From your storefront using Shopify's app proxy
 
-- **Next Request**: You can implement [chained requests](../request-parameters/chained-requests.md) by setting the Next Request field to the name of a request to run after this one completes.
+- **Next Request**: You can implement [chained requests](../request-parameters/chained-requests.md) by setting the Next Request field to the handle of a request to run after this one completes.
 
 SOURCE
 https://docs.apiease.com/docs/requests/request-types/flow-requests
@@ -1528,7 +1767,8 @@ Flow requests allow you to securely trigger or continue a Shopify Flow workflow.
 
 **Flow Request Fields**
 
-- **Name**: Optional display name. Needed when another request calls this one via a [chained request](../request-parameters/chained-requests.md).
+- **Name**: Optional display name.
+- **Handle**: Stable identifier used when another request calls this one via a [chained request](../request-parameters/chained-requests.md).
 - **Type**: Set to `flow` to trigger a Shopify Flow workflow.
 - **Parameters ([?](../request-parameters/in-app-vs-dynamic.md))**:
   - **Flow**: JSON key/value pairs passed to your workflow.
@@ -1545,7 +1785,7 @@ Flow requests allow you to securely trigger or continue a Shopify Flow workflow.
 - Manually via the "Copy and Execute" link on the requests admin page
 - From your storefront using Shopify's app proxy
 
-**Next Request**: You can specify the name of another request to run after this request finishes. This allows you to build multi-step workflows using [chained requests](../request-parameters/chained-requests.md).
+**Next Request**: You can specify the handle of another request to run after this request finishes. This allows you to build multi-step workflows using [chained requests](../request-parameters/chained-requests.md).
 
 SOURCE
 https://docs.apiease.com/docs/requests/request-types/liquid-requests
@@ -1558,9 +1798,13 @@ CONTENT
 
 Liquid requests let you run a Liquid template that can call any APIEase request and shape the output. This is useful when you want logic, variable substitution, or to combine multiple requests into one response without building a custom app.
 
+To create a Liquid request, choose **Liquid** as the request type and enter the Liquid template. Add saved parameters only for values you want to store on the request, and add triggers only for the ways this request should run.
+
 **Liquid Request Fields**
 
-**Name**: You can optionally give your request a name for your reference. If you plan to call this request from another request using a chained request, the name will be used by the calling request.
+**Name**: You can optionally give your request a name for your reference.
+
+**Handle**: Stable identifier used by Liquid `call` tags, chained requests, storefront calls, `apiease-cli`, and the public API.
 
 **Type**: Set this to **liquid** to create a request that renders a Liquid template.
 
@@ -1569,16 +1813,16 @@ Liquid requests let you run a Liquid template that can call any APIEase request 
 - Use standard Liquid tags like assign, if, elsif, else, for, and capture.
 - Call other APIEase requests using the custom call tag shown below.
 - Call saved APIEase Functions using the custom function tag shown below.
-- Read parameters passed in from the storefront or other triggers.
+- Read saved Liquid parameters and values passed in when the request runs.
 
-**Parameters**: You can provide in app parameters directly in the request configuration. If you need values that depend on customer activity or storefront context, you can pass dynamic embedded parameters from the storefront.
+**Parameters**: Parameters are optional for Liquid requests. Add a saved parameter when a value should be stored on the request, reused as a default, marked sensitive, or inserted with `{parameterName}` before execution.
 
-- **Liquid**: Key value pairs you want available to the template as variables.
+- **Liquid**: Saved key value pairs you want available for `{parameterName}` substitution.
 - **System**: System parameters used by APIEase in special cases such as Customer Authentication.
 
-**How Liquid parameters replace variables in Liquid requests**
+**Saved Liquid parameters**
 
-Liquid parameters define variables for the Liquid template. Reference a Liquid parameter in request values using `{parameterName}` and APIEase replaces it at runtime.
+Saved Liquid parameters let you insert a stored value with `{parameterName}`. APIEase replaces `{parameterName}` with the saved value when the request runs.
 
 Example:
 
@@ -1615,20 +1859,20 @@ At runtime, embedded parameters take precedence over in app parameters for the m
 
 **The call tag**
 
-Use the call tag to invoke any saved APIEase request from within your Liquid template. You can bind the response to a variable with `as`. You must provide `requestId` to the call tag.
+Use the call tag to invoke any saved APIEase request from within your Liquid template. You can bind the response to a variable with `as`. You must provide `requestId` to the call tag. For new work, pass the request handle as the `requestId` value.
 
-Basic syntax with hard coded requestId:
+Basic syntax with a hard coded request handle:
 
 ```liquid
-{% call { "requestId": "51bcee90-89ce-11f0-ac46-894599c37" } as response %}
+{% call { "requestId": "product-details-proxy" } as response %}
 {{ response.status }}
 {{ response.data | json }}
 ```
 
-Basic syntax with requestId that must be set as a Liquid Parameter:
+Basic syntax with a request handle that must be set as a Liquid parameter:
 
 ```liquid
-{% call { "requestId": "{requestId}" } as response %}
+{% call { "requestId": "{requestHandle}" } as response %}
 {{ response.status }}
 {{ response.data | json }}
 ```
@@ -1639,7 +1883,7 @@ You can also pass a single JSON object. This is convenient when you want to embe
 
 ```liquid
 {% call {
-  "requestId": "",
+  "requestId": "product-details-proxy",
   "headersEmbedded": { "Authorization": "Bearer {api_token}" },
   "queryParamsEmbedded": { "limit": 10 },
   "pathParamsEmbedded": { "productId": "product_id" },
@@ -1681,7 +1925,7 @@ Important behavior:
 
 - `as <name>` is required.
 - Inline arguments are mapped to the Function's declared parameters in order.
-- Object syntax supports `functionName` or `functionId`.
+- Object syntax supports `functionName` or legacy `functionId`. Prefer `functionName` in new Liquid templates.
 - Missing arguments resolve to `null`.
 - Extra positional arguments are rejected.
 
@@ -1692,12 +1936,12 @@ For full details and more examples, see [Using Functions in Liquid Requests](../
 You can save values from one call and pass them into a second call using embedded parameters.
 
 ```liquid
-{% call {"requestId": "51bcee90-89ce-11f0-ac46-894599c37"} as getCustomer %}
+{% call {"requestId": "customer-lookup"} as getCustomer %}
 
 {% assign email = getCustomer.data.email %}
 
 {% call {
-  "requestId": "51bcee90-89ce-11f0-ac46-894599c38",
+  "requestId": "send-customer-email",
   "bodyEmbedded": { "email": email }
 } as sendEmail %}
 
@@ -1709,7 +1953,7 @@ You can save values from one call and pass them into a second call using embedde
 Conditional logic:
 
 ```liquid
-{% call { "requestId": "51bcee90-89ce-11f0-ac46-894599c37" } as response %}
+{% call { "requestId": "product-details-proxy" } as response %}
 {% if response.status == 200 %}
   Success
 {% else %}
@@ -1720,7 +1964,7 @@ Conditional logic:
 Looping:
 
 ```liquid
-{% call { "requestId": "51bcee90-89ce-11f0-ac46-894599c37" } as response %}
+{% call { "requestId": "product-details-proxy" } as response %}
 
 {% for item in response.data.items %}
   {{ forloop.index }}. {{ item.title }}
@@ -1730,7 +1974,7 @@ Looping:
 Assign and capture:
 
 ```liquid
-{% call { "requestId": "51bcee90-89ce-11f0-ac46-894599c37" } as response %}
+{% call { "requestId": "product-details-proxy" } as response %}
 
 {% if response.status == 200 %}
   Success
@@ -1747,6 +1991,8 @@ Assign and capture:
 
 **Triggers**
 
+Triggers are optional. Add a trigger only for the entry point that should run this request. Do not add the Storefront App Proxy trigger just because the request is a Liquid request; add that trigger only when storefront theme code calls this request directly through Shopify's app proxy. A Liquid request invoked by another APIEase request with the `call` tag does not need its own Storefront App Proxy trigger.
+
 Choose how the request should be triggered:
   - Automatically via [webhook](../triggers/webhooks/trigger-requests-from-a-webhook.md)
   - On a recurring schedule using [cron](../triggers/cron-schedule.md)
@@ -1757,7 +2003,7 @@ Choose how the request should be triggered:
 
 **Next Request**
 
-You can specify the name of another request to run after this request finishes. This allows you to build multi step workflows using chained requests.
+You can specify the handle of another request to run after this request finishes. This allows you to build multi step workflows using chained requests.
 
 **Examples**
 
@@ -1771,7 +2017,7 @@ Hello world:
 Call a saved HTTP request and show JSON:
 
 ```liquid
-{% call { "requestId": "51bcee90-89ce-11f0-ac46-894599c37" } as r %}
+{% call { "requestId": "product-details-proxy" } as r %}
 {{ r.data | json }}
 ```
 
@@ -1791,7 +2037,7 @@ POST with a dynamic body:
 ```liquid
 {% assign email = "test@example.com" %}
 {% call {
-  "requestId": "51bcee90-89ce-11f0-ac46-894599c37",
+  "requestId": "newsletter-signup",
   "headersEmbedded": { "Content-Type": "application/json" },
   "bodyEmbedded": { "email": "{{email}}", "source": "storefront" }
 } as sub %}
@@ -1819,7 +2065,8 @@ Use a System request when you need an internal, app-managed action (for example,
 
 **System Request Fields**
 
-- **Name**: Optional display name. Required if this request is called by name from a [chained request](../request-parameters/chained-requests.md).
+- **Name**: Optional display name.
+- **Handle**: Stable identifier used when another request calls this one via a [chained request](../request-parameters/chained-requests.md).
 - **Type**: Set to `system`.
 - **Address**: Unused for System requests (leave blank).
 - **Parameters ([?](../request-parameters/in-app-vs-dynamic.md))**:
@@ -1834,7 +2081,10 @@ System request behavior is controlled by two in-app system parameters:
 
 `arguments` must be an array (or a JSON string that parses to an array) of objects. Each array entry must include:
 
-- `name` (string, required)
+- `handle` (string, recommended), or
+- `name` (string, legacy compatibility fallback)
+
+Use `handle` for new System Request variable operations. Variable names are display text and can become ambiguous; handles are the stable public identifiers used by the CLI and public API.
 
 ## Supported functions
 
@@ -1842,7 +2092,8 @@ System request behavior is controlled by two in-app system parameters:
 
 Each `arguments` entry supports:
 
-- `name` (required)
+- `handle` (recommended)
+- `name` (legacy fallback)
 - `value` (required to set a meaningful value; may be `null` if intentionally setting `null`)
 - `sensitive` (optional boolean; APIEase may accept `"true"` / `"false"` but prefer a boolean)
 
@@ -1850,7 +2101,7 @@ Response `data` shape:
 
 ```json
 {
-  "<name>": { "set": true }
+  "<handle-or-name>": { "set": true }
 }
 ```
 
@@ -1861,29 +2112,30 @@ Example system parameters:
 
 ```json
 [
-  { "name": "variable1", "value": "value1", "sensitive": true },
-  { "name": "variable2", "value": "value2" }
+  { "handle": "support-api-key", "value": "value1", "sensitive": true },
+  { "handle": "support-email", "value": "help@example.com" }
 ]
 ```
 
 Example response (`data`):
 
 ```json
-{ "variable1": { "set": true }, "variable2": { "set": true } }
+{ "support-api-key": { "set": true }, "support-email": { "set": true } }
 ```
 
 ### getVariables
 
 Each `arguments` entry supports:
 
-- `name` (required)
+- `handle` (recommended)
+- `name` (legacy fallback)
 - `defaultValue` (optional; used when the variable is missing or null/undefined)
 
 Response `data` shape:
 
 ```json
 {
-  "<name>": "<value-or-default-or-null>"
+  "<handle-or-name>": "<value-or-default-or-null>"
 }
 ```
 
@@ -1891,28 +2143,29 @@ Example `arguments` (JSON string):
 
 ```json
 [
-  { "name": "variable1" },
-  { "name": "variable2", "defaultValue": "fallback2" }
+  { "handle": "support-api-key" },
+  { "handle": "support-email", "defaultValue": "help@example.com" }
 ]
 ```
 
 Example response (`data`):
 
 ```json
-{ "variable1": "persistedValue1", "variable2": "fallback2" }
+{ "support-api-key": "persistedValue1", "support-email": "help@example.com" }
 ```
 
 ### deleteVariables
 
 Each `arguments` entry supports:
 
-- `name` (required)
+- `handle` (recommended)
+- `name` (legacy fallback)
 
 Response `data` shape:
 
 ```json
 {
-  "<name>": { "deleted": true }
+  "<handle-or-name>": { "deleted": true }
 }
 ```
 
@@ -1920,15 +2173,15 @@ Example `arguments` (JSON string):
 
 ```json
 [
-  { "name": "variable1" },
-  { "name": "variable2" }
+  { "handle": "support-api-key" },
+  { "handle": "support-email" }
 ]
 ```
 
 Example response (`data`):
 
 ```json
-{ "variable1": { "deleted": true }, "variable2": { "deleted": false } }
+{ "support-api-key": { "deleted": true }, "support-email": { "deleted": false } }
 ```
 
 SOURCE
@@ -1943,11 +2196,13 @@ CONTENT
 APIEase lets you pass data into requests in several ways so each run has the inputs it needs without exposing sensitive values.
 
 - **In-app parameters**: Static or confidential values stored securely in APIEase. Use these when the value rarely changes or must stay server-side.
-- **Dynamic embedded parameters**: Values provided at runtime from the storefront, webhooks, or other triggers (headers, query, path, body, flow). Use these for request-specific data like customer ids or product handles.
+- **Dynamic embedded parameters**: Values provided at runtime from the storefront, webhooks, or other triggers (headers, query, path, body, or flow). Use these for request-specific data like customer ids or product handles.
 - **Path variables**: Placeholders in the request URL (`/products/{id}`) that are filled by in-app or dynamic embedded parameters when the request executes.
 - **Chained request parameters**: Data passed from the response of one request into the next request in a sequence.
 
 Choose the parameter type based on where the value comes from and whether it must stay confidential. Combine these options to keep sensitive data secure while still letting each trigger supply the context it needs.
+
+For Liquid requests, add a saved Liquid parameter only when you want a stored default, a sensitive saved value, or to insert a value with `{parameterName}`.
 
 SOURCE
 https://docs.apiease.com/docs/requests/request-parameters/in-app-vs-dynamic
@@ -2259,7 +2514,7 @@ const pathParamsEmbeddedVar = JSON.stringify({
   exampleParameter3: "exampleParameterValue3",
 });
 const pathParams = new URLSearchParams({
-  requestId: "a1dd1880-ewsd-sdss-8f48-27f04dbadc32",
+  requestId: "product-details-proxy",
   pathParamsEmbedded: pathParamsEmbeddedVar,
 });
 fetch('/apps/apiease/integration/caller/call?' + pathParams)
@@ -2294,7 +2549,7 @@ const bodyEmbeddedVar = JSON.stringify({
 });
 
 const queryParams = new URLSearchParams({
-  requestId: "a1dd1880-ewsd-sdss-8f48-27f04dbadc33",
+  requestId: "newsletter-signup",
   bodyEmbedded: bodyEmbeddedVar,
 });
 
@@ -2330,7 +2585,7 @@ const headerParamsEmbeddedVar = JSON.stringify({
 });
 
 const queryParams = new URLSearchParams({
-  requestId: "a1dd1880-ewsd-sdss-8f48-27f04dbadc31",
+  requestId: "customer-profile",
   headersEmbedded: headerParamsEmbeddedVar,
 });
 
@@ -2366,7 +2621,7 @@ const queryParamsEmbeddedVar = JSON.stringify({
 });
 
 const queryParams = new URLSearchParams({
-  requestId: "a1dd1880-ewsd-sdss-8f48-27f04dbadc30",
+  requestId: "product-search",
   queryParamsEmbedded: queryParamsEmbeddedVar,
 });
 
@@ -2402,7 +2657,7 @@ Dynamic embedded parameters are added as query parameters to calls made to APIEa
     exampleFlow3: "exampleFlowValue3",
   });
   const queryParams = new URLSearchParams({
-    requestId: "a1dd1880-ewsd-sdss-8f48-27f04dbadc31",
+    requestId: "start-order-flow",
     flowParamsEmbedded: flowParamsEmbeddedVar,
   });
   fetch('/apps/apiease/integration/caller/call?' + queryParams)
@@ -2521,7 +2776,7 @@ const pathParamsEmbeddedVar = JSON.stringify({
   variable1: "dynamicEmbeddedPathValue1",
 });
 const queryParams = new URLSearchParams({
-  requestId: "a375c890-14a5-11f0-941a-f549b30199d1",
+  requestId: "product-details-proxy",
   pathParamsEmbedded: pathParamsEmbeddedVar,
 });
 fetch('/apps/apiease/integration/caller/call?' + queryParams)
@@ -2563,7 +2818,7 @@ Every APIEase request uses the same configuration but can be invoked in differen
 
 ## [Proxy Endpoint](./proxy-endpoint.md)
 - Expose a stable endpoint that forwards incoming HTTP calls to a configured request.
-- Helpful when another system needs to call APIEase without knowing the internal request id.
+- Helpful when another system needs to call APIEase with a stable request handle instead of an internal id.
 
 ## [Manual Calls](./manual-calls.md)
 - Run a request directly from the admin for testing or one-off actions.
@@ -2832,10 +3087,10 @@ Run any APIEase request directly from your Shopify storefront using Shopify's ap
 If you want a more convenient and reusable way to make storefront calls, use [Widget Calls](./widget-calls.md) and trigger the request from an APIEase widget instead of pasting snippets into theme Liquid.
 
 ## Caution
-Use caution with Storefront App Proxy requests. Anyone from anywhere can call Storefront App Proxy requests. APIEase verifies that Storefront App Proxy requests have been routed through the Shopify App Proxy and that a Storefront App Proxy trigger has been added to your request. However, anyone can call this request via the Shopify App Proxy just as you can from your storefront.
+Use caution with Storefront App Proxy requests. Anyone from anywhere can call Storefront App Proxy requests. APIEase verifies that Storefront App Proxy requests have been routed through the Shopify App Proxy and that a Storefront App Proxy trigger has been added to the directly called request. However, anyone can call this request via the Shopify App Proxy just as you can from your storefront.
 
 ## How it works
-- Your theme calls the APIEase app proxy path (for example `/apps/apiease/integration/caller/call`) and includes the `requestId` for the request to run.
+- Your theme calls the APIEase app proxy path (for example `/apps/apiease/integration/caller/call`) and includes the request handle as the `requestId` value for the request to run.
 - Shopify forwards the call through the app proxy. If the customer is logged in, Shopify passes the customer id to APIEase.
 - APIEase executes the request on the server, injects any sensitive parameters you saved in the admin, and returns the request's final response to the storefront.
 
@@ -2843,7 +3098,7 @@ Use caution with Storefront App Proxy requests. Anyone from anywhere can call St
 1. Go to the Requests page.
 2. Click the plus icon at the top left of the page.
 3. At a minimum, set your Address and Method.
-4. If you want to call this request from your storefront, you must add the `Storefront App Proxy` trigger.
+4. If this exact request should be called directly from your storefront through Shopify's app proxy, add the `Storefront App Proxy` trigger.
 5. Click **Save** at the top of the screen.
 
 ## Call from your theme
@@ -2852,7 +3107,7 @@ Use the copied snippet as-is to verify the integration, then extend it with any 
 ```html
 <script>
   const queryParams = new URLSearchParams({
-    requestId: "e4234d0-5b0a-11ee-9e5d-195679c7ea93b",
+    requestId: "product-details-proxy",
   });
   fetch('/apps/apiease/integration/caller/call?' + queryParams).
     then(function(response) {return response.json();}).
@@ -2860,9 +3115,11 @@ Use the copied snippet as-is to verify the integration, then extend it with any 
 </script>
 ```
 
-- `requestId` tells APIEase which request to run; this value is filled in when you click **Copy**.
+- `requestId` tells APIEase which request to run. Use the request handle as this value for new storefront code.
 - Add `pathParamsEmbedded`, `queryParamsEmbedded`, `headersEmbedded`, `bodyEmbedded`, or `flowParamsEmbedded` as needed to pass dynamic embedded parameters from the storefront.
 - Keep confidential values stored in the APIEase request configuration; do not place secrets in storefront code.
+
+Do not add a Storefront App Proxy trigger to helper requests that are only invoked by another APIEase request or by a Liquid `call` tag.
 
 ## Customer validation options
 If the customer is logged in when the app proxy runs, Shopify includes their customer id in the call.
@@ -2914,13 +3171,13 @@ You can call any APIEase request from any http client by making a direct HTTP re
 
 **Step 2**: Make the Remote Call
 
-**Address**: `https://app-admin.apiease.com/api/remote/caller/call?requestId=<your_request_id>`
+**Address**: `https://app-admin.apiease.com/api/remote/caller/call?requestId=<your-request-handle>`
 
 **Headers:**
 - `x-shop-myshopify-domain`: `yourstore.myshopify.com`
 - `x-apiease-api-key`: `<your_generated_api_key>`
 
-Replace `<your_request_id>` with the ID of the request you want to call. You can find the `requestId` in the APIEase request admin page.
+Replace `<your-request-handle>` with the handle of the request you want to call. The query parameter is still named `requestId`, but the value should be the request handle for new integrations.
 
 SOURCE
 https://docs.apiease.com/docs/requests/request-parameters/chained-requests
@@ -2941,7 +3198,7 @@ For example, you might need to:
 
 **Setting Next Request**
 
-Set the request id or request name of the next request you would like to call in the **Next Request** field.
+Set the request handle of the next request you would like to call in the **Next Request** field.
 
 **How Chaining Works in APIEase**
 
@@ -3088,7 +3345,7 @@ Use this quick setup to trigger Shopify Flow from APIEase and capture Flow outpu
 
 1. Create a **Flow** request in APIEase.
 2. In Shopify Flow, build a workflow that uses the **APIEase Flow Trigger**.
-3. Add a **Condition** step to ensure the incoming `requestId` matches your Flow request.
+3. Add a **Condition** step to ensure the incoming `requestId` value matches your Flow request handle.
 4. Add the **APIEase Flow Action** and return a variable named `flowParameters`.
 
 > Important: If Flow does not return `flowParameters`, APIEase still responds, but the Flow-produced details are omitted. APIEase waits for the Flow action runtime call to finish before sending the final response to the original requester.
@@ -3118,10 +3375,11 @@ This demo shows how a storefront button triggers APIEase, Shopify Flow, and a ch
 ## APIEase request chain
 1. **Request #1: The Cat API**  
    - Name: `Flow - Cat Images - Get Cat`  
+   - Handle: `flow-cat-images-get-cat`
    - Type: `http`  
    - Address: `https://api.thecatapi.com/v1/images/search`  
    - Method: `GET`  
-   - Next Request: `Flow - Cat Images - Add Cat`  
+   - Next Request: `flow-cat-images-add-cat`  
    - Sample response:
      ```json
      {
@@ -3140,8 +3398,9 @@ This demo shows how a storefront button triggers APIEase, Shopify Flow, and a ch
 
 2. **Request #2: Shopify Flow (APIEase Flow Trigger)**  
    - Name: `Flow - Cat Images - Add Cat`  
+   - Handle: `flow-cat-images-add-cat`
    - Type: `flow`  
-   - Next Request: `Flow - Cat Images - Increment Inventory`  
+   - Next Request: `flow-cat-images-increment-inventory`  
    - Incoming Flow parameters:
      ```json
      {
@@ -3212,7 +3471,7 @@ This example uses an explicit `X-Shopify-Access-Token` header for the Shopify Ad
 
 ## Shopify Flow workflow
 1. Trigger: **apiease-flow-trigger**.
-2. Condition: Confirm the incoming `requestId` matches the Flow request.
+2. Condition: Confirm the incoming `requestId` value matches the Flow request handle.
 3. Action: Shopify **Get location data** to retrieve variants and locations.
 4. Action: **Run Code** to classify image size and select the matching inventory item.
 5. Action: **apiease-flow-action** to return Flow parameters (including `incrementInventoryParameter`) to APIEase.
@@ -3314,7 +3573,7 @@ async function getPhoto(photoId) {
   const pathParamsEmbeddedVar = JSON.stringify({ photoId });
   const getPicturesQueryParams = new URLSearchParams({
     pathParamsEmbedded: pathParamsEmbeddedVar,
-    requestId: '69782d80-63b8-11ee-b950-ff5a55fbe301',
+    requestId: 'facebook-photo',
   });
 
   const res = await fetch(
@@ -3341,7 +3600,7 @@ async function callApi() {
   const pathParamsEmbeddedVar = JSON.stringify({ albumId: '122103599360059617' });
   const getAlbumQueryParams = new URLSearchParams({
     pathParamsEmbedded: pathParamsEmbeddedVar,
-    requestId: '24d5bb60-63c8-11ee-b950-ff5a55fbe301',
+    requestId: 'facebook-album-photos',
   });
 
   const res = await fetch(
@@ -3431,7 +3690,7 @@ let dumpId = null;
 async function callApi() {
   if (dumpId === null) {
     const createDumpQueryParams = new URLSearchParams({
-      requestId: 'd58be5e0-5b0a-11ee-9e5d-19ff9c7e593b',
+      requestId: 'http-dump-create',
     });
 
     const res = await fetch(
@@ -3461,7 +3720,7 @@ async function callApi() {
   const pathParamsEmbeddedVar = JSON.stringify({ dumpId });
 
   const callDumpQueryParams = new URLSearchParams({
-    requestId: 'e4edbbd0-5b0a-11ee-9e5d-19ff9c7e593b',
+    requestId: 'http-dump-inspect',
     queryParamsEmbedded: queryParamsEmbeddedVar,
     headersEmbedded: headersEmbeddedVar,
     bodyEmbedded: bodyEmbeddedVar,
@@ -3553,7 +3812,7 @@ This demo calls The Cat API via APIEase and displays a random cat image.
 ```javascript
 function callApi() {
   const queryParamsCaller = new URLSearchParams({
-    requestId: '72277ed0-db24-11ed-b56c-119d120a4914',
+    requestId: 'cat-random-image',
   });
 
   fetch('/apps/apiease/integration/caller/call?' + queryParamsCaller, {
@@ -3624,7 +3883,7 @@ function callApi() {
   const agifyInputName = document.getElementById('agifyInputName').value;
   const queryParamsEmbedded = JSON.stringify({ name: agifyInputName });
   const queryParamsCaller = new URLSearchParams({
-    requestId: '14d572d0-db21-11ed-b56c-119d120a4914',
+    requestId: 'agify-age-lookup',
     queryParamsEmbedded,
   });
 
@@ -3773,6 +4032,8 @@ Each function includes these fields:
 - **Parameters**: Optional parameter definitions for the function.
 - **Liquid**: Required. The Liquid code that runs when the function is called.
 
+When you manage Functions through `apiease-cli` or the public API, include a stable `handle` in the JSON source file. The Function `name` remains the value used by the current Liquid function tag. For the repository identifier pattern, see [Resource handles](../developers/resource-handles.md).
+
 The editor supports the same save bar behavior used elsewhere in APIEase:
 
 - The save bar appears when you make changes.
@@ -3902,18 +4163,7 @@ Example using `functionName`:
 {{ summary.message }}
 ```
 
-Example using `functionId`:
-
-```liquid
-{% function {
-  "functionId": "function-123",
-  "args": {
-    "amount": "{{ product.price }}",
-    "currency": "{{ cart.currency.iso_code }}"
-  }
-} as result %}
-{{ result }}
-```
+Use `functionName` for new Liquid templates. `functionId` remains a legacy option when you already have a server-owned function id, but do not copy server-owned ids into repository-managed examples.
 
 You can also pass a variable that already contains the invocation object:
 
@@ -4057,7 +4307,7 @@ In the APIEase admin, select **Variables** from the main navigation.
 
 The Variables page shows a table with four columns:
 
-- **Name**: The variable name. Select the name or the edit action to open the variable.
+- **Name**: The variable display name. Select the name or the edit action to open the variable.
 - **Value**: The current value summary. Non-sensitive values are shown directly. Sensitive values are masked.
 - **Sensitive**: Shows `Yes` or `No`.
 - **Actions**: Edit or delete the variable.
@@ -4076,13 +4326,15 @@ To create a variable:
 1. Open the **Variables** page.
 2. Select **Add variable**.
 3. Enter a **Name**.
-4. Enter a **Value**.
-5. Turn on **Sensitive** if the value should stay hidden after it is saved.
-6. Use the save bar to save the variable.
+4. Confirm or edit the **Handle**.
+5. Enter a **Value**.
+6. Turn on **Sensitive** if the value should stay hidden after it is saved.
+7. Use the save bar to save the variable.
 
 Notes:
 
 - `Name` is required when creating a variable.
+- `Handle` is the stable public identifier used by System Requests, `apiease-cli`, and the public API. APIEase generates it from the name until you edit it manually.
 - The save bar appears when you make changes.
 - You can use **Discard** in the save bar to abandon unsaved edits.
 
@@ -4091,12 +4343,12 @@ Notes:
 To edit a variable:
 
 1. Open the variable from the list.
-2. Update the **Value** and, if needed, the **Sensitive** checkbox.
+2. Update the **Name**, **Handle**, **Value**, and, if needed, the **Sensitive** checkbox.
 3. Save from the save bar.
 
 Important behavior:
 
-- After a variable is created, its **Name** is read-only.
+- Keep the **Handle** stable if requests, CLI scripts, or public API integrations already reference the variable.
 - Existing sensitive values stay masked in the editor. If you leave the masked value as-is and save, APIEase keeps the stored value.
 - If you want to replace a sensitive value, type a new value before saving.
 - If you turn off **Sensitive** for an existing masked variable, enter the replacement plain-text value before saving because APIEase does not reveal the stored secret back into the form.
@@ -4122,17 +4374,17 @@ Widgets overview
 CONTENT
 # Widgets overview
 
-APIEase widgets are reusable storefront UI components that you build and manage in APIEase, then render in your Shopify theme through the APIEase theme app block. A widget can output Liquid (markup) and optionally run JavaScript, which makes it a good fit for UI that needs to stay flexible but still integrate with your backend logic.
+APIEase widgets are reusable storefront UI components that you build and manage in APIEase, then render in your Shopify theme through the APIEase Widget App Block or Widget App Embed. A widget can output Liquid (markup) and optionally run JavaScript, which makes it a good fit for UI that needs to stay flexible but still integrate with your backend logic.
 
 ## Why widgets are useful
 
 - **UI + secure API requests, together:** Widgets help you connect storefront UI components to secure API requests powered by APIEase, without moving secrets or request logic into the theme.
 - **Rich UI with Liquid + JavaScript:** Liquid plus inline JavaScript and external JavaScript libraries lets you build interactive, dynamic widgets while still relying on APIEase for secure request execution.
-- **Easy placement anywhere:** The Storefront block extension makes it straightforward to inject simple or complex API-integrated UI components anywhere in your store using the Theme Editor.
+- **Easy placement anywhere:** Widget App Extensions make it straightforward to add widgets to a specific page or template, or run selected widgets across the storefront.
 
 ## Learn more
 
-Learn more about the [Widgets page](./widgets-page.md) to manage and organize your widgets, the [Widget edit page](./widget-edit-page.md) to configure a widget's Liquid, JavaScript, and handle, and the [Storefront block extension](./storefront-block-extension.md) to add a widget to your theme and control where it renders.
+Learn more about the [Widgets page](./widgets-page.md) to manage and organize your widgets, the [Widget edit page](./widget-edit-page.md) to configure a widget's Liquid, JavaScript, and handle, and [Widget App Extensions](./widget-app-extensions.md) to choose between placement-specific and global widget rendering.
 
 SOURCE
 https://docs.apiease.com/docs/widgets/widgets-page
@@ -4223,31 +4475,60 @@ When checked, the widget renders its Liquid template but does not load any JavaS
 Use the assistant panel to generate or refine a widget draft. When you accept a draft, the editor updates the Liquid and JavaScript fields so you can review and save.
 
 SOURCE
-https://docs.apiease.com/docs/widgets/storefront-block-extension
+https://docs.apiease.com/docs/widgets/widget-app-extensions
 
 TITLE
-Storefront block extension
+Widget App Extensions
 
 CONTENT
-# Storefront block extension
+# Widget App Extensions
 
-Widgets render in your storefront through the APIEase theme app block. The block loads the widget by handle and injects its Liquid and JavaScript into the page.
+Widgets can render in your Shopify storefront through the APIEase Widget App Block or the APIEase Widget App Embed.
+
+Use the App Block when a widget belongs in a specific theme section, page, or template. Use the App Embed when a widget should load across the storefront.
 
 ## Before you start
 
 - Create and save a widget in APIEase.
 - Copy the widget handle from the widget editor.
-- In Shopify Theme Editor, enable the **APIEase Widget App Embed** (you typically only need to do this once per theme).
+
+## Choosing between App Block and App Embed
+
+Use the **Widget App Block** for the normal placement-specific path. Choose it when a widget belongs in one theme section, page, or template.
+
+Use the **Widget App Embed** only for site-wide widgets that should load on every storefront page. Good fits include non-visual background widgets, tracking, floating widgets, popups, and banners that position themselves.
+
+If a widget is ordinary page content, use the Widget App Block. Do not add ordinary section or content widgets to **Global widget handles** unless you intentionally want them to load across the entire storefront.
+
+## Next steps
+
+- Add a widget to a specific page or template with the [Widget App Block](./widget-app-block.md).
+- Run selected widgets globally with the [Widget App Embed](./widget-app-embed.md).
+
+SOURCE
+https://docs.apiease.com/docs/widgets/widget-app-block
+
+TITLE
+Widget App Block
+
+CONTENT
+# Widget App Block
+
+The APIEase Widget App Block renders a widget in a specific Shopify theme section, page, or template. This is the normal path for page content widgets and other widgets that need a specific placement in the storefront.
+
+## Before you start
+
+- Create and save a widget in APIEase.
+- Copy the widget handle from the widget editor.
 
 ## Add the widget to your theme
 
 1. Open Shopify admin and go to **Online Store** -> **Themes**.
 2. Select **Customize** on the theme you want to update.
-3. Open **App embeds** and enable **APIEase Widget App Embed**, then save.
-4. Navigate to the page or template where the widget should appear.
-5. Add the **APIEase App Block** block to the section.
-6. Paste the widget handle into the **Widget handle** setting.
-7. Save the theme changes.
+3. Navigate to the page or template where the widget should appear.
+4. Add the **APIEase Widget App Block** block to the section.
+5. Paste the widget handle into the **Widget handle** setting.
+6. Save the theme changes.
 
 ## Update or move a widget
 
@@ -4257,7 +4538,56 @@ Widgets render in your storefront through the APIEase theme app block. The block
 ## Troubleshooting
 
 - If the block shows "Widget handle not configured", confirm the handle value is set and saved.
-- If the widget does not render, confirm **APIEase Widget App Embed** is enabled and that the handle matches exactly.
+- If the widget does not render, confirm the handle matches exactly and the widget is saved in APIEase.
+
+## Related pages
+
+- Compare the App Block with the App Embed in [Widget App Extensions](./widget-app-extensions.md).
+- Use the [Widget App Embed](./widget-app-embed.md) for widgets that should run across the storefront.
+
+SOURCE
+https://docs.apiease.com/docs/widgets/widget-app-embed
+
+TITLE
+Widget App Embed
+
+CONTENT
+# Widget App Embed
+
+The APIEase Widget App Embed is optional. Enable it only for widgets that should run on every storefront page.
+
+When the App Embed is enabled, APIEase loads the registered widgets on every storefront page. Their Liquid can render globally, and their JavaScript can run globally.
+
+Globally registered widgets should be designed for site-wide use. They can be non-visual background widgets or self-positioned visual widgets, such as floating widgets, popups, or banners.
+
+Do not register ordinary section or content widgets globally unless you intentionally want them to load on every storefront page.
+
+## Before you start
+
+- Create and save a widget in APIEase.
+- Copy the widget handle from the widget editor.
+
+## Register global widgets
+
+1. Open Shopify admin and go to **Online Store** -> **Themes**.
+2. Select **Customize** on the theme you want to update.
+3. Open **App embeds**.
+4. Enable the **APIEase Widget App Embed**.
+5. Add one or more widget handles to **Global widget handles**.
+6. Save the theme changes.
+
+Use the **Global widget handles** setting to register one or more widget handles. Separate multiple handles with new lines or commas.
+
+## Troubleshooting
+
+- If a global widget does not run, confirm the App Embed is enabled and the theme changes are saved.
+- If a widget does not render, confirm the handle matches exactly and the widget is saved in APIEase.
+- If a visual widget appears on pages where it should not appear, remove it from **Global widget handles** and add it with the [Widget App Block](./widget-app-block.md) instead.
+
+## Related pages
+
+- Compare the App Embed with the App Block in [Widget App Extensions](./widget-app-extensions.md).
+- Use the [Widget App Block](./widget-app-block.md) for ordinary page content or section-specific widgets.
 
 SOURCE
 https://docs.apiease.com/docs/widgets/using-requests-in-widgets
@@ -4271,13 +4601,13 @@ CONTENT
 Widgets can call APIEase requests. The widget runs in the browser, but the request runs on the server. This separation keeps integrations secure by keeping credentials and private logic off the storefront.
 
 ## Configure a request call
-1. Get the `requestId` for the request you want to run (from the request admin page).
+1. Get the handle for the request you want to run.
 2. In the widget edit page, the **Liquid** field is required; you can use a simple placeholder like `<div></div>`.
 3. Paste the JavaScript below into the widget's **JavaScript** field to call the APIEase integration endpoint with `fetch` and read the JSON response:
 
 ```js
 const queryParams = new URLSearchParams({
-  requestId: 'YOUR_REQUEST_ID',
+  requestId: 'product-details-proxy',
 });
 
 fetch('/apps/apiease/integration/caller/call?' + queryParams)
@@ -4387,11 +4717,11 @@ Liquid requests let you fetch products, loop through the response, and post each
 3. Use a Liquid request to connect them:
 
 ```liquid
-{% call { "requestId": "third-party-products-request-id" } as source %}
+{% call { "requestId": "third-party-products" } as source %}
 
 {% for product in source.data.products %}
   {% call {
-    "requestId": "shopify-product-upsert-request-id",
+    "requestId": "shopify-product-upsert",
     "bodyEmbedded": {
       "title": "{{ product.title }}",
       "vendor": "{{ product.vendor }}",
@@ -4439,8 +4769,8 @@ You can use this placeholder in any value context where variable replacement is 
 - Body parameter values
 - Address values via path parameters
 - System parameter values
-- Liquid parameter values
-- Liquid request values via Liquid parameters
+- Liquid parameter values used for `{parameterName}` substitution
+- Liquid request values that reference saved Liquid parameters
 - Flow parameter values
 
 ## Examples
@@ -4502,9 +4832,9 @@ You can also use the placeholder as a system parameter value. Example:
 
 This is useful when downstream request logic expects customer ID as a system value.
 
-### Liquid request values via Liquid parameters
+### Liquid request values
 
-Liquid request variables are always defined through Liquid parameters, then referenced in the template.
+Use a saved Liquid parameter when you want the customer-id placeholder resolved before the template renders, then reference that saved value in the template with `{customerId}`.
 
 Set a Liquid parameter:
 
@@ -4522,6 +4852,8 @@ Then use it in the Liquid request:
 } as response %}
 {{ response.status }}
 ```
+
+This example only applies when you choose to use a saved Liquid parameter. Do not trust a storefront-supplied customer id for authentication; use the validation options below when customer identity matters.
 
 ### Flow parameter value
 
