@@ -157,7 +157,7 @@ describe('CreateRequestCommand', () => {
       assert.equal(stderrChunks.join(''), '');
     });
 
-    it('should load the widget file, call the shared resource create client, and return zero for human-readable success output', async () => {
+    it('should load the widget file, call the handle-based create-or-update service, and return zero for human-readable updated output', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const widgetDefinition = {
@@ -167,7 +167,7 @@ describe('CreateRequestCommand', () => {
       const stdoutChunks = [];
       const stderrChunks = [];
       const loadRequestDefinitionCalls = [];
-      const createResourceCalls = [];
+      const createOrUpdateResourceByHandleCalls = [];
       const createRequestCommand = new CreateRequestCommand({
         requestDefinitionFileLoader: {
           async loadRequestDefinition(filePath) {
@@ -185,10 +185,16 @@ describe('CreateRequestCommand', () => {
         },
         apiEaseCrudResourceClient: {
           async createResource(options) {
-            createResourceCalls.push(options);
+            throw new Error(`direct resource create should not be used for widget resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
             return {
-              status: 201,
+              status: 200,
               ok: true,
+              operation: 'updated',
               shopDomain: 'cool-shop.myshopify.com',
               widget: {
                 ...widgetDefinition,
@@ -217,19 +223,146 @@ describe('CreateRequestCommand', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/widget.json']);
-      assert.deepEqual(createResourceCalls, [
+      assert.deepEqual(createOrUpdateResourceByHandleCalls, [
         {
           resourceName: 'widget',
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
+          resourceHandle: 'promo-banner',
           resource: widgetDefinition,
-          failureErrorCode: 'WIDGET_CREATE_FAILED',
+          readFailureErrorCode: 'WIDGET_READ_FAILED',
+          createFailureErrorCode: 'WIDGET_CREATE_FAILED',
+          updateFailureErrorCode: 'WIDGET_UPDATE_FAILED',
         },
       ]);
-      assert.match(stdoutChunks.join(''), /Widget created successfully\./);
+      assert.match(stdoutChunks.join(''), /Widget updated successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Widget created successfully\./);
       assert.match(stdoutChunks.join(''), /Widget Handle: promo-banner/);
       assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write raw json output when widget create-or-update creates a missing widget', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const widgetDefinition = {
+        handle: 'promo-banner',
+        name: 'Promo banner',
+      };
+      const result = {
+        status: 201,
+        ok: true,
+        operation: 'created',
+        widget: {
+          id: 'widget-1',
+          ...widgetDefinition,
+        },
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: widgetDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for widget resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should surface widget handle lookup failures before creating a widget', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const widgetDefinition = {
+        handle: 'promo-banner',
+        name: 'Promo banner',
+      };
+      const stderrChunks = [];
+      const createOrUpdateResourceByHandleCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: widgetDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for widget resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
+            return {
+              status: 503,
+              ok: false,
+              errorCode: 'WIDGET_READ_FAILED',
+              message: 'Unable to read widget by handle.',
+              fieldErrors: [],
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createOrUpdateResourceByHandleCalls[0].readFailureErrorCode, 'WIDGET_READ_FAILED');
+      assert.match(stderrChunks.join(''), /Widget creation failed\./);
+      assert.match(stderrChunks.join(''), /Error Code: WIDGET_READ_FAILED/);
+      assert.match(stderrChunks.join(''), /Status: 503/);
     });
 
     it('should load the variable file, call the shared resource create client, and return zero for human-readable success output', async () => {
@@ -1190,7 +1323,7 @@ describe('CreateRequestCommand', () => {
     it('should migrate legacy widget fields and write the source file before create when auto source identifier update is set', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
-      const createResourceCalls = [];
+      const createOrUpdateResourceByHandleCalls = [];
       const writeResourceDefinitionCalls = [];
       const sourceWidgetDefinition = {
         widgetId: 'server-owned-widget-id',
@@ -1220,12 +1353,13 @@ describe('CreateRequestCommand', () => {
             };
           },
         },
-        apiEaseCrudResourceClient: {
-          async createResource(options) {
-            createResourceCalls.push(options);
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
             return {
               status: 201,
               ok: true,
+              operation: 'created',
               widget: migratedWidgetDefinition,
             };
           },
@@ -1257,8 +1391,9 @@ describe('CreateRequestCommand', () => {
           resourceDefinition: migratedWidgetDefinition,
         },
       ]);
-      assert.equal(createResourceCalls[0].resourceName, 'widget');
-      assert.deepEqual(createResourceCalls[0].resource, migratedWidgetDefinition);
+      assert.equal(createOrUpdateResourceByHandleCalls[0].resourceName, 'widget');
+      assert.equal(createOrUpdateResourceByHandleCalls[0].resourceHandle, 'promo-banner');
+      assert.deepEqual(createOrUpdateResourceByHandleCalls[0].resource, migratedWidgetDefinition);
     });
 
     it('should fail before widget create when auto source identifier update cannot infer a handle', async () => {

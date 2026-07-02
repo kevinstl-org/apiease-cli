@@ -1,5 +1,6 @@
 import { ApiEaseCreateRequestClient } from '../client/ApiEaseCreateRequestClient.js';
 import { ApiEaseCrudResourceClient } from '../client/ApiEaseCrudResourceClient.js';
+import { ApiEaseHandleBasedCreateOrUpdateService } from '../client/ApiEaseHandleBasedCreateOrUpdateService.js';
 import { ApiEaseRequestSourceIdentifierMigrationService } from '../client/ApiEaseRequestSourceIdentifierMigrationService.js';
 import { ApiEaseWidgetSourceFieldMigrationService } from '../client/ApiEaseWidgetSourceFieldMigrationService.js';
 import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
@@ -18,6 +19,9 @@ class CreateRequestCommand {
     requestDefinitionFileLoader = new RequestDefinitionFileLoader(),
     apiEaseCreateRequestClient = new ApiEaseCreateRequestClient(),
     apiEaseCrudResourceClient = new ApiEaseCrudResourceClient(),
+    apiEaseHandleBasedCreateOrUpdateService = new ApiEaseHandleBasedCreateOrUpdateService({
+      apiEaseCrudResourceClient,
+    }),
     apiEaseRequestSourceIdentifierMigrationService = new ApiEaseRequestSourceIdentifierMigrationService(),
     apiEaseWidgetSourceFieldMigrationService = new ApiEaseWidgetSourceFieldMigrationService(),
     apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
@@ -32,6 +36,7 @@ class CreateRequestCommand {
     this.requestDefinitionFileLoader = requestDefinitionFileLoader;
     this.apiEaseCreateRequestClient = apiEaseCreateRequestClient;
     this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
+    this.apiEaseHandleBasedCreateOrUpdateService = apiEaseHandleBasedCreateOrUpdateService;
     this.apiEaseRequestSourceIdentifierMigrationService = apiEaseRequestSourceIdentifierMigrationService;
     this.apiEaseWidgetSourceFieldMigrationService = apiEaseWidgetSourceFieldMigrationService;
     this.crudResourceDefinitionCollection = crudResourceDefinitionCollection;
@@ -163,14 +168,52 @@ class CreateRequestCommand {
       return resourceDefinitionResult;
     }
 
+    return await this.createSharedResource({
+      parseResult,
+      configurationResult,
+      resourceDefinition: resourceDefinitionResult.resourceDefinition,
+    });
+  }
+
+  async createSharedResource({ parseResult, configurationResult, resourceDefinition }) {
+    if (this.shouldCreateOrUpdateSharedResourceByHandle({ parseResult, resourceDefinition })) {
+      return await this.createOrUpdateSharedResourceByHandle({ parseResult, configurationResult, resourceDefinition });
+    }
+
+    return await this.createNewSharedResource({ parseResult, configurationResult, resourceDefinition });
+  }
+
+  shouldCreateOrUpdateSharedResourceByHandle({ parseResult, resourceDefinition }) {
+    return parseResult.crudResourceDefinition.resourceName === 'widget'
+      && typeof resourceDefinition.handle === 'string'
+      && resourceDefinition.handle.length > 0;
+  }
+
+  async createOrUpdateSharedResourceByHandle({ parseResult, configurationResult, resourceDefinition }) {
+    return await this.apiEaseHandleBasedCreateOrUpdateService.createOrUpdateResourceByHandle({
+      ...this.buildSharedResourceWriteOptions({ parseResult, configurationResult, resourceDefinition }),
+      resourceHandle: resourceDefinition.handle,
+      readFailureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'READ'),
+      createFailureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'CREATE'),
+      updateFailureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'UPDATE'),
+    });
+  }
+
+  async createNewSharedResource({ parseResult, configurationResult, resourceDefinition }) {
     return await this.apiEaseCrudResourceClient.createResource({
+      ...this.buildSharedResourceWriteOptions({ parseResult, configurationResult, resourceDefinition }),
+      failureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'CREATE'),
+    });
+  }
+
+  buildSharedResourceWriteOptions({ parseResult, configurationResult, resourceDefinition }) {
+    return {
       resourceName: parseResult.crudResourceDefinition.resourceName,
       apiBaseUrl: configurationResult.apiBaseUrl,
       apiKey: configurationResult.apiKey,
       shopDomain: configurationResult.shopDomain,
-      resource: resourceDefinitionResult.resourceDefinition,
-      failureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'CREATE'),
-    });
+      resource: resourceDefinition,
+    };
   }
 
   async prepareSharedResourceDefinition({ parseResult, resourceDefinition }) {
