@@ -91,6 +91,19 @@ describe('README', () => {
       assert.doesNotMatch(widgetSourceGuidance, /`widgetName`/);
     });
 
+    it('should document that auto source identifier update rewrites request and widget source files', async () => {
+      // Arrange
+      const readme = await fs.readFile(readmeFilePath, 'utf8');
+
+      // Act
+      const autoUpdateSourceIdentifierSection = readme;
+
+      // Assert
+      assert.match(autoUpdateSourceIdentifierSection, /`--auto-update-source-identifier` rewrites the source JSON file before creating the resource\./);
+      assert.match(autoUpdateSourceIdentifierSection, /For older widget source files, it migrates legacy widget fields to `handle` and `name` and removes server-owned id fields\./);
+      assert.match(autoUpdateSourceIdentifierSection, /apiease create widget \\\n  --file \.\/widget-definition\.json \\\n  --auto-update-source-identifier/);
+    });
+
     it('should document request id option compatibility with handles', async () => {
       // Arrange
       const readme = await fs.readFile(readmeFilePath, 'utf8');

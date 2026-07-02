@@ -1047,6 +1047,281 @@ describe('CreateRequestCommand', () => {
       });
     });
 
+    it('should write the migrated request source file before create when auto source identifier update is set', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const createRequestCalls = [];
+      const writeResourceDefinitionCalls = [];
+      const sourceRequestDefinition = {
+        id: 'lookup-discount',
+        name: 'Lookup discount',
+        type: 'http',
+        method: 'GET',
+        address: 'https://api.example.com/discounts',
+      };
+      const migratedRequestDefinition = {
+        handle: 'lookup-discount',
+        name: 'Lookup discount',
+        type: 'http',
+        method: 'GET',
+        address: 'https://api.example.com/discounts',
+      };
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: sourceRequestDefinition,
+            };
+          },
+        },
+        resourceDefinitionFileWriter: {
+          async writeResourceDefinition(options) {
+            writeResourceDefinitionCalls.push(options);
+            return {
+              ok: true,
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest(options) {
+            createRequestCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              request: {
+                id: 'request-1',
+              },
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--auto-update-source-identifier',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(writeResourceDefinitionCalls, [
+        {
+          filePath: '/tmp/request.json',
+          resourceDefinition: migratedRequestDefinition,
+        },
+      ]);
+      assert.deepEqual(createRequestCalls[0].request, migratedRequestDefinition);
+    });
+
+    it('should return the write failure and skip create when the migrated request source file cannot be written', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let createRequestCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                id: 'lookup-discount',
+                name: 'Lookup discount',
+                type: 'http',
+              },
+            };
+          },
+        },
+        resourceDefinitionFileWriter: {
+          async writeResourceDefinition() {
+            return {
+              ok: false,
+              errorCode: 'RESOURCE_DEFINITION_FILE_WRITE_FAILED',
+              message: 'Resource definition file could not be written: /tmp/request.json',
+              fieldErrors: [],
+            };
+          },
+        },
+        apiEaseCreateRequestClient: {
+          async createRequest() {
+            createRequestCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'request',
+        '--file',
+        '/tmp/request.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--auto-update-source-identifier',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createRequestCallCount, 0);
+      assert.match(stderrChunks.join(''), /Resource definition file could not be written/);
+    });
+
+    it('should migrate legacy widget fields and write the source file before create when auto source identifier update is set', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const createResourceCalls = [];
+      const writeResourceDefinitionCalls = [];
+      const sourceWidgetDefinition = {
+        widgetId: 'server-owned-widget-id',
+        widgetHandle: 'promo-banner',
+        widgetName: 'Promo Banner',
+        liquid: '<section>Promo</section>',
+      };
+      const migratedWidgetDefinition = {
+        handle: 'promo-banner',
+        name: 'Promo Banner',
+        liquid: '<section>Promo</section>',
+      };
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: sourceWidgetDefinition,
+            };
+          },
+        },
+        resourceDefinitionFileWriter: {
+          async writeResourceDefinition(options) {
+            writeResourceDefinitionCalls.push(options);
+            return {
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            createResourceCalls.push(options);
+            return {
+              status: 201,
+              ok: true,
+              widget: migratedWidgetDefinition,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream([]),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--auto-update-source-identifier',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(writeResourceDefinitionCalls, [
+        {
+          filePath: '/tmp/widget.json',
+          resourceDefinition: migratedWidgetDefinition,
+        },
+      ]);
+      assert.equal(createResourceCalls[0].resourceName, 'widget');
+      assert.deepEqual(createResourceCalls[0].resource, migratedWidgetDefinition);
+    });
+
+    it('should fail before widget create when auto source identifier update cannot infer a handle', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      let createResourceCallCount = 0;
+      let writeResourceDefinitionCallCount = 0;
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: {
+                widgetName: '!!!',
+                liquid: '<section>Promo</section>',
+              },
+            };
+          },
+        },
+        resourceDefinitionFileWriter: {
+          async writeResourceDefinition() {
+            writeResourceDefinitionCallCount += 1;
+            return {
+              ok: true,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource() {
+            createResourceCallCount += 1;
+            return {
+              status: 201,
+              ok: true,
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'widget',
+        '--file',
+        '/tmp/widget.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--auto-update-source-identifier',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(writeResourceDefinitionCallCount, 0);
+      assert.equal(createResourceCallCount, 0);
+      assert.match(stderrChunks.join(''), /Widget handle cannot be inferred/);
+    });
+
     it('should fail fast with usage output when the resource argument is unsupported', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);

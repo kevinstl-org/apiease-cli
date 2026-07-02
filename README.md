@@ -46,7 +46,7 @@ apiease init [project-name]
 apiease upgrade
 apiease upgrade [--check]
 apiease upgrade --dry-run
-apiease create <request|widget|variable|function> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
+apiease create <request|widget|variable|function> --file <path> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--auto-update-source-identifier] [--json]
 apiease read request --request-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease read widget --widget-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
 apiease read variable --variable-handle <handle> [--base-url <url>] [--shop-domain <shop-domain>] [--api-key <api-key>] [--json]
@@ -254,11 +254,19 @@ Resource source files use `handle` as the stable repository identifier. `id` is 
 
 Handles must be lowercase slug values using letters, numbers, and hyphens, for example `cli-demo-request`. When a request source file has a valid `handle`, `apiease create request` looks up the remote request by that handle and reports either `Request created successfully.` or `Request updated successfully.`.
 
-For older request source files that still have `id` metadata or no `handle`, run create with `--auto-update-source-identifier`. This can update only identifier metadata in the local request JSON; it does not change request configuration such as `type`, `method`, `address`, `parameters`, `triggers`, `liquid`, `body`, or `nextRequest`.
+For older request source files that still have `id` metadata or no `handle`, run create with `--auto-update-source-identifier`. `--auto-update-source-identifier` rewrites the source JSON file before creating the resource. For requests, it updates only identifier metadata in the local request JSON; it does not change request configuration such as `type`, `method`, `address`, `parameters`, `triggers`, `liquid`, `body`, or `nextRequest`.
 
 ```bash
 apiease create request \
   --file ./request-definition.json \
+  --auto-update-source-identifier
+```
+
+For older widget source files, it migrates legacy widget fields to `handle` and `name` and removes server-owned id fields.
+
+```bash
+apiease create widget \
+  --file ./widget-definition.json \
   --auto-update-source-identifier
 ```
 

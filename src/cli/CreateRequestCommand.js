@@ -1,10 +1,12 @@
 import { ApiEaseCreateRequestClient } from '../client/ApiEaseCreateRequestClient.js';
 import { ApiEaseCrudResourceClient } from '../client/ApiEaseCrudResourceClient.js';
 import { ApiEaseRequestSourceIdentifierMigrationService } from '../client/ApiEaseRequestSourceIdentifierMigrationService.js';
+import { ApiEaseWidgetSourceFieldMigrationService } from '../client/ApiEaseWidgetSourceFieldMigrationService.js';
 import { ApiEaseHomeConfigurationResolver } from '../config/ApiEaseHomeConfigurationResolver.js';
 import { CrudResourceDefinitionCollection } from '../crud/CrudResourceDefinitionCollection.js';
 import { ApiEaseCommandConfigurationResolver } from './ApiEaseCommandConfigurationResolver.js';
 import { RequestDefinitionFileLoader } from './RequestDefinitionFileLoader.js';
+import { ResourceDefinitionFileWriter } from './ResourceDefinitionFileWriter.js';
 
 const JSON_FLAG = '--json';
 const AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG = '--auto-update-source-identifier';
@@ -17,11 +19,13 @@ class CreateRequestCommand {
     apiEaseCreateRequestClient = new ApiEaseCreateRequestClient(),
     apiEaseCrudResourceClient = new ApiEaseCrudResourceClient(),
     apiEaseRequestSourceIdentifierMigrationService = new ApiEaseRequestSourceIdentifierMigrationService(),
+    apiEaseWidgetSourceFieldMigrationService = new ApiEaseWidgetSourceFieldMigrationService(),
     apiEaseHomeConfigurationResolver = new ApiEaseHomeConfigurationResolver(),
     crudResourceDefinitionCollection = new CrudResourceDefinitionCollection(),
     apiEaseCommandConfigurationResolver = new ApiEaseCommandConfigurationResolver({
       apiEaseHomeConfigurationResolver,
     }),
+    resourceDefinitionFileWriter = new ResourceDefinitionFileWriter(),
     stdout = process.stdout,
     stderr = process.stderr,
   } = {}) {
@@ -29,8 +33,10 @@ class CreateRequestCommand {
     this.apiEaseCreateRequestClient = apiEaseCreateRequestClient;
     this.apiEaseCrudResourceClient = apiEaseCrudResourceClient;
     this.apiEaseRequestSourceIdentifierMigrationService = apiEaseRequestSourceIdentifierMigrationService;
+    this.apiEaseWidgetSourceFieldMigrationService = apiEaseWidgetSourceFieldMigrationService;
     this.crudResourceDefinitionCollection = crudResourceDefinitionCollection;
     this.apiEaseCommandConfigurationResolver = apiEaseCommandConfigurationResolver;
+    this.resourceDefinitionFileWriter = resourceDefinitionFileWriter;
     this.stdout = stdout;
     this.stderr = stderr;
   }
@@ -133,6 +139,14 @@ class CreateRequestCommand {
         return requestSourceIdentifierResult;
       }
 
+      const writeResult = await this.writeSourceDefinitionWhenRequested({
+        parseResult,
+        resourceDefinition: requestSourceIdentifierResult.requestDefinition,
+      });
+      if (!writeResult.ok) {
+        return writeResult;
+      }
+
       return await this.apiEaseCreateRequestClient.createRequest({
         apiBaseUrl: configurationResult.apiBaseUrl,
         apiKey: configurationResult.apiKey,
@@ -141,13 +155,61 @@ class CreateRequestCommand {
       });
     }
 
+    const resourceDefinitionResult = await this.prepareSharedResourceDefinition({
+      parseResult,
+      resourceDefinition,
+    });
+    if (!resourceDefinitionResult.ok) {
+      return resourceDefinitionResult;
+    }
+
     return await this.apiEaseCrudResourceClient.createResource({
       resourceName: parseResult.crudResourceDefinition.resourceName,
       apiBaseUrl: configurationResult.apiBaseUrl,
       apiKey: configurationResult.apiKey,
       shopDomain: configurationResult.shopDomain,
-      resource: resourceDefinition,
+      resource: resourceDefinitionResult.resourceDefinition,
       failureErrorCode: this.buildFailureErrorCode(parseResult.crudResourceDefinition, 'CREATE'),
+    });
+  }
+
+  async prepareSharedResourceDefinition({ parseResult, resourceDefinition }) {
+    if (parseResult.crudResourceDefinition.resourceName !== 'widget' || !parseResult.autoUpdateSourceIdentifier) {
+      return {
+        ok: true,
+        resourceDefinition,
+      };
+    }
+
+    const migrationResult = this.apiEaseWidgetSourceFieldMigrationService.migrateWidgetSourceFields(resourceDefinition);
+    if (!migrationResult.ok) {
+      return migrationResult;
+    }
+
+    const writeResult = await this.writeSourceDefinitionWhenRequested({
+      parseResult,
+      resourceDefinition: migrationResult.widgetDefinition,
+    });
+    if (!writeResult.ok) {
+      return writeResult;
+    }
+
+    return {
+      ok: true,
+      resourceDefinition: migrationResult.widgetDefinition,
+    };
+  }
+
+  async writeSourceDefinitionWhenRequested({ parseResult, resourceDefinition }) {
+    if (!parseResult.autoUpdateSourceIdentifier) {
+      return {
+        ok: true,
+      };
+    }
+
+    return await this.resourceDefinitionFileWriter.writeResourceDefinition({
+      filePath: parseResult.filePath,
+      resourceDefinition,
     });
   }
 
@@ -263,7 +325,7 @@ class CreateRequestCommand {
       '  --base-url <url>            APIEase base URL. Defaults to ~/.apiease/.env.<environment>.',
       '  --shop-domain <shop-domain> Shopify shop domain. Defaults to ~/.apiease/.env.<environment>.',
       '  --api-key <api-key>         APIEase API key. Defaults to ~/.apiease home configuration.',
-      '  --auto-update-source-identifier  Infer request handle metadata before creating a request.',
+      '  --auto-update-source-identifier  Rewrite supported legacy source fields before creating a resource.',
       '  --json                      Emit raw JSON output.',
     );
 
