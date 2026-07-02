@@ -13,7 +13,7 @@ const JSON_FLAG = '--json';
 const AUTO_UPDATE_SOURCE_IDENTIFIER_FLAG = '--auto-update-source-identifier';
 const COMMAND_REQUIRED_OPTION_NAMES = ['--file'];
 const CONFIGURATION_OPTION_NAMES = ['--base-url', '--shop-domain'];
-const HANDLE_BASED_CREATE_OR_UPDATE_RESOURCE_NAMES = new Set(['widget', 'variable']);
+const HANDLE_BASED_CREATE_OR_UPDATE_RESOURCE_NAMES = new Set(['widget', 'variable', 'function']);
 
 class CreateRequestCommand {
   constructor({

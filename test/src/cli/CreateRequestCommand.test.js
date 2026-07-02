@@ -576,7 +576,7 @@ describe('CreateRequestCommand', () => {
       assert.match(stderrChunks.join(''), /Status: 503/);
     });
 
-    it('should load the function file, call the shared resource create client, and return zero for human-readable success output', async () => {
+    it('should load the function file, call the handle-based create-or-update service, and return zero for human-readable updated output', async () => {
       // Arrange
       const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
       const functionDefinition = {
@@ -586,7 +586,7 @@ describe('CreateRequestCommand', () => {
       const stdoutChunks = [];
       const stderrChunks = [];
       const loadRequestDefinitionCalls = [];
-      const createResourceCalls = [];
+      const createOrUpdateResourceByHandleCalls = [];
       const createRequestCommand = new CreateRequestCommand({
         requestDefinitionFileLoader: {
           async loadRequestDefinition(filePath) {
@@ -604,10 +604,16 @@ describe('CreateRequestCommand', () => {
         },
         apiEaseCrudResourceClient: {
           async createResource(options) {
-            createResourceCalls.push(options);
+            throw new Error(`direct resource create should not be used for function resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
             return {
-              status: 201,
+              status: 200,
               ok: true,
+              operation: 'updated',
               shopDomain: 'cool-shop.myshopify.com',
               function: {
                 ...functionDefinition,
@@ -636,19 +642,146 @@ describe('CreateRequestCommand', () => {
       // Assert
       assert.equal(exitCode, 0);
       assert.deepEqual(loadRequestDefinitionCalls, ['/tmp/function.json']);
-      assert.deepEqual(createResourceCalls, [
+      assert.deepEqual(createOrUpdateResourceByHandleCalls, [
         {
           resourceName: 'function',
           apiBaseUrl: 'https://apiease.example.com',
           apiKey: 'api-key-1',
           shopDomain: 'cool-shop.myshopify.com',
+          resourceHandle: 'apply-discount',
           resource: functionDefinition,
-          failureErrorCode: 'FUNCTION_CREATE_FAILED',
+          readFailureErrorCode: 'FUNCTION_READ_FAILED',
+          createFailureErrorCode: 'FUNCTION_CREATE_FAILED',
+          updateFailureErrorCode: 'FUNCTION_UPDATE_FAILED',
         },
       ]);
-      assert.match(stdoutChunks.join(''), /Function created successfully\./);
+      assert.match(stdoutChunks.join(''), /Function updated successfully\./);
+      assert.doesNotMatch(stdoutChunks.join(''), /Function created successfully\./);
       assert.match(stdoutChunks.join(''), /Function Handle: apply-discount/);
       assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should write raw json output when function create-or-update creates a missing function', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const functionDefinition = {
+        handle: 'apply-discount',
+        name: 'Apply discount',
+      };
+      const result = {
+        status: 201,
+        ok: true,
+        operation: 'created',
+        function: {
+          id: 'function-1',
+          ...functionDefinition,
+        },
+      };
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: functionDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for function resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle() {
+            return result;
+          },
+        },
+        stdout: createWritableStream(stdoutChunks),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'function',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+        '--json',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 0);
+      assert.deepEqual(JSON.parse(stdoutChunks.join('')), result);
+      assert.equal(stderrChunks.join(''), '');
+    });
+
+    it('should surface function handle lookup failures before creating a function', async () => {
+      // Arrange
+      const { CreateRequestCommand } = await import(createRequestCommandModuleUrl);
+      const functionDefinition = {
+        handle: 'apply-discount',
+        name: 'Apply discount',
+      };
+      const stderrChunks = [];
+      const createOrUpdateResourceByHandleCalls = [];
+      const createRequestCommand = new CreateRequestCommand({
+        requestDefinitionFileLoader: {
+          async loadRequestDefinition() {
+            return {
+              ok: true,
+              requestDefinition: functionDefinition,
+            };
+          },
+        },
+        apiEaseCrudResourceClient: {
+          async createResource(options) {
+            throw new Error(`direct resource create should not be used for function resources: ${JSON.stringify(options)}`);
+          },
+        },
+        apiEaseHandleBasedCreateOrUpdateService: {
+          async createOrUpdateResourceByHandle(options) {
+            createOrUpdateResourceByHandleCalls.push(options);
+            return {
+              status: 503,
+              ok: false,
+              errorCode: 'FUNCTION_READ_FAILED',
+              message: 'Unable to read function by handle.',
+              fieldErrors: [],
+            };
+          },
+        },
+        stdout: createWritableStream([]),
+        stderr: createWritableStream(stderrChunks),
+      });
+
+      // Act
+      const exitCode = await createRequestCommand.run([
+        'create',
+        'function',
+        '--file',
+        '/tmp/function.json',
+        '--base-url',
+        'https://apiease.example.com',
+        '--shop-domain',
+        'cool-shop.myshopify.com',
+        '--api-key',
+        'api-key-1',
+      ]);
+
+      // Assert
+      assert.equal(exitCode, 1);
+      assert.equal(createOrUpdateResourceByHandleCalls[0].readFailureErrorCode, 'FUNCTION_READ_FAILED');
+      assert.match(stderrChunks.join(''), /Function creation failed\./);
+      assert.match(stderrChunks.join(''), /Error Code: FUNCTION_READ_FAILED/);
+      assert.match(stderrChunks.join(''), /Status: 503/);
     });
 
     it('should resolve the api key from home configuration when the api key argument is omitted', async () => {
