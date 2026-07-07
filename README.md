@@ -184,7 +184,7 @@ Create the APIEase home directory:
 mkdir -p ~/.apiease
 ```
 
-Declare the active environment in `~/.apiease/environment`. The only supported values are `local`, `staging`, and `production`.
+Declare the active environment in `~/.apiease/environment`. The CLI uses that value to load the matching `~/.apiease/.env.<environment>` file. The examples below use `local`, `staging`, and `production`, but custom environment names such as `qa` are supported when the matching env file exists.
 
 For a local setup:
 
@@ -221,7 +221,7 @@ Configuration precedence is:
 If the home configuration is missing, invalid, or unreadable, the CLI fails fast with a structured error. The most common fixes are:
 
 - Create `~/.apiease/environment` if it does not exist.
-- Set `~/.apiease/environment` to exactly `local`, `staging`, or `production`.
+- Set `~/.apiease/environment` to the non-blank environment name that matches the env file you want to load.
 - Create the matching `~/.apiease/.env.<environment>` file for the selected environment.
 - Add a non-empty `APIEASE_API_KEY` entry to that env file.
 - Add `APIEASE_BASE_URL` and `APIEASE_SHOP_DOMAIN` when you want those values to be optional on each CLI command.
